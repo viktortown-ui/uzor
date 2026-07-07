@@ -124,3 +124,62 @@ describe('lab v3', () => {
     expect(screen.queryByText(/Нужна настройка Supabase|Войдите в закрытый круг|Код приглашения/)).not.toBeInTheDocument();
   });
 });
+
+describe('lab v4', () => {
+  it('/lab/v4 показывает бейдж и главный вывод про транспорт, время и усталость', () => {
+    renderAt('/lab/v4');
+    expect(screen.getByText('ДЕМО-ЛАБОРАТОРИЯ · синтетические данные')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Транспорт сильнее всего забирает время.' })).toBeInTheDocument();
+    expect(screen.getByText(/79 из 126 участников/)).toBeInTheDocument();
+    expect(screen.getAllByText('Транспорт').length).toBeGreaterThan(0);
+    expect(screen.getByText('Больше времени в дороге')).toBeInTheDocument();
+    expect(screen.getAllByText('Усталость').length).toBeGreaterThan(0);
+  });
+
+  it('future показывает горизонты и числа ожиданий', () => {
+    renderAt('/lab/v4?scale=126&scenario=signal&step=future&copy=a');
+    expect(screen.getByRole('button', { name: '7 дней' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '30 дней' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '6–12 месяцев' })).toBeInTheDocument();
+    expect(screen.getByText('46%')).toBeInTheDocument();
+    expect(screen.getByText('34%')).toBeInTheDocument();
+    expect(screen.getByText('20%')).toBeInTheDocument();
+  });
+
+  it('why показывает объяснение доверия человеческим языком', () => {
+    renderAt('/lab/v4?scale=126&scenario=signal&step=why&copy=a');
+    expect(screen.getByRole('button', { name: 'Почему мы это показываем?' })).toBeInTheDocument();
+    expect(screen.getByText(/Эта связь повторяется не у одного человека/)).toBeInTheDocument();
+  });
+
+  it('fork показывает две разные ветки последствий', () => {
+    renderAt('/lab/v4?scale=1248&scenario=fork&step=why&copy=a');
+    expect(screen.getByText(/Продукты → расходы → меньше свободных денег/i)).toBeInTheDocument();
+    expect(screen.getByText(/Продукты → расходы → больше тревоги/i)).toBeInTheDocument();
+  });
+
+  it('выбор Я среди других меняет текст', async () => {
+    const u = userEvent.setup();
+    renderAt('/lab/v4');
+    await u.click(screen.getByRole('button', { name: 'Продукты' }));
+    expect(screen.getByText(/меньшая часть круга/)).toBeInTheDocument();
+    await u.click(screen.getByRole('button', { name: 'Транспорт' }));
+    expect(screen.getByText(/Ты ближе к 42% круга/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Услуги' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Пока не знаю' })).toBeInTheDocument();
+  });
+
+  it('не показывает технические значения и не просит Supabase', () => {
+    renderAt('/lab/v4');
+    expect(screen.queryByText(/0\.69|туман 18%|confidence|coverage|diversity/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Нужна настройка Supabase|Код приглашения|Войдите в закрытый круг/)).not.toBeInTheDocument();
+  });
+
+  it('важные маршруты продолжают рендериться', () => {
+    for (const route of ['/', '/join', '/contribute', '/branch/support%7Cs2%7Cc8', '/curator', '/about', '/demo', '/lab']) {
+      const view = renderAt(route);
+      expect(document.body.textContent).toMatch(/УЗОР|ДЕМО-ЛАБОРАТОРИЯ/);
+      view.unmount();
+    }
+  });
+});
