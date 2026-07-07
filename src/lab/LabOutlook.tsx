@@ -1,0 +1,6 @@
+import { zonesFor } from './labData';
+import type { LabScale, LabScenario } from './labTypes';
+export function LabOutlook({ scale, scenario }: { scale: LabScale; scenario: LabScenario }) {
+  const status = scale === 18 ? 'Пока слишком мало откликов для уверенного вывода.' : scale === 126 ? 'Картина начинает собираться.' : 'Внутри этого круга ожидание устойчиво повторяется в нескольких группах участников.';
+  return <section className="lab-view"><div className="lab-verdict"><p className="eyebrow">Чего люди ждут в ближайшие 30 дней?</p><h1>ОЖИДАНИЯ НА 30 ДНЕЙ</h1><p>Это ожидания участников круга, а не официальный прогноз.</p></div><div className="expectation-wave">{zonesFor(scenario).map((z, i) => <article key={z.id} className="wave-row"><h3>{z.title}</h3><div className="wave" style={{ ['--up' as string]: `${z.outlook.up}%`, ['--flat' as string]: `${z.outlook.flat}%`, ['--down' as string]: `${z.outlook.down}%`, ['--delay' as string]: `${i * .2}s` }}><span>усилится ↑ {z.outlook.up}%</span><span>без изменений → {z.outlook.flat}%</span><span>станет легче ↓ {z.outlook.down}%</span></div></article>)}</div><article className="lab-card important"><p className="eyebrow">ЧТО ИЗМЕНИЛОСЬ ЗА НЕДЕЛЮ</p><h2>Ожидание усиления давления в транспорте выросло с 31% до 46%.</h2><p>Это ранний сдвиг, а не доказанный тренд. {status}</p></article></section>;
+}
