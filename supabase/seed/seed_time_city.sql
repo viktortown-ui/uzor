@@ -1,0 +1,9 @@
+with circle as (insert into public.circles(name,context,invite_code_hash) values('Первый круг УЗОР','Закрытый круг для темы «Время города».',encode(digest('UZOR-DEMO-2026','sha256'),'hex')) returning id), theme as (insert into public.themes(circle_id,slug,title,subtitle) select id,'time-city','Время города','Как город забирает и возвращает людям время.' from circle returning id)
+insert into public.catalog_items(theme_id,kind,layer,label,sort_order)
+select theme.id, v.kind, v.layer, v.label, v.sort_order from theme cross join (values
+('signal','tension','Дольше ждать транспорт',1),('signal','tension','Больше пробок',2),('signal','tension','Сложнее пересаживаться',3),('signal','tension','Поездки стали дороже',4),('signal','tension','Сложнее попасть к важным услугам',5),
+('signal','support','Появился удобный маршрут',1),('signal','support','Стало быстрее добираться',2),('signal','support','Стало проще пересаживаться',3),('signal','support','Путь стал безопаснее',4),('signal','support','Услуги стали ближе',5),
+('signal','potential','Нужен прямой маршрут',1),('signal','potential','Нужна безопасная остановка',2),('signal','potential','Нужна удобная пересадка',3),('signal','potential','Важные услуги должны быть ближе',4),('signal','potential','Можно улучшить освещение и путь пешком',5),
+('group',null,'Работающие',1),('group',null,'Родители',2),('group',null,'Пожилые',3),('group',null,'Студенты',4),('group',null,'Предприниматели',5),('group',null,'Жители района',6),
+('consequence',null,'Больше времени в дороге',1),('consequence',null,'Опоздания',2),('consequence',null,'Меньше времени дома',3),('consequence',null,'Усталость',4),('consequence',null,'Больше расходов',5),('consequence',null,'Сложнее попасть к услугам',6),('consequence',null,'Легче добираться',7),('consequence',null,'Больше доступности',8),('consequence',null,'Меньше ожидания',9),('consequence',null,'Больше безопасности',10)
+) as v(kind,layer,label,sort_order);
