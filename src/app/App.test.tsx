@@ -85,3 +85,42 @@ describe('app', () => {
     expect(screen.getByDisplayValue('TEST')).toBeInTheDocument();
   });
 });
+
+describe('lab v3', () => {
+  it('/lab показывает бейдж, режимы и масштабы', () => {
+    renderAt('/lab');
+    expect(screen.getByText('ДЕМО-ЛАБОРАТОРИЯ · синтетические данные для проверки визуала')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Сводка' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ожидания' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Связи' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '18 участников' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '126 участников' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /1\s*248 участников/ })).toBeInTheDocument();
+  });
+
+  it('при переключении масштаба меняется текст статуса', async () => {
+    const u = userEvent.setup();
+    renderAt('/lab?view=summary&scale=18&scenario=shift&copy=b');
+    expect(screen.getAllByText('РАННИЙ СИГНАЛ').length).toBeGreaterThan(0);
+    await u.click(screen.getByRole('link', { name: /1\s*248 участников/ }));
+    expect((await screen.findAllByText('УСТОЙЧИВЫЙ СИГНАЛ КРУГА')).length).toBeGreaterThan(0);
+  });
+
+  it('сценарии показывают понятные итоги', () => {
+    const first = renderAt('/lab?view=summary&scale=126&scenario=shift&copy=b');
+    expect(screen.getByText('ДАВЛЕНИЕ УСИЛИВАЕТСЯ ↑')).toBeInTheDocument();
+    first.unmount();
+    const second = renderAt('/lab?view=summary&scale=126&scenario=relief&copy=b');
+    expect(screen.getByText('СТАЛО ЛЕГЧЕ ↓')).toBeInTheDocument();
+    second.unmount();
+    renderAt('/lab?view=summary&scale=126&scenario=split&copy=b');
+    expect(screen.getByText(/расходятся/i)).toBeInTheDocument();
+  });
+
+  it('лаборатория не вызывает Supabase API и показывает связи расхождения', () => {
+    renderAt('/lab?view=connections&scale=126&scenario=split&copy=b');
+    expect(screen.getByText('Продукты → Расходы → Свободные деньги')).toBeInTheDocument();
+    expect(screen.getByText('Продукты → Тревожность')).toBeInTheDocument();
+    expect(screen.queryByText(/Нужна настройка Supabase|Войдите в закрытый круг|Код приглашения/)).not.toBeInTheDocument();
+  });
+});
