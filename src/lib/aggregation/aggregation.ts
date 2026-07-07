@@ -33,19 +33,21 @@ export function aggregateContributions(contributions: ContributionInput[], now =
   }
   const branches: BranchAggregate[] = [...groups.entries()].map(([key, rows]) => {
     const [layer, signalId, consequenceId] = key.split('|') as [Layer, string, string];
-    const groupId = rows[0]?.groupId ?? '';
     const users = new Set(rows.map((r) => r.userId)); const groupSet = new Set(rows.map((r) => r.groupId)); const evidences = new Set(rows.map((r) => r.evidence));
-    const effectiveWeight = [...users].reduce((sum, userId) => sum + baseWeight(rows.filter((r) => r.userId === userId).sort((a,b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))[0], now), 0);
+    const latestByUser = [...users].map((userId) => rows.filter((r) => r.userId === userId).sort((a,b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))[0]);
+    const effectiveWeight = latestByUser.reduce((sum, row) => sum + baseWeight(row, now), 0);
     const distinctGroups = groupSet.size; const diversityBonus = 1 + Math.min(0.3, 0.08 * (distinctGroups - 1));
     const strength = Math.log(1 + effectiveWeight) * diversityBonus; const evidenceDiversity = evidences.size > 1 ? 1 : 0.5;
     const clarity = Math.min(1, 0.18 * Math.sqrt(users.size) + 0.14 * Math.sqrt(distinctGroups) + 0.10 * evidenceDiversity);
+    const groupBreakdown = [...groupSet].map((gid) => { const groupRows = rows.filter((r) => r.groupId === gid); return { groupId: gid, participantCount: new Set(groupRows.map((r) => r.userId)).size, strength: groupRows.reduce((sum, r) => sum + baseWeight(r, now), 0) }; }).sort((a,b) => b.strength - a.strength);
+    const dominantGroups = groupBreakdown.slice(0, 2).map((g) => g.groupId);
     const scores = { tensionScore: 0, supportScore: 0, potentialScore: 0 }; scores[scoreField[layer]] = strength;
     const consequenceSets = signalConsequences.get(`${layer}|${signalId}`); const strongConsequences = [...(consequenceSets?.values() ?? [])].filter((set) => set.size >= 3).length;
-    return { id: key, layer, signalId, groupId, consequenceId, participantCount: users.size, distinctGroups, evidenceDiversity, strength, clarity, status: status(clarity, users.size), ...scores, isDivergence: strongConsequences >= 2 };
+    return { id: key, layer, signalId, consequenceId, participantCount: users.size, distinctGroups, dominantGroups, groupBreakdown, evidenceDiversity, strength, clarity, status: status(clarity, users.size), ...scores, isDivergence: strongConsequences >= 2 };
   });
   const convergenceMap = new Map<string, number>();
   for (const b of branches) convergenceMap.set(b.consequenceId, (convergenceMap.get(b.consequenceId) ?? 0) + b.strength);
   const participantCount = new Set([...unique.values()].map((c) => c.userId)).size;
   const clarity = branches.length ? branches.reduce((s, b) => s + b.clarity, 0) / branches.length : 0;
-  return { participantCount, threadCount: unique.size, branches, convergence: [...convergenceMap.entries()].map(([consequenceId, influence]) => ({ consequenceId, influence })).sort((a,b) => b.influence - a.influence), clarity };
+  return { participantCount, branchCount: branches.length, threadCount: unique.size, branches, convergence: [...convergenceMap.entries()].map(([consequenceId, influence]) => ({ consequenceId, influence })).sort((a,b) => b.influence - a.influence), clarity };
 }

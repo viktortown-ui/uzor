@@ -21,6 +21,40 @@ npm run dev
 3. Применить `supabase/migrations/001_uzor_init.sql` и `supabase/seed/seed_time_city.sql`.
 4. Добавить GitHub Variables `VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY`.
 5. Включить GitHub Pages → GitHub Actions.
-6. Войти по приглашению `UZOR-DEMO-2026` и назначить себя curator по `docs/SUPABASE_SETUP.md`.
+6. Войти по приглашению `REPLACE_WITH_A_LONG_PRIVATE_INVITE_CODE` и назначить себя curator по `docs/SUPABASE_SETUP.md`.
 
 Подробно: `docs/SUPABASE_SETUP.md`, `docs/DEPLOYMENT.md`, `docs/QA_CHECKLIST.md`.
+
+## MVP 1.1: demo и production
+
+### Demo
+
+```bash
+VITE_APP_MODE=demo npm run dev
+```
+
+Демо использует только локальные вымышленные данные и всегда показывает бейдж `ДЕМО — данные вымышлены`.
+
+### Production
+
+```bash
+VITE_APP_MODE=production \
+VITE_SUPABASE_URL=https://<project>.supabase.co \
+VITE_SUPABASE_PUBLISHABLE_KEY=<publishable-key> \
+npm run dev
+```
+
+Production не использует demo fixtures. Пользователь входит через hash invite URL:
+
+```text
+https://<owner>.github.io/uzor/#/join?code=REPLACE_WITH_A_LONG_PRIVATE_INVITE_CODE
+```
+
+Ручная настройка Supabase:
+1. Применить migrations `001_uzor_init.sql`, затем `002_uzor_integrity_and_curator.sql`.
+2. Включить Anonymous Sign-In в Supabase Auth.
+3. Создать первый закрытый круг и тему; код приглашения должен быть длинным, случайным и не коммититься. В seed и документации оставлен только placeholder `REPLACE_WITH_A_LONG_PRIVATE_INVITE_CODE`.
+4. Добавить GitHub repository variables `VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY`; service role key не нужен на клиенте.
+5. Для GitHub Pages выбрать `Repository Settings → Pages → Source: GitHub Actions`.
+
+GitHub Pages публикует только фронтенд. Данные круга защищаются Supabase RLS; чужие сырые contributions и raw candidate text не выдаются на публичное полотно.
