@@ -5,7 +5,7 @@
 3. SQL Editor → выполните `supabase/migrations/001_uzor_init.sql`.
 4. SQL Editor → выполните `supabase/seed/seed_time_city.sql`.
 5. В Project Settings → API скопируйте Project URL и publishable anon key. Не используйте service role key во фронтенде.
-6. Первый вход: откройте сайт с `?join=UZOR-DEMO-2026` или страницу `/join`.
+6. Первый вход: откройте сайт с `?join=REPLACE_WITH_A_LONG_PRIVATE_INVITE_CODE` или страницу `/join`.
 7. Назначьте себя куратором после входа:
 
 ```sql

@@ -1,8 +1,12 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { isProductionConfigured, supabaseConfig } from '../../app/appMode';
 
-export function getSupabaseClient(): SupabaseClient | null {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true } });
+let client: SupabaseClient | null = null;
+
+export function getSupabaseClient(): SupabaseClient {
+  if (!isProductionConfigured || !supabaseConfig.url || !supabaseConfig.key) {
+    throw new Error('Supabase is not configured for production mode');
+  }
+  client ??= createClient(supabaseConfig.url, supabaseConfig.key, { auth: { persistSession: true, autoRefreshToken: true } });
+  return client;
 }
