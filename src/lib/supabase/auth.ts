@@ -10,3 +10,13 @@ export async function ensureAnonymousSession() {
   if (!data.session) throw new Error('Не удалось создать анонимную сессию.');
   return data.session;
 }
+
+export async function hasSupabaseSession(): Promise<boolean> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    console.error('[UZOR-SESSION]', error);
+    return false;
+  }
+  return Boolean(data.session);
+}
