@@ -2,42 +2,62 @@ import { getSupabaseClient } from './client';
 import type { ActiveTheme, CandidateProposal, CatalogItem, ContributionPayload, JoinResult, ThemeSnapshot } from './types';
 import type { CatalogKind, Layer } from '../../types/domain';
 
+export type UZorErrorCode = 'UZOR-LOAD-THEME' | 'UZOR-LOAD-CATALOG' | 'UZOR-LOAD-SNAPSHOT' | 'UZOR-JOIN' | 'UZOR-SAVE';
+
+export class UZorApiError extends Error {
+  constructor(public code: UZorErrorCode, message: string, public cause?: unknown) {
+    super(`${code}: ${message}`);
+    this.name = 'UZorApiError';
+  }
+}
+
 function first<T>(value: T | T[] | null): T | null { return Array.isArray(value) ? (value[0] ?? null) : value; }
+
+function logTechnical(code: UZorErrorCode, error: unknown) {
+  console.error(`[${code}]`, error);
+}
+
+function normalizeSupabaseError(code: UZorErrorCode, fallback: string, error: unknown): never {
+  logTechnical(code, error);
+  throw new UZorApiError(code, fallback, error);
+}
 
 export async function joinCircleByCode(code: string): Promise<JoinResult> {
   const normalized = code.trim().toUpperCase();
   const { data, error } = await getSupabaseClient().rpc('join_circle_by_code', { input_code: normalized });
-  if (error) throw new Error('Круг не найден. Проверь ссылку или код.');
+  if (error) normalizeSupabaseError('UZOR-JOIN', 'Круг не найден. Проверь ссылку или код.', error);
   const row = first(data as JoinResult | JoinResult[] | null);
-  if (!row) throw new Error('Круг не найден. Проверь ссылку или код.');
+  if (!row) throw new UZorApiError('UZOR-JOIN', 'Круг не найден. Проверь ссылку или код.');
   localStorage.setItem('activeCircleId', row.circle_id);
   localStorage.setItem('activeThemeId', row.theme_id);
   return row;
 }
 
 export async function loadActiveTheme(): Promise<ActiveTheme | null> {
-  const themeId = localStorage.getItem('activeThemeId');
-  if (!themeId) return null;
-  const { data, error } = await getSupabaseClient().from('themes').select('id,circle_id,title,subtitle').eq('id', themeId).single();
-  if (error) throw error;
-  return { id: data.id, circleId: data.circle_id, title: data.title, subtitle: data.subtitle };
+  const { data, error } = await getSupabaseClient().rpc('get_my_active_theme');
+  if (error) normalizeSupabaseError('UZOR-LOAD-THEME', 'Не удалось загрузить тему круга. Попробуйте ещё раз.', error);
+  const row = first(data as { id: string; circle_id: string; title: string; subtitle: string } | Array<{ id: string; circle_id: string; title: string; subtitle: string }> | null);
+  if (!row) return null;
+  localStorage.setItem('activeCircleId', row.circle_id);
+  localStorage.setItem('activeThemeId', row.id);
+  return { id: row.id, circleId: row.circle_id, title: row.title, subtitle: row.subtitle };
 }
 
 export async function loadCatalog(themeId: string): Promise<CatalogItem[]> {
-  const { data, error } = await getSupabaseClient().from('catalog_items').select('id,kind,layer,label,sort_order').eq('theme_id', themeId).eq('is_active', true).order('sort_order');
-  if (error) throw error;
-  return (data ?? []).map((i) => ({ id: i.id, kind: i.kind, layer: i.layer, label: i.label, sortOrder: i.sort_order })) as CatalogItem[];
+  const { data, error } = await getSupabaseClient().rpc('get_theme_catalog', { input_theme_id: themeId });
+  if (error) normalizeSupabaseError('UZOR-LOAD-CATALOG', 'Не удалось загрузить карточки темы. Попробуйте ещё раз.', error);
+  return (data ?? []).map((i: { id: string; kind: CatalogKind; layer: Layer | null; label: string; sort_order: number }) => ({ id: i.id, kind: i.kind, layer: i.layer, label: i.label, sortOrder: i.sort_order })) as CatalogItem[];
 }
 
 export async function getThemeSnapshot(themeId: string): Promise<ThemeSnapshot> {
   const { data, error } = await getSupabaseClient().rpc('get_theme_snapshot', { input_theme_id: themeId });
-  if (error) throw error;
+  if (error) normalizeSupabaseError('UZOR-LOAD-SNAPSHOT', 'Не удалось загрузить нити круга. Попробуйте ещё раз.', error);
   return data as ThemeSnapshot;
 }
 
 export async function upsertContributionRpc(payload: ContributionPayload): Promise<string> {
   const { data, error } = await getSupabaseClient().rpc('upsert_contribution', { input_theme_id: payload.themeId, input_layer: payload.layer, input_signal_id: payload.signalId, input_group_id: payload.groupId, input_consequence_id: payload.consequenceId, input_evidence: payload.evidence, input_intensity: payload.intensity });
-  if (error) throw error;
+  if (error) normalizeSupabaseError('UZOR-SAVE', 'Не удалось сохранить нить. Попробуйте ещё раз.', error);
   return data as string;
 }
 
