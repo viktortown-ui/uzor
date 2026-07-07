@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -81,22 +81,21 @@ describe('production fallback', () => {
   it('production visitor без session на /contribute не видит форму вклада', async () => {
     await renderProduction('/contribute?layer=tension', { hasSession: false });
     expect(await screen.findByRole('heading', { name: 'Войдите в закрытый круг' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Что происходит' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/Другое/)).not.toBeInTheDocument();
   });
 
   it('после production RPC на главной есть заголовок темы и три слоя', async () => {
     await renderProduction('/');
-    expect(await screen.findByRole('heading', { name: 'Время города' })).toBeInTheDocument();
-    const layers = screen.getByRole('link', { name: 'Стало сложнее' }).closest('.layers') as HTMLElement;
-    expect(within(layers).getByRole('link', { name: 'Стало сложнее' })).toBeInTheDocument();
-    expect(within(layers).getByRole('link', { name: 'Стало лучше' })).toBeInTheDocument();
-    expect(within(layers).getByRole('link', { name: 'Можно изменить' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Куда уходит твой час?' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Что забирает/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Что возвращает/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Что можно сдвинуть/ })).toBeInTheDocument();
   });
 
   it('на /contribute?layer=tension есть не менее 5 карточек напряжения', async () => {
     await renderProduction('/contribute?layer=tension');
-    await screen.findByRole('heading', { name: 'Стало сложнее' });
+    await screen.findByRole('heading', { name: 'Что ты сейчас узнаёшь?' });
     expect(screen.getAllByRole('button').filter((button) => tensionCards.some((card) => card.label === button.textContent))).toHaveLength(5);
   });
 
@@ -111,7 +110,7 @@ describe('production fallback', () => {
   it('успешный join сохраняет активный context и ведёт на главную', async () => {
     const rpc = await renderProduction('/join?code=INVITE_CODE_123456', { hasSession: false });
     expect(await screen.findByText('Круг подключён')).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: 'Время города' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Куда уходит твой час?' })).toBeInTheDocument();
     expect(rpc).toHaveBeenCalledWith('join_circle_by_code', { input_code: 'INVITE_CODE_123456' });
     expect(localStorage.getItem('activeCircleId')).toBe('circle-1');
     expect(localStorage.getItem('activeThemeId')).toBe('theme-1');
@@ -119,6 +118,7 @@ describe('production fallback', () => {
 
   it('snapshot пустого круга валиден', async () => {
     await renderProduction('/');
-    expect(await screen.findByText('В этом круге пока туман: первая нить ещё не вплетена.')).toBeInTheDocument();
+    expect(await screen.findByText('В круге пока мало независимых откликов.')).toBeInTheDocument();
+    expect(screen.queryByText(/7 независимых/)).not.toBeInTheDocument();
   });
 });
