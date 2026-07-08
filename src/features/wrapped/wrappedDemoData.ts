@@ -2,7 +2,7 @@ import type { WrappedReport } from './wrappedTypes';
 
 export const wrappedDemoReport: WrappedReport = {
   period: { weekStart: '2026-07-06', weekEnd: '2026-07-12', label: 'Эта неделя' },
-  identity: { title: 'Ранний наблюдатель', subtitle: 'Вы замечаете сдвиги раньше круга.', percentileText: 'Вы в числе 23% самых точных', style: 'Осторожный аналитик' },
+  identity: { title: 'Ранний наблюдатель', subtitle: 'Вы замечаете сдвиги раньше круга.', percentileText: 'Вы в числе участников, чьи сигналы собирают контур', style: 'Ранний наблюдатель' },
   summary: { signalsThisWeek: 23, confirmedSignals: 14, accuracy: 62, earlySignals: 1, weekStreak: 3, xp: 7678, nextLevelXp: 10000, xpToNextLevel: 2322 },
   mainTheme: { label: 'Транспорт', share: 38, description: 'Вы замечали чаще других в этой теме.' },
   topThemes: [{ label: 'Транспорт', share: 38 }, { label: 'Продукты', share: 29 }, { label: 'Услуги', share: 18 }],

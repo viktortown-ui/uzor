@@ -15,3 +15,9 @@
 - [ ] Production без сессии/круга: спокойный экран «Войдите в закрытый круг» с переходом на `/join`.
 - [ ] Production без migration 004: понятное сообщение про `004_weekly_wrapped_rpc.sql`.
 - [ ] Empty state: при отсутствии вкладов за неделю показывается CTA «Добавить сигнал» на `/contribute`.
+
+## Wrapped QA hotfix 005
+- [ ] Проверить `/wrapped` desktop: sidebar с иконками, top controls, hero, donut, line chart, top themes, right signals, progress/XP и metric cards.
+- [ ] Проверить `/wrapped` на mobile 360px: нет горизонтального скролла, критичные тексты видны, кнопки не вылезают.
+- [ ] Проверить empty state блока “Где вы были правы”: текст про независимое подтверждение и CTA `/contribute`.
+- [ ] Проверить confirmed logic в production: один пользователь не подтверждает сам себя; две разные учётки на одной ветке дают `participants >= 2`, `summary.confirmedSignals` и `rightSignals` согласованы.

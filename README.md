@@ -14,7 +14,7 @@ npm run dev
 - Математика без единого рейтинга: напряжение, поддержка и потенциал считаются отдельно.
 - Supabase migration с закрытым кругом, anonymous auth, RLS, RPC приглашения и агрегатов.
 - GitHub Actions для CI и GitHub Pages deploy.
-- `/wrapped` — личный недельный Wrapped реальности: сигналы, подтверждения, стиль наблюдателя и прогресс.
+- `/wrapped` — личный недельный dashboard Wrapped реальности: компактная неоновая легенда недели с сигналами, независимыми подтверждениями, точностью, темами, прогрессом XP и красивым empty state.
 
 ## Ручные шаги владельца
 1. Создать Supabase project.
@@ -52,7 +52,7 @@ https://<owner>.github.io/uzor/#/join?code=REPLACE_WITH_A_LONG_PRIVATE_INVITE_CO
 ```
 
 Ручная настройка Supabase:
-1. Применить migrations `001_uzor_init.sql`, затем `002_uzor_integrity_and_curator.sql`, `003_uzor_read_rpc.sql` и `004_weekly_wrapped_rpc.sql`.
+1. Применить migrations `001_uzor_init.sql`, затем `002_uzor_integrity_and_curator.sql`, `003_uzor_read_rpc.sql` и `004_weekly_wrapped_rpc.sql`, затем `005_fix_wrapped_report_sql_and_confirmation.sql`.
 2. Включить Anonymous Sign-In в Supabase Auth.
 3. Создать первый закрытый круг и тему; код приглашения должен быть длинным, случайным и не коммититься. В seed и документации оставлен только placeholder `REPLACE_WITH_A_LONG_PRIVATE_INVITE_CODE`.
 4. Добавить GitHub repository variables `VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY`; service role key не нужен на клиенте.

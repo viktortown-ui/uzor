@@ -1,0 +1,2 @@
+import type { WrappedTheme } from '../wrappedTypes';
+export function WrappedTopThemes({ themes }: { themes: WrappedTheme[] }) { if (!themes.length) return <div className="wrapped-empty-mini"><b>Темы ещё собираются</b><span>Добавьте сигналы, и здесь появится рейтинг наблюдений.</span></div>; return <div>{themes.slice(0,3).map((theme, i) => <div className="wrapped-bar" key={theme.label}><em>{i + 1}</em><span>{theme.label}</span><b>{theme.share}%</b><i style={{ width: `${theme.share}%` }}/></div>)}</div>; }

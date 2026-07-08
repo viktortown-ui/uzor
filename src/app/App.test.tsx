@@ -183,3 +183,22 @@ describe('lab v4', () => {
     }
   });
 });
+
+describe('wrapped dashboard', () => {
+  it('/wrapped renders demo dashboard', () => {
+    renderAt('/wrapped');
+    expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    expect(screen.getAllByText('Ранний наблюдатель').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Транспорт').length).toBeGreaterThan(0);
+    expect(screen.getByText('23')).toBeInTheDocument();
+    expect(screen.getByText('14 ваших сигнала подтвердились')).toBeInTheDocument();
+  });
+
+  it('mobile critical text exists on /wrapped', () => {
+    renderAt('/wrapped');
+    expect(screen.getByText('Эта неделя ▾')).toBeInTheDocument();
+    expect(screen.getByText('Поделиться')).toBeInTheDocument();
+    expect(screen.getByText('Где вы были правы')).toBeInTheDocument();
+    expect(screen.getByText('Ваш прогресс')).toBeInTheDocument();
+  });
+});
