@@ -1,0 +1,3 @@
+import { Link } from 'react-router-dom';
+import type { WrappedRightSignal } from '../wrappedTypes';
+export function WrappedRightSignals({ signals }: { signals: WrappedRightSignal[] }) { if (!signals.length) return <div className="wrapped-right-empty"><div>✓</div><h3>Пока нет подтверждённых сигналов</h3><p>Ваши сигналы уже сохранены. Они появятся здесь, когда круг подтвердит их независимо.</p><Link to="/contribute">Добавить сигнал</Link></div>; return <div className="wrapped-signal-list">{signals.map((signal) => <article key={`${signal.title}-${signal.time}`}><i>✓</i><div><span>{signal.tag}</span><strong>{signal.title}</strong>{signal.consequence && <p>{signal.consequence}</p>}<small>{signal.status} · {signal.time}</small></div><em>→</em></article>)}</div>; }

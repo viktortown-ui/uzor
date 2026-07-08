@@ -122,3 +122,21 @@ describe('production fallback', () => {
     expect(screen.queryByText(/7 независимых/)).not.toBeInTheDocument();
   });
 });
+
+describe('wrapped production states', () => {
+  it('missing RPC state remains handled', async () => {
+    vi.stubEnv('VITE_APP_MODE', 'production');
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'anon-key');
+    vi.doMock('@supabase/supabase-js', () => ({
+      createClient: () => ({
+        rpc: vi.fn(async (name: string) => name === 'get_my_wrapped_report' ? { data: null, error: { message: 'get_my_wrapped_report not in schema cache' } } : { data: null, error: null }),
+        auth: { getSession: vi.fn(async () => ({ data: { session: { user: { id: 'u1' } } }, error: null })) },
+        from: vi.fn(),
+      }),
+    }));
+    const { App } = await import('./App');
+    render(<MemoryRouter initialEntries={['/wrapped']}><App /></MemoryRouter>);
+    expect(await screen.findByRole('heading', { name: 'Нужно применить migration 005_fix_wrapped_report_sql_and_confirmation.sql' })).toBeInTheDocument();
+  });
+});

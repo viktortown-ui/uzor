@@ -1,0 +1,3 @@
+import type { WrappedReport } from '../wrappedTypes';
+import { WrappedCard } from './WrappedCard';
+export function WrappedMetricCards({ report }: { report: WrappedReport }) { const metrics = [['Сигналов за неделю', report.summary.signalsThisWeek, '+4 vs прошл. неделя'], ['Подтверждено', report.summary.confirmedSignals, '+2'], ['Точность', `${report.summary.accuracy}%`, '+8%'], ['Раньше круга', report.summary.earlySignals, '+1'], ['Серия недель', report.summary.weekStreak, 'стабильно']]; return <div className="wrapped-metrics">{metrics.map(([k, v, change]) => <WrappedCard key={k as string}><p>{k}</p><h3>{v}</h3><small>{change}</small></WrappedCard>)}</div>; }
