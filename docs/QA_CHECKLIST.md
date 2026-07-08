@@ -6,3 +6,12 @@
 - Production без env показывает спокойный экран настройки, а не фальшивые цифры.
 - `/about`, `/branch/:id`, `/curator`, `/join` открываются.
 - Проверки: `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`.
+
+## `/wrapped` личный недельный отчёт
+- [ ] Demo mode: `/wrapped` открывается без Supabase и показывает неоновый dashboard с Ранним наблюдателем, Транспортом, 23 сигналами, 14 подтверждениями, 62% точности, 1 ранним сигналом и серией 3 недели.
+- [ ] Desktop: sidebar + dashboard grid без поломки существующей навигации.
+- [ ] Mobile 360px: нет горизонтального скролла, карточки идут в одну колонку.
+- [ ] Production: `/wrapped` вызывает RPC `get_my_wrapped_report` и не показывает raw contributions других пользователей.
+- [ ] Production без сессии/круга: спокойный экран «Войдите в закрытый круг» с переходом на `/join`.
+- [ ] Production без migration 004: понятное сообщение про `004_weekly_wrapped_rpc.sql`.
+- [ ] Empty state: при отсутствии вкладов за неделю показывается CTA «Добавить сигнал» на `/contribute`.
