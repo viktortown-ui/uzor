@@ -1,7 +1,7 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HashRouter, MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 
 afterEach(() => {
@@ -185,20 +185,45 @@ describe('lab v4', () => {
 });
 
 describe('wrapped dashboard', () => {
-  it('/wrapped renders demo dashboard', () => {
+  it('/wrapped renders core MVP blocks', () => {
     renderAt('/wrapped');
     expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
-    expect(screen.getAllByText('Ранний наблюдатель').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Транспорт').length).toBeGreaterThan(0);
-    expect(screen.getByText('23')).toBeInTheDocument();
-    expect(screen.getByText('14 ваших сигнала подтвердились')).toBeInTheDocument();
-  });
-
-  it('mobile critical text exists on /wrapped', () => {
-    renderAt('/wrapped');
-    expect(screen.getByText('Эта неделя ▾')).toBeInTheDocument();
-    expect(screen.getByText('Поделиться')).toBeInTheDocument();
+    expect(screen.getByText('Ваш итог недели')).toBeInTheDocument();
+    expect(screen.getByText('Сигналов за неделю')).toBeInTheDocument();
+    expect(screen.getAllByText('Подтверждено').length).toBeGreaterThan(0);
+    expect(screen.getByText('Точность')).toBeInTheDocument();
+    expect(screen.getByText('Серия недель')).toBeInTheDocument();
+    expect(screen.getByText('Что вы замечали')).toBeInTheDocument();
     expect(screen.getByText('Где вы были правы')).toBeInTheDocument();
     expect(screen.getByText('Ваш прогресс')).toBeInTheDocument();
+  });
+
+  it('/wrapped does not show dead nav/buttons', () => {
+    renderAt('/wrapped');
+    expect(screen.queryByText('Биржа ожиданий')).not.toBeInTheDocument();
+    expect(screen.queryByText('Смотреть все темы')).not.toBeInTheDocument();
+    expect(screen.queryByText('Активность сигналов')).not.toBeInTheDocument();
+    expect(screen.queryByText('Раньше круга')).not.toBeInTheDocument();
+  });
+
+  it('share button works and Add signal CTA goes to /contribute', async () => {
+    const writeText = vi.fn(async () => undefined);
+    const share = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'share', { configurable: true, value: share });
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    const u = userEvent.setup();
+    renderAt('/wrapped');
+    expect(screen.getByRole('link', { name: 'Добавить сигнал' })).toHaveAttribute('href', '/contribute');
+    await u.click(screen.getByRole('button', { name: /Поделиться/ }));
+    await waitFor(() => expect(share).toHaveBeenCalledWith(expect.objectContaining({ text: expect.stringMatching(/Мой/) }))); 
+    expect(await screen.findByText('Отчёт скопирован')).toBeInTheDocument();
+  });
+
+  it('/curator/overview renders in demo and /lab/wrapped-reference-v2 remains available', () => {
+    renderAt('/curator/overview');
+    expect(screen.getByRole('heading', { name: /Сводка круга/ })).toBeInTheDocument();
+    cleanup();
+    renderAt('/lab/wrapped-reference-v2');
+    expect(document.body.textContent).toMatch(/Wrapped|УЗОР/i);
   });
 });

@@ -16,7 +16,7 @@ const catalogRows = [
 ];
 const emptySnapshot = { participantCount: 0, branchCount: 0, threadCount: 0, branches: [], convergence: [], clarity: 0 };
 
-function mockSupabase({ catalogError = false, hasSession = true } = {}) {
+function mockSupabase({ catalogError = false, hasSession = true, curator = false } = {}) {
   let session = hasSession ? { user: { id: 'u1' } } : null;
   const rpc = vi.fn(async (name: string) => {
     if (name === 'get_my_active_theme') return { data: [{ id: 'theme-1', circle_id: 'circle-1', title: 'Время города', subtitle: 'Тестовая тема' }], error: null };
@@ -29,13 +29,25 @@ function mockSupabase({ catalogError = false, hasSession = true } = {}) {
     createClient: () => ({
       rpc,
       auth: { getSession: vi.fn(async () => ({ data: { session }, error: null })), signInAnonymously: vi.fn(async () => { session = { user: { id: 'u1' } }; return { data: { session }, error: null }; }) },
-      from: vi.fn(),
+      from: vi.fn((table: string) => {
+        if (table === 'circle_memberships') return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn(async () => ({ data: curator ? { role: 'curator' } : { role: 'member' }, error: null })),
+              })),
+            })),
+          })),
+        };
+        if (table === 'candidate_proposals') return { select: vi.fn(() => ({ eq: vi.fn(() => ({ order: vi.fn(async () => ({ data: [], error: null })) })) })) };
+        return { select: vi.fn() };
+      }),
     }),
   }));
   return rpc;
 }
 
-async function renderProduction(path: string, opts?: { catalogError?: boolean; hasSession?: boolean }) {
+async function renderProduction(path: string, opts?: { catalogError?: boolean; hasSession?: boolean; curator?: boolean }) {
   vi.stubEnv('VITE_APP_MODE', 'production');
   vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
   vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'anon-key');
@@ -124,6 +136,16 @@ describe('production fallback', () => {
 });
 
 describe('wrapped production states', () => {
+  it('curator overview is protected for non-curator', async () => {
+    await renderProduction('/curator/overview');
+    expect(await screen.findByText('Этот раздел доступен только управляющему круга.')).toBeInTheDocument();
+  });
+
+  it('existing /curator still works', async () => {
+    await renderProduction('/curator', { curator: true });
+    expect(await screen.findByRole('heading', { name: 'Кандидаты круга' })).toBeInTheDocument();
+  });
+
   it('missing RPC state remains handled', async () => {
     vi.stubEnv('VITE_APP_MODE', 'production');
     vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
