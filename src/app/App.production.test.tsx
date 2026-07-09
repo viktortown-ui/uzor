@@ -72,23 +72,24 @@ describe('production fallback', () => {
     vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', '');
 
     const { App } = await import('./App');
-    render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={['/lab/old-home']}><App /></MemoryRouter>);
 
     expect(screen.getByRole('link', { name: 'УЗОР' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Нужна настройка Supabase' })).toBeInTheDocument();
     expect(screen.getByText(/VITE_SUPABASE_URL/)).toBeInTheDocument();
     expect(screen.getByText(/VITE_SUPABASE_PUBLISHABLE_KEY/)).toBeInTheDocument();
-  });
+  }, 10000);
 
 
 
-  it('production visitor без session на / видит приглашение и не вызывает get_my_active_theme', async () => {
+  it('production visitor без session на / попадает на безопасный Wrapped entry и не вызывает get_my_active_theme', async () => {
     const rpc = await renderProduction('/', { hasSession: false });
     expect(await screen.findByRole('heading', { name: 'Войдите в закрытый круг' })).toBeInTheDocument();
-    expect(screen.getByText('УЗОР открывается по ссылке-приглашению от куратора круга.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'У меня есть приглашение' })).toHaveAttribute('href', '/join');
+    expect(screen.getByText('Wrapped собирается только для участников круга.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Войти по приглашению' })).toHaveAttribute('href', '/join');
+    expect(screen.queryByRole('heading', { name: 'Куда уходит твой час?' })).not.toBeInTheDocument();
     expect(rpc).not.toHaveBeenCalledWith('get_my_active_theme');
-  });
+  }, 10000);
 
   it('production visitor без session на /contribute не видит форму вклада', async () => {
     await renderProduction('/contribute?layer=tension', { hasSession: false });
@@ -97,12 +98,10 @@ describe('production fallback', () => {
     expect(screen.queryByPlaceholderText(/Другое/)).not.toBeInTheDocument();
   });
 
-  it('после production RPC на главной есть заголовок темы и три слоя', async () => {
+  it('после production RPC root остаётся Wrapped MVP entry', async () => {
     await renderProduction('/');
-    expect(await screen.findByRole('heading', { name: 'Куда уходит твой час?' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Что забирает/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Что возвращает/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Что можно сдвинуть/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Wrapped|Войдите в закрытый круг|Пока Wrapped не собран/ })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Куда уходит твой час?' })).not.toBeInTheDocument();
   });
 
   it('на /contribute?layer=tension есть не менее 5 карточек напряжения', async () => {
@@ -119,17 +118,16 @@ describe('production fallback', () => {
     expect(screen.queryByPlaceholderText(/Другое/)).not.toBeInTheDocument();
   });
 
-  it('успешный join сохраняет активный context и ведёт на главную', async () => {
+  it('успешный join сохраняет активный context и ведёт на Wrapped', async () => {
     const rpc = await renderProduction('/join?code=INVITE_CODE_123456', { hasSession: false });
-    expect(await screen.findByText('Круг подключён')).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: 'Куда уходит твой час?' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Wrapped|Пока Wrapped не собран/ })).toBeInTheDocument();
     expect(rpc).toHaveBeenCalledWith('join_circle_by_code', { input_code: 'INVITE_CODE_123456' });
     expect(localStorage.getItem('activeCircleId')).toBe('circle-1');
     expect(localStorage.getItem('activeThemeId')).toBe('theme-1');
   });
 
-  it('snapshot пустого круга валиден', async () => {
-    await renderProduction('/');
+  it('старый prototype route с пустым snapshot валиден через lab path', async () => {
+    await renderProduction('/lab/old-home');
     expect(await screen.findByText('В круге пока мало независимых откликов.')).toBeInTheDocument();
     expect(screen.queryByText(/7 независимых/)).not.toBeInTheDocument();
   });

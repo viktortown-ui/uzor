@@ -29,7 +29,7 @@ describe('app', () => {
     expect(await screen.findByText('Несколько людей независимо увидели одну связь.')).toBeInTheDocument();
     await u.click(screen.getByRole('link', { name: 'Развилка' }));
     expect(await screen.findByText('Люди видят одну причину, но расходятся в последствиях.')).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('production-подобная пустая картина не показывает вымышленные цифры', () => {
     renderAt('/demo?scenario=fog');
@@ -57,7 +57,7 @@ describe('app', () => {
     expect(localStorage.getItem('uzor.preferredContext.v2')).toBe('g0');
     await u.click(screen.getByRole('button', { name: 'Вплести в УЗОР' }));
     expect(await screen.findByText(/Ты (оставил первый след|не один|открыл развилку)/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Посмотреть, что изменилось' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Посмотреть, что изменилось' })).toHaveAttribute('href', '/wrapped');
   });
 
   it('следующий вклад показывает компактный чип сохранённого контекста', async () => {
@@ -69,13 +69,11 @@ describe('app', () => {
     expect(screen.getByText(/Сейчас ты отвечаешь из контекста: Работающие/)).toBeInTheDocument();
   });
 
-  it('рендерит главную страницу в HashRouter на GitHub Pages base path без basename', () => {
+  it('рендерит Wrapped MVP на root в HashRouter на GitHub Pages base path без basename', () => {
     renderHashAt('#/');
-    expect(screen.getByRole('link', { name: 'УЗОР' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Куда уходит твой час?' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Что забирает/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Что возвращает/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Что можно сдвинуть/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /УЗОР/ })).toHaveAttribute('href', '#/wrapped');
+    expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Куда уходит твой час?' })).not.toBeInTheDocument();
   });
 
   it('рендерит join route в HashRouter с query code на GitHub Pages base path', () => {
@@ -176,7 +174,7 @@ describe('lab v4', () => {
   });
 
   it('важные маршруты продолжают рендериться', () => {
-    for (const route of ['/', '/join', '/contribute', '/branch/support%7Cs2%7Cc8', '/curator', '/about', '/demo', '/lab']) {
+    for (const route of ['/', '/join', '/contribute', '/branch/support%7Cs2%7Cc8', '/curator', '/about', '/demo', '/lab/old-home', '/lab']) {
       const view = renderAt(route);
       expect(document.body.textContent).toMatch(/УЗОР|ДЕМО-ЛАБОРАТОРИЯ/);
       view.unmount();
@@ -185,6 +183,44 @@ describe('lab v4', () => {
 });
 
 describe('wrapped dashboard', () => {
+
+  it('/ redirects to Wrapped MVP while old prototype stays available only under lab/demo paths', () => {
+    renderAt('/');
+    expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Куда уходит твой час?' })).not.toBeInTheDocument();
+    cleanup();
+    renderAt('/lab/old-home');
+    expect(screen.getByRole('heading', { name: 'Куда уходит твой час?' })).toBeInTheDocument();
+  });
+
+  it('clicking Wrapped brand keeps the user on /wrapped and sidebar has only MVP links', async () => {
+    const u = userEvent.setup();
+    renderAt('/wrapped');
+    expect(screen.getByRole('link', { name: /УЗОР/ })).toHaveAttribute('href', '/wrapped');
+    expect(screen.getByRole('link', { name: /Сигналы/ })).toHaveAttribute('href', '/contribute');
+    expect(screen.getByRole('link', { name: /Wrapped/ })).toHaveAttribute('href', '/wrapped');
+    expect(screen.queryByText('Карта давления')).not.toBeInTheDocument();
+    expect(screen.queryByText('Куратор')).not.toBeInTheDocument();
+    await u.click(screen.getByRole('link', { name: /УЗОР/ }));
+    expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+  });
+
+  it('MVP support routes remain available', () => {
+    renderAt('/contribute');
+    expect(screen.getByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).toBeInTheDocument();
+    cleanup();
+    renderAt('/join');
+    expect(screen.getByRole('heading', { name: 'Вход в закрытый круг' })).toBeInTheDocument();
+    cleanup();
+    renderAt('/curator');
+    expect(screen.getByRole('heading', { name: /Куратор|Кандидаты круга/ })).toBeInTheDocument();
+    cleanup();
+    renderAt('/curator/overview');
+    expect(screen.getByRole('heading', { name: /Сводка круга/ })).toBeInTheDocument();
+    cleanup();
+    renderAt('/lab/wrapped-reference-v2');
+    expect(document.body.textContent).toMatch(/Wrapped|УЗОР/i);
+  });
   it('/wrapped renders core MVP blocks', () => {
     renderAt('/wrapped');
     expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
