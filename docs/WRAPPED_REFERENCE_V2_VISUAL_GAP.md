@@ -1,39 +1,28 @@
-# Wrapped Reference V2 visual gap pass
+# Wrapped reference v2 — visual gap report
 
-Reference target: attached 1920×1080 neon/glassmorphism dashboard image. Route checked: `#/lab/wrapped-reference-v2`.
+## What was wrong before
 
-## First screenshot comparison gaps found
+- The lab screen mostly copied the high-level grid, but the UI still looked like a flat MVP dashboard rather than the premium neon reference.
+- Sidebar proportions, active state, status card, and logo treatment were too light and did not match the stronger cyan-glass reference style.
+- Hero and top stat cards lacked the visual density of the target: weak glow, flatter panels, simple icon staging, and less distinctive color themes.
+- Donut, activity chart, top themes, progress, right-signals, and bottom metrics had the right content but weaker contrast, simpler separators, and less polished icon/glow systems.
 
-1. Sidebar width was too close to the older lab reference and needed a tighter 220px dashboard rail.
-2. Logo pulse needed stronger cyan glow and larger visual weight.
-3. Wrapped nav item needed a brighter cyan glass active pill with inner glow.
-4. Sidebar line icons needed consistent thin SVG strokes instead of text/emoji symbols.
-5. Bottom status card needed a compact glass capsule and green/cyan emphasis.
-6. Header title needed larger, denser premium dashboard typography.
-7. Header actions needed bordered glass controls with inline SVG icons.
-8. Hero card needed a larger mountains/star/pulse neon emblem rather than generic copy.
-9. Top stat cards needed distinct neon illustrations for car, orb/check, accuracy ring, lightning, and shield/glasses.
-10. Top row needed six compact cards in one dense 1920px row.
-11. Donut needed thicker ring, glow, gradient, and centered percentage.
-12. Activity chart needed dashed vertical guides and a luminous cyan polyline.
-13. Confirmed chart markers needed green rings with glow.
-14. Unconfirmed chart markers needed pink rings with glow.
-15. Top themes needed ranked chips plus horizontal neon progress bars.
-16. Right-signal rows needed check/shield icon, tag, status/time column, and chevron.
-17. Progress block needed previous/current/next levels, with current level highlighted cyan.
-18. XP panel needed a separate right-side area and progress bar.
-19. Bottom metric row needed five separate cards with unique SVG icons.
-20. Overall background needed dark navy radial cyan/violet glows and fewer empty zones.
+## What changed now
 
-## Corrections applied after comparison
+- Rebuilt the `/lab/wrapped-reference-v2` CSS layer around a 240px sidebar, ~1550px content width, tighter grid gaps, denser cards, stronger borders, premium inner highlights, and layered radial background glows.
+- Restyled the sidebar with a larger pulse logo, stronger active Wrapped cyan-glass highlight, hover states, and richer bottom status card.
+- Reworked the hero row with a wider hero card, stronger neon illustration treatment, richer badge styling, and individually themed top cards with deeper magenta/blue/cyan/violet/green lighting.
+- Upgraded the donut card with a thicker ring, darker center fill, central typography, outer glow, and a more prominent +12% badge.
+- Upgraded the activity chart with dashed vertical grid lines, stronger line glow, confirmed check glyphs, unconfirmed X glyphs, and a clearer legend.
+- Rebuilt the progress block visual hierarchy with three level cards, connectors/arrows, a current neon-emblem level, a locked next level treatment, and a more premium XP panel/progress bar.
+- Reworked the right-signals list and bottom metrics with tighter rows, stronger dividers, glowing status circles, unique metric card glows, and larger neon icons.
 
-- Built a dedicated static V2 route using fixed demo data only.
-- Added custom inline SVG icons and illustrations; no emoji are used as primary icons.
-- Tightened the desktop grid to fill a 1920×1080 viewport with compact, glassy cards.
-- Increased neon glow on logo, hero emblem, cards, chart line, and markers.
-- Added dense lower metrics and progress sections to match the reference dashboard structure.
+## Remaining visual gaps
 
-## Generated screenshots
+- The supplied target is a static image, so exact pixel-perfect icon geometry and micro-positioning are still approximations rather than traced assets.
+- The current inline SVG icon set is custom and richer, but the target's illustration details include more small particles and complex glow layers than are practical without adding image assets.
+- Browser screenshot capture could not complete in this container because Playwright's Chromium runtime is missing system library `libatk-1.0.so.0`; the page was still launched locally for the attempted 1920×1080 capture.
 
-- First comparison screenshot: `artifacts/wrapped-reference-v2-first.png`
-- Final screenshot: `artifacts/wrapped-reference-v2-final.png`
+## Closeness verdict
+
+The new implementation is visibly closer to the target than the previous current screenshot: the proportions are denser, the sidebar/hero/top cards/progress/bottom metrics are substantially richer, and the UI now leans into the premium neon dashboard style rather than a simple card-grid variation.
