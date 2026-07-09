@@ -4,3 +4,9 @@ dist
 .env.local
 
 tsconfig.tsbuildinfo
+artifacts/*.png
+artifacts/*.jpg
+artifacts/*.jpeg
+artifacts/*.webp
+playwright-report/
+test-results/
