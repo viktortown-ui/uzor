@@ -72,6 +72,15 @@ export async function listPendingCandidates(): Promise<CandidateProposal[]> {
   return (data ?? []) as CandidateProposal[];
 }
 
+export async function isCurrentUserCurator(circleId: string): Promise<boolean> {
+  const client = getSupabaseClient();
+  const { data: sessionData, error: sessionError } = await client.auth.getSession();
+  if (sessionError || !sessionData.session) return false;
+  const { data, error } = await client.from('circle_memberships').select('role').eq('circle_id', circleId).eq('user_id', sessionData.session.user.id).maybeSingle();
+  if (error) return false;
+  return (data as { role?: string } | null)?.role === 'curator';
+}
+
 export async function reviewCandidateProposal(inputProposalId: string, decision: 'approved' | 'rejected', approvedLabel: string, approvedKind: CatalogKind, approvedLayer: Layer): Promise<void> {
   const { error } = await getSupabaseClient().rpc('review_candidate_proposal', { input_proposal_id: inputProposalId, decision, approved_label: approvedLabel, approved_kind: approvedKind, approved_layer: approvedLayer });
   if (error) throw error;

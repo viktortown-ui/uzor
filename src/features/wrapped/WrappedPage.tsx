@@ -4,9 +4,7 @@ import { getMyWrappedReport, WrappedApiError } from './wrappedApi';
 import { wrappedDemoReport } from './wrappedDemoData';
 import { normalizeWrappedReport } from './wrappedLogic';
 import type { WrappedReport } from './wrappedTypes';
-import { WrappedActivityChart } from './components/WrappedActivityChart';
 import { WrappedCard } from './components/WrappedCard';
-import { WrappedDonut } from './components/WrappedDonut';
 import { WrappedHeader } from './components/WrappedHeader';
 import { WrappedHero } from './components/WrappedHero';
 import { WrappedMetricCards } from './components/WrappedMetricCards';
@@ -48,35 +46,24 @@ export function WrappedPage() {
   return (
     <div className="wrapped-page">
       <WrappedSidebar report={report} />
-      <main className="wrapped-dashboard">
+      <main className="wrapped-dashboard wrapped-dashboard-mvp">
         <WrappedHeader report={report} />
         <WrappedHero report={report} />
-        <div className="wrapped-mid-grid">
-          <WrappedCard className="wrapped-accuracy-card">
-            <div className="wrapped-card-head"><h2>Ваша точность за неделю</h2><span>ⓘ</span></div>
-            <WrappedDonut value={report.summary.accuracy} confirmed={report.summary.confirmedSignals} total={report.summary.signalsThisWeek} />
-            <div className="wrapped-explain-list">{report.explain.slice(0, 3).map((x) => <span key={x}>{x}</span>)}</div>
-          </WrappedCard>
-          <WrappedCard className="wrapped-activity-card wide">
-            <div className="wrapped-card-head"><h2>Активность сигналов</h2><button type="button">По дням⌄</button></div>
-            <WrappedActivityChart points={report.activity} />
-          </WrappedCard>
+        <WrappedMetricCards report={report} />
+        <div className="wrapped-mvp-grid">
           <WrappedCard className="wrapped-themes-card">
-            <div className="wrapped-card-head"><h2>Что вы замечали</h2><span>ⓘ</span></div>
+            <div className="wrapped-card-head"><h2>Что вы замечали</h2><span>топ-3 темы</span></div>
             <WrappedTopThemes themes={report.topThemes} />
           </WrappedCard>
-        </div>
-        <div className="wrapped-bottom-grid">
           <WrappedCard className="wrapped-right-card">
-            <div className="wrapped-card-head"><h2>Где вы были правы</h2><span>ⓘ</span></div>
+            <div className="wrapped-card-head"><h2>Где вы были правы</h2><span>подтверждено кругом</span></div>
             <WrappedRightSignals signals={report.rightSignals} />
           </WrappedCard>
-          <WrappedCard className="wrapped-progress-card">
-            <div className="wrapped-card-head"><h2>Ваш прогресс</h2><span>ⓘ</span></div>
+          <WrappedCard className="wrapped-progress-card wide">
+            <div className="wrapped-card-head"><h2>Ваш прогресс</h2><span>уровень и XP</span></div>
             <WrappedProgress report={report} />
           </WrappedCard>
         </div>
-        <WrappedMetricCards report={report} />
       </main>
     </div>
   );

@@ -61,7 +61,7 @@ describe('wrapped UI fragments', () => {
   it('rightSignals empty state renders when empty', () => {
     render(<MemoryRouter><WrappedRightSignals signals={[]} /></MemoryRouter>);
     expect(screen.getByText('Пока нет подтверждённых сигналов')).toBeInTheDocument();
-    expect(screen.getByText('Ваши сигналы уже сохранены. Они появятся здесь, когда круг подтвердит их независимо.')).toBeInTheDocument();
+    expect(screen.getByText(/Нужно, чтобы другой участник независимо отметил похожую ветку/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Добавить сигнал' })).toHaveAttribute('href', '/contribute');
   });
 });
