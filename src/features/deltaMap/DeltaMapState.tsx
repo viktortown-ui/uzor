@@ -1,0 +1,5 @@
+import { Link } from 'react-router-dom';
+export function DeltaMapState({ kind, onRetry }: { kind: 'loading'|'missing-token'|'no-circle'|'missing-migration'|'error'; onRetry?: () => void }) {
+ const copy = { loading:['Загружаем карту…','Готовим центр Перми и дельты.'], 'missing-token':['Нужна настройка Mapbox','Добавьте VITE_MAPBOX_ACCESS_TOKEN, чтобы открыть карту.'], 'no-circle':['Войдите в закрытый круг','Карта дельт доступна участникам круга.'], 'missing-migration':['Карта Дельт ещё не подключена к базе','Примените migration 006_delta_foundation.sql в Supabase.'], error:['Не удалось обновить дельты','Попробуйте повторить запрос.'] }[kind];
+ return <section className={`delta-map-state delta-map-state--${kind}`}><h2>{copy[0]}</h2><p>{copy[1]}</p>{kind==='no-circle' && <Link className="delta-map-button" to="/join">У меня есть приглашение</Link>}{(kind==='error'||kind==='missing-migration') && onRetry && <button className="delta-map-button" onClick={onRetry}>Повторить</button>}</section>;
+}

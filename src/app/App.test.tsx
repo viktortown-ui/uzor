@@ -197,6 +197,7 @@ describe('wrapped dashboard', () => {
     const u = userEvent.setup();
     renderAt('/wrapped');
     expect(screen.getByRole('link', { name: /УЗОР/ })).toHaveAttribute('href', '/wrapped');
+    expect(screen.getByRole('link', { name: /Карта дельт/ })).toHaveAttribute('href', '/map');
     expect(screen.getByRole('link', { name: /Сигналы/ })).toHaveAttribute('href', '/contribute');
     expect(screen.getByRole('link', { name: /Wrapped/ })).toHaveAttribute('href', '/wrapped');
     expect(screen.queryByText('Карта давления')).not.toBeInTheDocument();

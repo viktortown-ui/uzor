@@ -1,0 +1,20 @@
+import { describe, expect, it } from 'vitest';
+import type { DeltaMapItem } from '../deltas/deltaTypes';
+import { buildViewportInput, getDeltaMarkerVisual, getImpactCopy, getObservedWindowCopy, getStatusCopy, shouldShowDeltaOnMap } from './deltaMapLogic';
+const base: DeltaMapItem = { id:'1', category:{slug:'transport',title:'Транспорт',iconKey:'transport'}, direction:'positive', statement:'Тест', status:'new', confirmCount:1, disconfirmCount:0, confirmationTarget:3, priorityScore:.1, location:{lat:58,lng:56,label:'Пермь'}, lastActivityAt:'2026-07-10T00:00:00.000Z' };
+describe('delta map logic',()=>{
+ it('positive marker получает positive core tone',()=>expect(getDeltaMarkerVisual({...base,direction:'positive'},new Date('2026-07-10T01:00:00Z')).coreTone).toBe('positive'));
+ it('negative marker получает negative core tone',()=>expect(getDeltaMarkerVisual({...base,direction:'negative'},new Date('2026-07-10T01:00:00Z')).coreTone).toBe('negative'));
+ it('new marker получает new ring',()=>expect(getDeltaMarkerVisual({...base,status:'new'}).ringTone).toBe('new'));
+ it('checking marker получает checking ring',()=>expect(getDeltaMarkerVisual({...base,status:'checking'}).ringTone).toBe('checking'));
+ it('confirmed marker получает confirmed ring',()=>expect(getDeltaMarkerVisual({...base,status:'confirmed'}).ringTone).toBe('confirmed'));
+ it('fork marker получает fork ring',()=>expect(getDeltaMarkerVisual({...base,status:'fork'}).ringTone).toBe('fork'));
+ it('size растёт с response count и имеет cap',()=>{ expect(getDeltaMarkerVisual({...base,confirmCount:1,disconfirmCount:0}).size).toBe(20); expect(getDeltaMarkerVisual({...base,confirmCount:2,disconfirmCount:0}).size).toBe(24); expect(getDeltaMarkerVisual({...base,confirmCount:8,disconfirmCount:3}).size).toBe(36); });
+ it('свежий marker pulse = true',()=>expect(getDeltaMarkerVisual(base,new Date('2026-07-10T12:00:00Z')).pulse).toBe(true));
+ it('старый marker pulse = false',()=>expect(getDeltaMarkerVisual(base,new Date('2026-07-12T12:00:00Z')).pulse).toBe(false));
+ it('archived marker не должен отображаться',()=>expect(shouldShowDeltaOnMap({...base,status:'archived'})).toBe(false));
+ it('status copy корректен',()=>expect(getStatusCopy('fork')[0]).toBe('Возникла развилка'));
+ it('observed window copy корректен',()=>expect(getObservedWindowCopy('last_2_4_weeks')).toBe('Последние 2–4 недели'));
+ it('impact copy зависит от direction',()=>{ expect(getImpactCopy('strong','positive')).toBe('Сильно улучшило'); expect(getImpactCopy('strong','negative')).toBe('Сильно мешает'); });
+ it('active filters корректно формируют DeltaViewportInput',()=>expect(buildViewportInput({circleId:'c',citySlug:'perm'},{minLat:1,minLng:2,maxLat:3,maxLng:4},{direction:'positive',status:'confirmed',categorySlug:'transport'})).toMatchObject({circleId:'c',citySlug:'perm',direction:'positive',status:'confirmed',categorySlug:'transport'}));
+});

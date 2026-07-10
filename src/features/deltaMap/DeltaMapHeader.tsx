@@ -1,0 +1,1 @@
+export function DeltaMapHeader({ loading }: { loading?: boolean }) { return <div className="delta-map-header"><p className="eyebrow">Карта дельт</p><h1>Дельты Перми</h1><p>Изменения рядом, которые люди уже заметили и помогают проверить.</p>{loading && <span className="delta-map-refresh">Обновляем дельты…</span>}</div>; }
