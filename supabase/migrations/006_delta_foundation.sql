@@ -47,7 +47,21 @@ create index if not exists delta_reactions_delta_id_idx on public.delta_reaction
 
 create or replace function public.calculate_delta_confirmation_target(sensitivity_weight numeric, distance_from_center_m numeric, outskirts_distance_m integer default 8000) returns smallint language sql immutable set search_path = public, extensions, gis as $$ select least(4,greatest(3,3 + case when sensitivity_weight >= 0.850 then 1 else 0 end - case when distance_from_center_m >= outskirts_distance_m then 1 else 0 end))::smallint $$;
 comment on function public.calculate_delta_confirmation_target(numeric,numeric,integer) is 'Distance weakly compensates lower participant density; it does not make a claim true and can reduce the raised target by at most one.';
-create or replace function public.calculate_delta_priority(sensitivity_weight numeric, impact_level text, created_at timestamptz, distance_from_center_m numeric, outskirts_distance_m integer) returns numeric language sql stable set search_path = public, extensions, gis as $$ select least(1,greatest(0, sensitivity_weight*0.50 + case impact_level when 'critical' then 0.35 when 'strong' then 0.20 else 0 end + case when now()-created_at < interval '24 hours' then 0.10 when now()-created_at <= interval '72 hours' then 0.05 else 0 end + case when distance_from_center_m >= outskirts_distance_m then 0.05 else 0 end))::numeric $$;
+drop function if exists public.calculate_delta_priority(
+  numeric,
+  text,
+  timestamptz,
+  numeric,
+  integer
+);
+drop function if exists public.calculate_delta_priority(
+  numeric,
+  text,
+  timestamptz,
+  double precision,
+  integer
+);
+create or replace function public.calculate_delta_priority(sensitivity_weight numeric, impact_level text, created_at timestamptz, distance_from_center_m double precision, outskirts_distance_m integer) returns numeric language sql stable set search_path = public, extensions, gis as $$ select least(1,greatest(0, sensitivity_weight*0.50 + case impact_level when 'critical' then 0.35 when 'strong' then 0.20 else 0 end + case when now()-created_at < interval '24 hours' then 0.10 when now()-created_at <= interval '72 hours' then 0.05 else 0 end + case when distance_from_center_m >= outskirts_distance_m then 0.05 else 0 end))::numeric $$;
 create or replace function public.touch_delta_updated_at() returns trigger language plpgsql set search_path = public as $$ begin new.updated_at=now(); return new; end; $$;
 drop trigger if exists deltas_touch_updated_at on public.deltas; create trigger deltas_touch_updated_at before update on public.deltas for each row execute function public.touch_delta_updated_at();
 drop trigger if exists delta_reactions_touch_updated_at on public.delta_reactions; create trigger delta_reactions_touch_updated_at before update on public.delta_reactions for each row execute function public.touch_delta_updated_at();

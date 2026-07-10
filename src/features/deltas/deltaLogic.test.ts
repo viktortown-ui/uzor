@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { calculateConfirmationTarget, calculateDeltaPriority, deriveDeltaStatus, isDeltaExpired } from './deltaLogic';
 
 describe('delta logic', () => {
@@ -31,5 +32,27 @@ describe('delta migration safety checks', () => {
   it('has GiST spatial indexes', () => { expect(sql).toContain('using gist(location)'); expect(sql).toContain('using gist(public_location)'); });
   it('uses ST_DWithin for similar deltas', () => expect(sql).toContain('ST_DWithin'));
   it('has explicit auth.uid checks', () => expect(sql.match(/auth\.uid\(\)/g)?.length ?? 0).toBeGreaterThanOrEqual(4));
+
+  it('uses double precision for delta priority distance to match ST_Distance', () => {
+    expect(sql).toContain('distance_from_center_m double precision');
+    expect(sql).not.toMatch(/create or replace function public\.calculate_delta_priority\([^;]*distance_from_center_m numeric/is);
+    expect(sql).toContain(`drop function if exists public.calculate_delta_priority(
+  numeric,
+  text,
+  timestamptz,
+  numeric,
+  integer
+);`);
+  });
+  it('keeps priority callers wired to ST_Distance without service role', () => {
+    expect(sql).toContain('ST_Distance');
+    expect(sql).toMatch(/create or replace function public\.delta_card_json[\s\S]*public\.calculate_delta_priority/i);
+    expect(sql).toMatch(/create or replace function public\.list_deltas_in_view[\s\S]*public\.calculate_delta_priority/i);
+    expect(sql.toLowerCase()).not.toContain('service_role');
+  });
+  it('does not modify migrations 001 through 005 in this hotfix', () => {
+    const changedFiles = execSync('git diff --name-only -- supabase/migrations/001_uzor_init.sql supabase/migrations/002_uzor_integrity_and_curator.sql supabase/migrations/003_uzor_read_rpc.sql supabase/migrations/004_weekly_wrapped_rpc.sql supabase/migrations/005_fix_wrapped_report_sql_and_confirmation.sql', { encoding: 'utf8' }).trim();
+    expect(changedFiles).toBe('');
+  });
   it('does not include service role key', () => expect(sql.toLowerCase()).not.toContain('service_role'));
 });
