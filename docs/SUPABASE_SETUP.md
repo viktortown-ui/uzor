@@ -20,3 +20,27 @@ where user_id = '<uuid вашего auth.users.id>';
 ```
 
 UUID можно найти в Authentication → Users. Куратор видит кандидатов своего круга и может одобрять/отклонять их.
+
+## Migration 006: Delta MVP foundation
+
+После merge вручную выполните `supabase/migrations/006_delta_foundation.sql` в Supabase SQL Editor. Migration добавляет backend-фундамент объекта «Дельта» и не изменяет migrations 001–005.
+
+PostGIS обязателен: migration создаёт schema `extensions`, включает `postgis` через `create extension if not exists postgis with schema extensions` и использует `search_path = public, extensions, gis`. Проверка extension:
+
+```sql
+select extname, extnamespace::regnamespace from pg_extension where extname = 'postgis';
+```
+
+Проверка таблиц:
+
+```sql
+select table_name from information_schema.tables where table_schema = 'public' and table_name in ('delta_cities','delta_categories','deltas','delta_reactions');
+```
+
+Проверка RPC:
+
+```sql
+select proname from pg_proc join pg_namespace n on n.oid = pronamespace where n.nspname = 'public' and proname in ('create_delta','react_to_delta','get_delta_card','find_similar_deltas','list_deltas_in_view');
+```
+
+`create_delta` и остальные write/read RPC проверяют `auth.uid()` и membership. Не вызывайте `create_delta` из SQL Editor без auth context: ошибка `not_authenticated` в этом случае ожидаема и не означает поломку migration.
