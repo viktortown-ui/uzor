@@ -43,4 +43,17 @@ select table_name from information_schema.tables where table_schema = 'public' a
 select proname from pg_proc join pg_namespace n on n.oid = pronamespace where n.nspname = 'public' and proname in ('create_delta','react_to_delta','get_delta_card','find_similar_deltas','list_deltas_in_view');
 ```
 
+
+### Hotfix migration 006
+
+Ранняя версия `006_delta_foundation.sql` могла падать в Supabase SQL Editor с `ERROR 42883` при создании `delta_card_json`: `ST_Distance(...)` для `geography` возвращает `double precision`, а старая сигнатура `public.calculate_delta_priority` ожидала `distance_from_center_m numeric`.
+
+После merge hotfix заново скопируйте весь обновлённый файл `supabase/migrations/006_delta_foundation.sql` и выполните его целиком в Supabase SQL Editor. Частично созданные таблицы, индексы, seed-строки `delta_cities` / `delta_categories` и функции удалять не нужно: migration безопасна для повторного запуска и не требует очистки данных.
+
+Ожидаемый результат выполнения полного файла:
+
+```text
+Success. No rows returned
+```
+
 `create_delta` и остальные write/read RPC проверяют `auth.uid()` и membership. Не вызывайте `create_delta` из SQL Editor без auth context: ошибка `not_authenticated` в этом случае ожидаема и не означает поломку migration.
