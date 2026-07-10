@@ -21,3 +21,22 @@
 - [ ] Проверить `/wrapped` на mobile 360px: нет горизонтального скролла, критичные тексты видны, кнопки не вылезают.
 - [ ] Проверить empty state блока “Где вы были правы”: текст про независимое подтверждение и CTA `/contribute`.
 - [ ] Проверить confirmed logic в production: один пользователь не подтверждает сам себя; две разные учётки на одной ветке дают `participants >= 2`, `summary.confirmedSignals` и `rightSignals` согласованы.
+
+
+## Delta Map MVP `/map`
+- [ ] Missing Mapbox token показывает setup-state и приложение не падает.
+- [ ] Карта загружается после настройки token.
+- [ ] Карта центрируется на Перми.
+- [ ] Поиск места работает по району, улице или месту.
+- [ ] Фильтры direction/status/category перезагружают viewport.
+- [ ] Empty viewport показывает текст без CTA на старый constructor.
+- [ ] Marker click открывает карточку.
+- [ ] Positive и negative визуально различаются.
+- [ ] Видны все четыре публичных статуса: new/checking/confirmed/fork.
+- [ ] Confirm обновляет счётчики, статус и marker без reload.
+- [ ] Disconfirm обновляет счётчики, статус и marker без reload.
+- [ ] Fork показывает понятное сообщение.
+- [ ] Mobile открывает карточку как bottom sheet.
+- [ ] Browser geolocation запрашивается только после явного клика.
+- [ ] Production не использует demo data.
+- [ ] Missing migration 006 показывает понятный state.

@@ -17,6 +17,7 @@ npm run dev
 - Supabase migration с закрытым кругом, anonymous auth, RLS, RPC приглашения и агрегатов.
 - GitHub Actions для CI и GitHub Pages deploy.
 - `/wrapped` — личный недельный dashboard Wrapped реальности: компактная неоновая легенда недели с сигналами, независимыми подтверждениями, точностью, темами, прогрессом XP и красивым empty state.
+- `/map` — карта дельт Перми: viewport-загрузка дельт, Mapbox SearchBox, карточка и confirm/disconfirm реакции.
 
 ## Ручные шаги владельца
 1. Создать Supabase project.
