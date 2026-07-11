@@ -18,6 +18,7 @@ npm run dev
 - GitHub Actions для CI и GitHub Pages deploy.
 - `/wrapped` — личный недельный dashboard Wrapped реальности: компактная неоновая легенда недели с сигналами, независимыми подтверждениями, точностью, темами, прогрессом XP и красивым empty state.
 - `/map` — карта дельт Перми: viewport-загрузка дельт, Mapbox SearchBox, карточка и confirm/disconfirm реакции.
+- `/lab/delta-create-core` — лабораторное UI-ядро конструктора Дельты.
 
 ## Ручные шаги владельца
 1. Создать Supabase project.

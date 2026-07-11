@@ -264,3 +264,76 @@ describe('wrapped dashboard', () => {
     expect(document.body.textContent).toMatch(/Wrapped|УЗОР/i);
   });
 });
+
+describe('delta create lab route', () => {
+  it('показывает заголовок, бейдж, четыре шага и не показывает старые preset-кнопки', () => {
+    renderAt('/lab/delta-create-core');
+    expect(screen.getByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
+    expect(screen.getByText('Лаборатория · этап 3.1')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Место' })).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByRole('button', { name: 'Изменение' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Контекст' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Проверка' })).toBeInTheDocument();
+    expect(screen.queryByText('Что ты сейчас узнаёшь?')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Дольше ждать транспорт' })).not.toBeInTheDocument();
+  });
+
+  it('позволяет пройти четыре шага, редактировать statement и показать summary без Supabase', async () => {
+    const u = userEvent.setup();
+    renderAt('/lab/delta-create-core');
+    await u.click(screen.getByRole('button', { name: 'Ленинский район' }));
+    expect(screen.getByRole('button', { name: 'Далее' })).toBeEnabled();
+    await u.click(screen.getByRole('button', { name: 'Далее' }));
+    expect(screen.getByText('Изменение облегчило, ускорило или улучшило ситуацию.')).toBeInTheDocument();
+    expect(screen.getByText('Изменение усложнило, замедлило или ухудшило ситуацию.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Стало лучше/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Стало хуже/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Транспорт и дорога/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Доступность услуг/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Городская среда/ })).toBeInTheDocument();
+    await u.click(screen.getByRole('button', { name: /Стало лучше/ }));
+    expect(screen.getByRole('button', { name: 'Стало быстрее' })).toBeInTheDocument();
+    await u.click(screen.getByRole('button', { name: /Стало хуже/ }));
+    expect(screen.getByRole('button', { name: 'Стало медленнее' })).toBeInTheDocument();
+    await u.click(screen.getByRole('button', { name: /Транспорт и дорога/ }));
+    await u.click(screen.getByRole('button', { name: 'Стало медленнее' }));
+    await u.type(screen.getByLabelText('Что именно изменилось?'), 'ожидание автобуса вечером');
+    expect(screen.getByText('Ожидание автобуса вечером стало дольше')).toBeInTheDocument();
+    await u.click(screen.getByRole('button', { name: 'Уточнить формулировку' }));
+    await u.clear(screen.getByLabelText('Формулировка Дельты'));
+    await u.type(screen.getByLabelText('Формулировка Дельты'), 'Ожидание автобуса стало заметно дольше');
+    expect(screen.getByRole('button', { name: 'Вернуть автоматическую формулировку' })).toBeInTheDocument();
+    await u.click(screen.getByRole('button', { name: 'Далее' }));
+    expect(screen.getByRole('button', { name: 'Сегодня' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Заметно' })).toBeInTheDocument();
+    await u.click(screen.getByRole('button', { name: 'Сегодня' }));
+    await u.click(screen.getByRole('button', { name: 'Заметно' }));
+    await u.type(screen.getByLabelText('Что именно вы заметили?'), 'Автобус приходит реже вечером.');
+    await u.click(screen.getByRole('button', { name: 'Далее' }));
+    expect(screen.getByRole('heading', { name: 'Проверьте Дельту' })).toBeInTheDocument();
+    expect(screen.getByText('Ожидание автобуса стало заметно дольше')).toBeInTheDocument();
+    await u.click(screen.getByRole('button', { name: 'Черновик готов' }));
+    expect(screen.getByRole('heading', { name: 'Черновик Дельты готов' })).toBeInTheDocument();
+    expect(screen.queryByText(/Нужна настройка Supabase|Код приглашения/)).not.toBeInTheDocument();
+  });
+
+  it('показывает restore prompt при draft и безопасно игнорирует damaged draft', () => {
+    localStorage.setItem('uzor_delta_create_core_v1', JSON.stringify({ currentStep: 2, districtCode: 'leninsky', districtLabel: 'Ленинский район', locationHint: '', direction: '', categorySlug: '', changeType: '', subject: '', statement: '', statementMode: 'auto', observedWindow: '', impactLevel: '', details: '' }));
+    const first = renderAt('/lab/delta-create-core');
+    expect(screen.getByText('У вас есть незавершённая Дельта')).toBeInTheDocument();
+    first.unmount(); cleanup(); localStorage.setItem('uzor_delta_create_core_v1', '{bad');
+    renderAt('/lab/delta-create-core');
+    expect(screen.getByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
+  });
+
+  it('production /contribute, /map и /wrapped продолжают открываться', async () => {
+    renderAt('/contribute');
+    expect(screen.getByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).toBeInTheDocument();
+    cleanup();
+    renderAt('/wrapped');
+    expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    cleanup();
+    renderAt('/map');
+    expect(await screen.findByText(/Нужна настройка Mapbox|Карта дельт Перми/)).toBeInTheDocument();
+  });
+});
