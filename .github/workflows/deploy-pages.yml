@@ -41,8 +41,6 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
-          VITE_MAPBOX_ACCESS_TOKEN: ${{ vars.VITE_MAPBOX_ACCESS_TOKEN }}
-          VITE_MAPBOX_STYLE_URL: ${{ vars.VITE_MAPBOX_STYLE_URL || 'mapbox://styles/mapbox/dark-v11' }}
 
       - uses: actions/configure-pages@v6
 
