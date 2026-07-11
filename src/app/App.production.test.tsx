@@ -93,7 +93,7 @@ describe('production fallback', () => {
 
   it('production visitor без session на /contribute не видит форму вклада', async () => {
     await renderProduction('/contribute?layer=tension', { hasSession: false });
-    expect(await screen.findByRole('heading', { name: 'Войдите в закрытый круг' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Нужно войти в круг' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/Другое/)).not.toBeInTheDocument();
   });
@@ -104,15 +104,16 @@ describe('production fallback', () => {
     expect(screen.queryByRole('heading', { name: 'Куда уходит твой час?' })).not.toBeInTheDocument();
   });
 
-  it('на /contribute?layer=tension есть не менее 5 карточек напряжения', async () => {
+  it('/contribute?layer=tension открывает production Delta constructor без старых карточек', async () => {
     await renderProduction('/contribute?layer=tension');
-    await screen.findByRole('heading', { name: 'Что ты сейчас узнаёшь?' });
-    expect(screen.getAllByRole('button').filter((button) => tensionCards.some((card) => card.label === button.textContent))).toHaveLength(5);
+    await screen.findByRole('heading', { name: 'Что изменилось рядом с вами?' });
+    expect(screen.queryByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Место' })).toBeInTheDocument();
   });
 
   it('ошибка каталога даёт UZOR-LOAD-CATALOG, а не форму с одним Другое', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    await renderProduction('/contribute?layer=tension', { catalogError: true });
+    await renderProduction('/lab/old-contribute?layer=tension', { catalogError: true });
     expect(await screen.findByText(/UZOR-LOAD-CATALOG/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Повторить' })).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/Другое/)).not.toBeInTheDocument();

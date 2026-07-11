@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import type { WrappedReport } from '../wrappedTypes';
 
 const nav = [
-  ['⌖', 'Карта дельт', '/map'], ['⚑', 'Сигналы', '/contribute'], ['▰', 'Wrapped', '/wrapped'],
+  ['⌖', 'Карта дельт', '/map'], ['✚', 'Добавить Дельту', '/contribute'], ['▰', 'Wrapped', '/wrapped'],
 ] as const;
 
 export function WrappedSidebar({ report }: { report: WrappedReport }) {
