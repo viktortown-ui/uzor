@@ -9,6 +9,13 @@ export interface DeltaCreateDraft {
   districtCode: string;
   districtLabel: string;
   locationHint: string;
+  lat: number | null;
+  lng: number | null;
+  locationLabel: string;
+  locationPrecision: 'point' | 'district' | 'city';
+  locationSource: 'search' | 'map' | 'geolocation' | null;
+  selectedSimilarDeltaId: string | null;
+  similarDecision: 'existing' | 'separate' | null;
   direction: DeltaDirection | '';
   categorySlug: DeltaCreateCategorySlug | '';
   changeType: DeltaChangeType | '';
@@ -44,3 +51,4 @@ export const DELTA_CREATE_DISTRICTS: DeltaDistrictOption[] = [
 ];
 
 export const DELTA_CREATE_STORAGE_KEY = 'uzor_delta_create_core_v1';
+export const DELTA_CREATE_GEO_STORAGE_KEY = 'uzor_delta_create_geo_v1';
