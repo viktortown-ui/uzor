@@ -46,7 +46,7 @@ describe('app', () => {
 
   it('путь вклада: поле иначе скрыто, открывается, контекст сохраняется, результат остаётся на экране', async () => {
     const u = userEvent.setup();
-    renderAt('/contribute?layer=tension');
+    renderAt('/lab/old-contribute?layer=tension');
     expect(screen.getByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Опиши свой след')).not.toBeInTheDocument();
     await u.click(screen.getByRole('button', { name: 'У меня иначе' }));
@@ -63,7 +63,7 @@ describe('app', () => {
   it('следующий вклад показывает компактный чип сохранённого контекста', async () => {
     localStorage.setItem('uzor.preferredContext.v2', 'g0');
     const u = userEvent.setup();
-    renderAt('/contribute?layer=tension');
+    renderAt('/lab/old-contribute?layer=tension');
     await u.click(screen.getByRole('button', { name: 'Дольше ждать транспорт' }));
     await u.click(screen.getByRole('button', { name: /Больше времени в дороге/ }));
     expect(screen.getByText(/Сейчас ты отвечаешь из контекста: Работающие/)).toBeInTheDocument();
@@ -176,7 +176,7 @@ describe('lab v4', () => {
   it('важные маршруты продолжают рендериться', () => {
     for (const route of ['/', '/join', '/contribute', '/branch/support%7Cs2%7Cc8', '/curator', '/about', '/demo', '/lab/old-home', '/lab']) {
       const view = renderAt(route);
-      expect(document.body.textContent).toMatch(/УЗОР|ДЕМО-ЛАБОРАТОРИЯ/);
+      expect(document.body.textContent).toMatch(/УЗОР|ДЕМО-ЛАБОРАТОРИЯ|Что изменилось рядом с вами/);
       view.unmount();
     }
   });
@@ -198,7 +198,7 @@ describe('wrapped dashboard', () => {
     renderAt('/wrapped');
     expect(screen.getByRole('link', { name: /УЗОР/ })).toHaveAttribute('href', '/wrapped');
     expect(screen.getByRole('link', { name: /Карта дельт/ })).toHaveAttribute('href', '/map');
-    expect(screen.getByRole('link', { name: /Сигналы/ })).toHaveAttribute('href', '/contribute');
+    expect(screen.getByRole('link', { name: /Добавить Дельту/ })).toHaveAttribute('href', '/contribute');
     expect(screen.getByRole('link', { name: /Wrapped/ })).toHaveAttribute('href', '/wrapped');
     expect(screen.queryByText('Карта давления')).not.toBeInTheDocument();
     expect(screen.queryByText('Куратор')).not.toBeInTheDocument();
@@ -208,7 +208,7 @@ describe('wrapped dashboard', () => {
 
   it('MVP support routes remain available', () => {
     renderAt('/contribute');
-    expect(screen.getByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
     cleanup();
     renderAt('/join');
     expect(screen.getByRole('heading', { name: 'Вход в закрытый круг' })).toBeInTheDocument();
@@ -328,7 +328,7 @@ describe('delta create lab route', () => {
 
   it('production /contribute, /map и /wrapped продолжают открываться', async () => {
     renderAt('/contribute');
-    expect(screen.getByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
     cleanup();
     renderAt('/wrapped');
     expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
@@ -349,9 +349,10 @@ describe('delta create lab route', () => {
     expect(screen.getByText('Лаборатория · этап 3.1')).toBeInTheDocument();
   });
 
-  it('production /contribute не заменён geo-конструктором', () => {
+  it('production /contribute заменён geo-конструктором', () => {
     renderAt('/contribute');
-    expect(screen.getByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).not.toBeInTheDocument();
     expect(screen.queryByText('Лаборатория · этап 3.2')).not.toBeInTheDocument();
   });
 

@@ -40,3 +40,28 @@
 - [ ] Browser geolocation запрашивается только после явного клика.
 - [ ] Production не использует demo data.
 - [ ] Missing migration 006 показывает понятный state.
+
+## Delta Create Stage 3.3 manual QA
+
+- Positive: заполнить `/contribute`, получить «Дельта опубликована» и прогресс 1/3 или 1/4.
+- Negative: вызвать ошибку публикации и убедиться, что draft и координаты сохранены.
+- Click map: выбрать точку кликом, проверить label и координаты.
+- Geolocation: проверить кнопку определения текущего места, если браузер разрешает.
+- Categories: загрузка, ошибка и повтор через «Повторить».
+- Similar empty: увидеть «Похожих Дельт рядом не найдено» и кнопку публикации.
+- Similar found: увидеть до пяти карточек похожих Дельт.
+- Confirm existing: выбрать «Это то же изменение» и проверить `reactToDelta(confirm)`.
+- Create separate: выбрать «Создать отдельную», увидеть confirmation dialog.
+- Confirmation dialog: только «Да, опубликовать отдельно» публикует новую Дельту.
+- 1/3: проверить progress для обычной категории.
+- 1/4: проверить progress для чувствительной категории, если backend вернул target 4.
+- Author locked: убедиться, что показан текст «Это ваша Дельта» без raw code.
+- Publication error: проверить retry, возврат к проверке и изменение Дельты.
+- Share: проверить Web Share API.
+- Clipboard fallback: отключить Web Share и проверить копирование ссылки.
+- Open on map: открыть result → «Показать на карте» → `/map?delta=id`.
+- Mobile: проверить одну колонку, sticky actions и отсутствие горизонтального scroll.
+- Draft restore: перезагрузить незавершённый production draft.
+- Draft cleanup: после success localStorage `uzor_delta_create_v1` удалён.
+- Demo separation: demo не пишет в production Supabase.
+- Old contribute archive: `/lab/old-contribute` показывает «Архивный прототип».

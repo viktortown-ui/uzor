@@ -65,3 +65,12 @@ https://<owner>.github.io/uzor/#/join?code=REPLACE_WITH_A_LONG_PRIVATE_INVITE_CO
 GitHub Pages публикует только фронтенд. Данные круга защищаются Supabase RLS; чужие сырые contributions и raw candidate text не выдаются на публичное полотно.
 
 - `/lab/delta-create-geo` — лабораторный конструктор с географией и поиском похожих Дельт.
+
+
+## Delta routes
+
+- `/contribute` — production-конструктор Дельты с публикацией и подтверждением похожих изменений.
+- `/lab/old-contribute` — архивный старый contribute prototype.
+- `/lab/delta-create-core` — core lab: локальный черновик без MapLibre и Supabase write.
+- `/lab/delta-create-geo` — geo lab: MapLibre и поиск похожих без create/react write.
+- `/map` — карта Дельт на MapLibre/OpenFreeMap; поддерживает `/map?delta=<id>`.
