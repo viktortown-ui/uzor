@@ -1,6 +1,6 @@
 import { createEmptyDeltaDraft, validateDeltaDraft } from './deltaCreateLogic';
 import type { DeltaCreateDraft } from './deltaCreateTypes';
-import type { CreateDeltaInput, DeltaCard, DeltaCategory, ReactToDeltaResult } from '../deltas/deltaTypes';
+import type { CreateDeltaInput, DeltaCard, DeltaCategory, DeltaEffect, ReactToDeltaResult } from '../deltas/deltaTypes';
 import { getDeltaEffectCopy } from '../deltas/deltaLogic';
 
 export type DeltaCreateResultMode = 'created_new' | 'confirmed_existing';
@@ -13,6 +13,31 @@ export function buildCreateDeltaInput(draft: DeltaCreateDraft, circleId: string)
 
 export function canPublishSeparate(draft: DeltaCreateDraft) { const coreErrors = validateDeltaDraft({ ...draft, districtCode: draft.districtCode || 'perm-all', districtLabel: draft.districtLabel || 'Пермь' }); return coreErrors.length === 0 && typeof draft.lat === 'number' && typeof draft.lng === 'number' && !!draft.locationLabel.trim(); }
 export function canConfirmExisting(draft: DeltaCreateDraft) { return !!draft.selectedSimilarDeltaId && draft.similarDecision === 'existing'; }
+
+export function canNavigateToStep(targetStep: number, draft: DeltaCreateDraft) {
+  if (targetStep <= draft.currentStep) return targetStep >= 1 && targetStep <= 4;
+  for (let step = 1; step < targetStep; step += 1) {
+    const errors = step === 1
+      ? (!draft.locationLabel.trim() || typeof draft.lat !== 'number' || typeof draft.lng !== 'number' ? ['location'] : [])
+      : validateDeltaDraft({ ...draft, currentStep: step as DeltaCreateDraft['currentStep'], districtCode: draft.districtCode || 'perm-all', districtLabel: draft.districtLabel || 'Пермь' }).filter(Boolean);
+    if (errors.length) return false;
+  }
+  return targetStep >= 1 && targetStep <= 4;
+}
+
+export async function shareDeltaPayload(payload: { title: string; text: string; url: string }, nav: Navigator = navigator) {
+  if ('share' in nav && typeof nav.share === 'function') {
+    try { await nav.share(payload); return 'Дельта отправлена'; }
+    catch (error) { if (error instanceof DOMException && error.name === 'AbortError') return 'Отправка отменена'; return 'Не удалось поделиться ссылкой'; }
+  }
+  const text = `${payload.text} ${payload.url}`;
+  try { if (nav.clipboard?.writeText) { await nav.clipboard.writeText(text); return 'Ссылка на Дельту скопирована'; } } catch { /* fallback */ }
+  try {
+    const t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select();
+    const ok = document.execCommand('copy'); t.remove();
+    return ok ? 'Ссылка на Дельту скопирована' : 'Не удалось поделиться ссылкой';
+  } catch { return 'Не удалось поделиться ссылкой'; }
+}
 
 export function buildDeltaSharePayload(delta: Pick<DeltaCard, 'id' | 'statement'>, mode: DeltaCreateResultMode, baseHref = typeof window !== 'undefined' ? window.location.href : 'https://example.test/#/') {
   const base = new URL(baseHref);
@@ -43,5 +68,5 @@ export function createDemoDeltaResult(draft: DeltaCreateDraft): { delta: DeltaCa
   return { delta, effect: getDeltaEffectCopy('created', null, 'new') };
 }
 export function createDemoReactionResult(delta: DeltaCard): ReactToDeltaResult { const confirmCount = delta.confirmCount + 1; const status = confirmCount >= delta.confirmationTarget ? 'confirmed' : 'checking'; return { delta: { id: delta.id, status, confirmationTarget: delta.confirmationTarget, confirmCount, disconfirmCount: delta.disconfirmCount, progress: { current: confirmCount, target: delta.confirmationTarget } }, effect: getDeltaEffectCopy('confirm', delta.status, status) }; }
-export function getProductionResultCopy(mode: DeltaCreateResultMode, result: { effect: { message: string; detail: string } }) { return mode === 'created_new' ? { title: 'Дельта опубликована', lead: result.effect.message, detail: result.effect.detail } : { title: 'Вы подтвердили Дельту', lead: result.effect.message, detail: result.effect.detail }; }
+export function getProductionResultCopy(mode: DeltaCreateResultMode, result: { effect: Pick<DeltaEffect, 'message' | 'detail'> }) { return mode === 'created_new' ? { title: 'Дельта опубликована', lead: result.effect.message, detail: result.effect.detail } : { title: 'Вы подтвердили Дельту', lead: result.effect.message, detail: result.effect.detail }; }
 export function resetProductionDraftAfterSuccess() { return createEmptyDeltaDraft(); }
