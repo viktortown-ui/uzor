@@ -1,4 +1,5 @@
 import type { DeltaChangeType, DeltaDirection, DeltaImpactLevel, DeltaObservedWindow } from '../deltas/deltaTypes';
+import { isWithinPermMvpArea } from './deltaGeoLogic';
 import { DELTA_CREATE_CATEGORIES, DELTA_CREATE_DISTRICTS, type DeltaCreateCategorySlug, type DeltaCreateDraft, type DeltaCreateOption, type DeltaCreateStep } from './deltaCreateTypes';
 
 const positiveTypes: DeltaCreateOption<DeltaChangeType>[] = [
@@ -53,6 +54,7 @@ export function restoreDeltaDraft(raw: string | null): DeltaCreateDraft | null {
     if (draft.statementMode !== 'auto' && draft.statementMode !== 'manual') return null;
     if (draft.lat !== null && (typeof draft.lat !== 'number' || draft.lat < -90 || draft.lat > 90)) draft.lat = null;
     if (draft.lng !== null && (typeof draft.lng !== 'number' || draft.lng < -180 || draft.lng > 180)) draft.lng = null;
+    if (draft.lat !== null && draft.lng !== null && !isWithinPermMvpArea(draft.lat, draft.lng)) return null;
     if (!['point','district','city'].includes(draft.locationPrecision)) draft.locationPrecision = 'point';
     if (draft.locationSource !== null && !['search','map','geolocation'].includes(draft.locationSource)) draft.locationSource = null;
     if (draft.districtCode && !DELTA_CREATE_DISTRICTS.some((d) => d.code === draft.districtCode)) return null;

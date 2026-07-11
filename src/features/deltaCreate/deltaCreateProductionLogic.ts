@@ -1,4 +1,5 @@
-import { createEmptyDeltaDraft, validateDeltaDraft } from './deltaCreateLogic';
+import { createEmptyDeltaDraft, validateDeltaStep } from './deltaCreateLogic';
+import { isWithinPermMvpArea } from './deltaGeoLogic';
 import type { DeltaCreateDraft } from './deltaCreateTypes';
 import type { CreateDeltaInput, DeltaCard, DeltaCategory, DeltaEffect, ReactToDeltaResult } from '../deltas/deltaTypes';
 import { getDeltaEffectCopy } from '../deltas/deltaLogic';
@@ -7,19 +8,19 @@ export type DeltaCreateResultMode = 'created_new' | 'confirmed_existing';
 export const DELTA_CREATE_PRODUCTION_STORAGE_KEY = 'uzor_delta_create_v1';
 
 export function buildCreateDeltaInput(draft: DeltaCreateDraft, circleId: string): CreateDeltaInput {
-  if (!draft.categorySlug || !draft.direction || !draft.changeType || !draft.observedWindow || !draft.impactLevel || draft.lat == null || draft.lng == null) throw new Error('invalid_delta_payload');
+  if (!draft.categorySlug || !draft.direction || !draft.changeType || !draft.observedWindow || !draft.impactLevel || draft.lat == null || draft.lng == null || !isWithinPermMvpArea(draft.lat, draft.lng)) throw new Error('invalid_delta_payload');
   return { circleId, citySlug: 'perm', categorySlug: draft.categorySlug, direction: draft.direction, subject: draft.subject.trim(), changeType: draft.changeType, statement: draft.statement.trim(), details: draft.details.trim() || null, observedWindow: draft.observedWindow, impactLevel: draft.impactLevel, lat: draft.lat, lng: draft.lng, locationLabel: draft.locationLabel.trim(), locationPrecision: draft.locationPrecision };
 }
 
-export function canPublishSeparate(draft: DeltaCreateDraft) { const coreErrors = validateDeltaDraft({ ...draft, districtCode: draft.districtCode || 'perm-all', districtLabel: draft.districtLabel || 'Пермь' }); return coreErrors.length === 0 && typeof draft.lat === 'number' && typeof draft.lng === 'number' && !!draft.locationLabel.trim(); }
+export function canPublishSeparate(draft: DeltaCreateDraft) { const coreErrors = [2,3].flatMap((step) => validateDeltaStep(draft, step as DeltaCreateDraft['currentStep'])); return coreErrors.length === 0 && typeof draft.lat === 'number' && typeof draft.lng === 'number' && !!draft.locationLabel.trim() && isWithinPermMvpArea(draft.lat, draft.lng); }
 export function canConfirmExisting(draft: DeltaCreateDraft) { return !!draft.selectedSimilarDeltaId && draft.similarDecision === 'existing'; }
 
 export function canNavigateToStep(targetStep: number, draft: DeltaCreateDraft) {
   if (targetStep <= draft.currentStep) return targetStep >= 1 && targetStep <= 4;
   for (let step = 1; step < targetStep; step += 1) {
     const errors = step === 1
-      ? (!draft.locationLabel.trim() || typeof draft.lat !== 'number' || typeof draft.lng !== 'number' ? ['location'] : [])
-      : validateDeltaDraft({ ...draft, currentStep: step as DeltaCreateDraft['currentStep'], districtCode: draft.districtCode || 'perm-all', districtLabel: draft.districtLabel || 'Пермь' }).filter(Boolean);
+      ? (!draft.locationLabel.trim() || typeof draft.lat !== 'number' || typeof draft.lng !== 'number' || !isWithinPermMvpArea(draft.lat, draft.lng) ? ['location'] : [])
+      : validateDeltaStep(draft, step as DeltaCreateDraft['currentStep']).filter(Boolean);
     if (errors.length) return false;
   }
   return targetStep >= 1 && targetStep <= 4;
@@ -28,7 +29,7 @@ export function canNavigateToStep(targetStep: number, draft: DeltaCreateDraft) {
 export async function shareDeltaPayload(payload: { title: string; text: string; url: string }, nav: Navigator = navigator) {
   if ('share' in nav && typeof nav.share === 'function') {
     try { await nav.share(payload); return 'Дельта отправлена'; }
-    catch (error) { if (error instanceof DOMException && error.name === 'AbortError') return 'Отправка отменена'; return 'Не удалось поделиться ссылкой'; }
+    catch (error) { if (error instanceof DOMException && error.name === 'AbortError') return 'Отправка отменена'; }
   }
   const text = `${payload.text} ${payload.url}`;
   try { if (nav.clipboard?.writeText) { await nav.clipboard.writeText(text); return 'Ссылка на Дельту скопирована'; } } catch { /* fallback */ }
@@ -57,7 +58,7 @@ export function mapDeltaPublishError(error: unknown) {
   if (/invalid_delta_payload/.test(message)) return 'Проверьте заполненные данные.';
   if (/delta_not_found/.test(message)) return 'Похожая Дельта больше недоступна.';
   if (/author_reaction_locked/.test(message)) return 'Первая отметка автора уже закреплена.';
-  if (/function|schema cache|migration|rpc/i.test(message)) return 'Функции Дельт ещё не подключены к базе. Проверьте migration 006.';
+  if (/function|schema cache|migration|rpc/i.test(message)) return 'Сервис Дельт временно недоступен. Попробуйте позже.';
   return 'Не удалось выполнить действие. Попробуйте ещё раз.';
 }
 

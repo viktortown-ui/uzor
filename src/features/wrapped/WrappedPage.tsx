@@ -13,6 +13,7 @@ import { WrappedRightSignals } from './components/WrappedRightSignals';
 import { WrappedSidebar } from './components/WrappedSidebar';
 import { WrappedState } from './components/WrappedState';
 import { WrappedTopThemes } from './components/WrappedTopThemes';
+import { ProductShell } from '../../app/ProductShell';
 import './wrapped.css';
 
 export function WrappedPage() {
@@ -37,16 +38,16 @@ export function WrappedPage() {
       });
   }, []);
 
-  if (state === 'empty') return <WrappedState title="Пока Wrapped не собран" body="Оставьте несколько сигналов в течение недели — и здесь появится ваш личный отчёт." to="/contribute" label="Добавить сигнал" />;
-  if (state === 'join') return <WrappedState title="Войдите в закрытый круг" body="Wrapped собирается только для участников круга." to="/join" label="Войти по приглашению" />;
-  if (state === 'missing-rpc') return <WrappedState title="Нужно применить migration 005_fix_wrapped_report_sql_and_confirmation.sql" body="После применения Supabase RPC get_my_wrapped_report экран загрузит реальные агрегаты." />;
-  if (state === 'error') return <WrappedState title="Не удалось загрузить Wrapped" body="Проверьте Supabase migration 005 или попробуйте позже." />;
-  if (state === 'loading') return <WrappedState title="Собираем Wrapped" body="Сверяем ваши сигналы с контуром круга…" />;
+  if (state === 'empty') return <ProductShell><WrappedState title="Пока Wrapped не собран" body="Оставьте несколько наблюдений в течение недели — и здесь появится ваш личный отчёт." to="/contribute" label="Добавить Дельту" /></ProductShell>;
+  if (state === 'join') return <ProductShell><WrappedState title="Войдите в закрытый круг" body="Wrapped собирается только для участников круга." to="/join" label="Войти по приглашению" /></ProductShell>;
+  if (state === 'missing-rpc') return <ProductShell><WrappedState title="Нужно применить migration 005_fix_wrapped_report_sql_and_confirmation.sql" body="После применения Supabase RPC get_my_wrapped_report экран загрузит реальные агрегаты." /></ProductShell>;
+  if (state === 'error') return <ProductShell><WrappedState title="Не удалось загрузить Wrapped" body="Проверьте соединение и попробуйте позже." /></ProductShell>;
+  if (state === 'loading') return <ProductShell><WrappedState title="Собираем Wrapped" body="Сверяем ваши наблюдения с контуром круга…" /></ProductShell>;
 
   return (
-    <div className="wrapped-page">
-      <WrappedSidebar report={report} />
-      <main className="wrapped-dashboard wrapped-dashboard-mvp">
+    <ProductShell className="wrapped-page">
+      <div className="wrapped-dashboard wrapped-dashboard-mvp">
+        <WrappedSidebar report={report} />
         <WrappedHeader report={report} />
         <WrappedHero report={report} />
         <WrappedMetricCards report={report} />
@@ -64,7 +65,7 @@ export function WrappedPage() {
             <WrappedProgress report={report} />
           </WrappedCard>
         </div>
-      </main>
-    </div>
+      </div>
+    </ProductShell>
   );
 }
