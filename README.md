@@ -63,3 +63,5 @@ https://<owner>.github.io/uzor/#/join?code=REPLACE_WITH_A_LONG_PRIVATE_INVITE_CO
 5. Для GitHub Pages выбрать `Repository Settings → Pages → Source: GitHub Actions`.
 
 GitHub Pages публикует только фронтенд. Данные круга защищаются Supabase RLS; чужие сырые contributions и raw candidate text не выдаются на публичное полотно.
+
+- `/lab/delta-create-geo` — лабораторный конструктор с географией и поиском похожих Дельт.

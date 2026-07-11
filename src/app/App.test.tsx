@@ -336,4 +336,23 @@ describe('delta create lab route', () => {
     renderAt('/map');
     expect(await screen.findByText(/Нужна настройка Mapbox|Карта дельт Перми/)).toBeInTheDocument();
   });
+  it('/lab/delta-create-geo открывается в demo и без выбранной точки блокирует шаг места', () => {
+    renderAt('/lab/delta-create-geo');
+    expect(screen.getByText('Лаборатория · этап 3.2')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Где это изменилось?' })).toBeInTheDocument();
+    expect(screen.getByText('Демо-режим · используются учебные точки')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Далее' })).toBeDisabled();
+  });
+
+  it('/lab/delta-create-core продолжает открываться после добавления geo route', () => {
+    renderAt('/lab/delta-create-core');
+    expect(screen.getByText('Лаборатория · этап 3.1')).toBeInTheDocument();
+  });
+
+  it('production /contribute не заменён geo-конструктором', () => {
+    renderAt('/contribute');
+    expect(screen.getByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).toBeInTheDocument();
+    expect(screen.queryByText('Лаборатория · этап 3.2')).not.toBeInTheDocument();
+  });
+
 });
