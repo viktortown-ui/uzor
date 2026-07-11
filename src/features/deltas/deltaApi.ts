@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../../lib/supabase/client';
-import type { CreateDeltaInput, DeltaApiErrorCode, DeltaCard, DeltaCategory, DeltaCity, DeltaMapItem, DeltaReaction, DeltaViewportInput, FindSimilarDeltaInput, ReactToDeltaResult } from './deltaTypes';
+import type { CreateDeltaInput, DeltaApiErrorCode, DeltaCard, DeltaCategory, DeltaCity, DeltaMapItem, DeltaReaction, DeltaViewportInput, FindSimilarDeltaInput, ReactToDeltaResult, DeltaEffect } from './deltaTypes';
 
 export class DeltaApiError extends Error { constructor(public code: DeltaApiErrorCode, message = code) { super(message); } }
 
@@ -10,7 +10,7 @@ function mapDeltaError(error: unknown): DeltaApiError {
 }
 async function rpc<T>(name: string, args?: Record<string, unknown>): Promise<T> { const { data, error } = await getSupabaseClient().rpc(name, args); if (error) throw mapDeltaError(error); return data as T; }
 
-export function createDelta(input: CreateDeltaInput) { return rpc<{ delta: DeltaCard }>('create_delta', { input_circle_id: input.circleId, input_city_slug: input.citySlug, input_category_slug: input.categorySlug, input_direction: input.direction, input_subject: input.subject, input_change_type: input.changeType, input_statement: input.statement, input_details: input.details ?? null, input_observed_window: input.observedWindow, input_impact_level: input.impactLevel, input_lat: input.lat, input_lng: input.lng, input_location_label: input.locationLabel, input_location_precision: input.locationPrecision ?? 'point' }); }
+export function createDelta(input: CreateDeltaInput) { return rpc<{ delta: DeltaCard; effect: DeltaEffect }>('create_delta', { input_circle_id: input.circleId, input_city_slug: input.citySlug, input_category_slug: input.categorySlug, input_direction: input.direction, input_subject: input.subject, input_change_type: input.changeType, input_statement: input.statement, input_details: input.details ?? null, input_observed_window: input.observedWindow, input_impact_level: input.impactLevel, input_lat: input.lat, input_lng: input.lng, input_location_label: input.locationLabel, input_location_precision: input.locationPrecision ?? 'point' }); }
 export function reactToDelta(deltaId: string, reaction: DeltaReaction) { return rpc<ReactToDeltaResult>('react_to_delta', { input_delta_id: deltaId, input_reaction: reaction }); }
 export function getDeltaCard(deltaId: string) { return rpc<DeltaCard>('get_delta_card', { input_delta_id: deltaId }); }
 export function findSimilarDeltas(input: FindSimilarDeltaInput) { return rpc<Array<Pick<DeltaCard, 'id' | 'statement' | 'status' | 'confirmCount' | 'disconfirmCount' | 'createdAt'> & { distanceMeters: number; locationLabel: string }>>('find_similar_deltas', { input_circle_id: input.circleId, input_city_slug: input.citySlug, input_category_slug: input.categorySlug, input_direction: input.direction, input_change_type: input.changeType, input_lat: input.lat, input_lng: input.lng, input_radius_m: input.radiusM ?? 1000, input_days: input.days ?? 14 }); }
