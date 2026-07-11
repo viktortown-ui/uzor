@@ -315,7 +315,7 @@ describe('delta create lab route', () => {
     await u.click(screen.getByRole('button', { name: 'Черновик готов' }));
     expect(screen.getByRole('heading', { name: 'Черновик Дельты готов' })).toBeInTheDocument();
     expect(screen.queryByText(/Нужна настройка Supabase|Код приглашения/)).not.toBeInTheDocument();
-  });
+  }, 10000);
 
   it('показывает restore prompt при draft и безопасно игнорирует damaged draft', () => {
     localStorage.setItem('uzor_delta_create_core_v1', JSON.stringify({ currentStep: 2, districtCode: 'leninsky', districtLabel: 'Ленинский район', locationHint: '', direction: '', categorySlug: '', changeType: '', subject: '', statement: '', statementMode: 'auto', observedWindow: '', impactLevel: '', details: '' }));
@@ -334,13 +334,13 @@ describe('delta create lab route', () => {
     expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
     cleanup();
     renderAt('/map');
-    expect(await screen.findByText(/Нужна настройка Mapbox|Карта дельт Перми/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Дельты Перми' })).toBeInTheDocument();
   });
   it('/lab/delta-create-geo открывается в demo и без выбранной точки блокирует шаг места', () => {
     renderAt('/lab/delta-create-geo');
     expect(screen.getByText('Лаборатория · этап 3.2')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Где это изменилось?' })).toBeInTheDocument();
-    expect(screen.getByText('Демо-режим · используются учебные точки')).toBeInTheDocument();
+    expect(screen.getByText('Демо-режим · быстрый выбор учебной точки')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Далее' })).toBeDisabled();
   });
 

@@ -1,7 +1,7 @@
 # Delta Map MVP
 
-- Выбран Mapbox GL JS: он даёт стабильную интерактивную карту без дополнительного React-слоя.
-- `SearchBox` из `@mapbox/search-js-react` нужен для простого поиска района, улицы или места по Перми.
+- Выбран MapLibre GL JS: он даёт стабильную интерактивную карту без дополнительного React-слоя и работает без токена.
+- OpenFreeMap Liberty используется как основа карты. Адресный autocomplete в MVP отключён: перемещение выполняется стандартными controls, кнопкой центра Перми и browser geolocation.
 - Custom HTML markers допустимы на раннем MVP, потому что точек мало, а маркер должен одновременно объяснять направление, статус, категорию и активность.
 - Цвет центра показывает direction: зелёный/teal — стало лучше, коралловый/оранжевый — стало хуже.
 - Внешнее кольцо показывает status: жёлтое — новая, янтарное — проверяется, светлое — подтверждена, двойное фиолетовое — развилка.
@@ -9,7 +9,7 @@
 - Пульсация означает активность за последние 24 часа и отключается через `prefers-reduced-motion`.
 - Clustering пока отложен: для первых проверок важнее читаемая карточка и реакция, чем агрегация точек.
 - Realtime пока отложен: карта обновляется initial fetch, moveend fetch, filter refetch, optimistic reaction update и manual retry.
-- Bounding box берётся из текущего viewport Mapbox после `load` и `moveend`; `moveend` debounce — 350 ms.
+- Bounding box берётся из текущего viewport MapLibre после `load` и `moveend`; `moveend` debounce — 350 ms.
 - Точная геопозиция защищена: браузерная геолокация вызывается только по клику на control, не сохраняется и не отправляется в Supabase.
-- Env variables: `VITE_MAPBOX_ACCESS_TOKEN` и необязательная `VITE_MAPBOX_STYLE_URL`.
+- Env variable: необязательная `VITE_MAP_STYLE_URL`; по умолчанию используется `https://tiles.openfreemap.org/styles/liberty`.
 - Следующий этап: новый конструктор добавления дельты. В этом MVP `/contribute` не переделывается.
