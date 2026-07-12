@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import '../features/wrapped/wrapped.css';
+import './productShell.css';
 
 const items = [
   { label: 'Wrapped', to: '/wrapped', icon: '▰' },
