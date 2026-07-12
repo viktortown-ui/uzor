@@ -43,9 +43,18 @@ describe('ProductShell CSS ownership', () => {
     expect(deltaMapCss).not.toMatch(/@media\s*\(max-width:\s*800px\)\s*\{[\s\S]*?\.delta-map-page\s*\{[\s\S]*?display:\s*block/);
   });
 
-  it('keeps mobile safe-area spacing owned only by ProductShell', () => {
-    expect(productShellCss).toContain('--product-mobile-nav-space: calc(var(--product-mobile-nav-height) + env(safe-area-inset-bottom));');
+  it('keeps mobile protected navigation geometry owned only by ProductShell', () => {
+    expect(productShellCss).toContain('--product-mobile-nav-surface-height: 80px;');
+    expect(productShellCss).toContain('--product-mobile-nav-overhang: 10px;');
+    expect(productShellCss).toMatch(
+      /--product-mobile-nav-space:\s*calc\(\s*var\(--product-mobile-nav-surface-height\) \+\s*var\(--product-mobile-nav-overhang\) \+\s*env\(safe-area-inset-bottom\)\s*\);/,
+    );
     expect(productShellCss).toContain('padding-bottom: var(--product-mobile-nav-space);');
+    expect(productShellCss).toContain('min-height: calc(100dvh - var(--product-mobile-nav-space));');
+    expect(productShellCss).toMatch(
+      /\.product-bottom-nav\s*\{[\s\S]*?min-height:\s*calc\(\s*var\(--product-mobile-nav-surface-height\) \+\s*env\(safe-area-inset-bottom\)\s*\);/,
+    );
+    expect(productShellCss).toContain('translateY(calc(-1 * var(--product-mobile-nav-overhang)))');
     expect(wrappedCss).not.toMatch(/wrapped-dashboard-mvp[\s\S]*?safe-area-inset-bottom/);
     expect(wrappedCss).not.toContain('calc(96px + env(safe-area-inset-bottom))');
     expect(wrappedCss).toContain('padding: 14px clamp(12px, 3.8vw, 18px) 20px;');
