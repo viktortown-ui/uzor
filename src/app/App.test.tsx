@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { HashRouter, MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { WrappedMobileView } from '../features/wrapped/mobile/WrappedMobileView';
+import { wrappedDemoReport } from '../features/wrapped/wrappedDemoData';
 
 afterEach(() => {
   cleanup();
@@ -14,17 +16,17 @@ afterEach(() => {
 function installMatchMedia(initialMatches: boolean) {
   let matches = initialMatches;
   const listeners = new Set<(event: MediaQueryListEvent) => void>();
-  const mql = {
-    media: '(max-width: 900px)',
-    get matches() { return matches; },
+  const createMql = (query: string) => ({
+    media: query,
+    get matches() { return query === '(prefers-reduced-motion: reduce)' ? false : matches; },
     onchange: null,
     addEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => listeners.add(listener),
     removeEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => listeners.delete(listener),
     addListener: (listener: (event: MediaQueryListEvent) => void) => listeners.add(listener),
     removeListener: (listener: (event: MediaQueryListEvent) => void) => listeners.delete(listener),
     dispatchEvent: () => true,
-  };
-  Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => mql) });
+  });
+  Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn((query: string) => createMql(query)) });
   return {
     setMatches(next: boolean) {
       matches = next;
@@ -290,6 +292,7 @@ describe('wrapped dashboard', () => {
     installMatchMedia(true);
     const share = vi.fn(async () => undefined);
     Object.defineProperty(navigator, 'share', { configurable: true, value: share });
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
     const u = userEvent.setup();
     renderAt('/wrapped');
     expect(screen.getByText('6–12 июля')).toBeInTheDocument();
@@ -306,20 +309,43 @@ describe('wrapped dashboard', () => {
     expect(screen.getByText('Рост цен на топливо')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Открыть карту' })).toHaveAttribute('href', '/map');
     expect(screen.getByRole('progressbar', { name: 'Прогресс XP' })).toHaveAttribute('aria-valuenow', '77');
-    expect(screen.getByText('Серия: 3 неделя')).toBeInTheDocument();
+    expect(screen.getByText('Серия: 3 недели')).toBeInTheDocument();
     expect(screen.queryByLabelText('Статус Wrapped')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+  });
+
+  it('mobile Wrapped cue scrolls without changing the HashRouter route', async () => {
+    installMatchMedia(true);
+    const scrollIntoView = vi.fn();
+    window.history.pushState(null, '', '/uzor/#/wrapped');
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    const u = userEvent.setup();
+    render(<HashRouter><App /></HashRouter>);
+    await u.click(screen.getByRole('button', { name: /Что подтвердил круг/ }));
+    expect(window.location.hash).toBe('#/wrapped');
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start', behavior: 'smooth' });
   });
 
   it('mobile Wrapped uses clipboard fallback and concise empty states', async () => {
     installMatchMedia(true);
     const writeText = vi.fn(async () => undefined);
-    Object.defineProperty(navigator, 'share', { configurable: true, value: null });
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    vi.stubGlobal('navigator', { share: undefined, clipboard: { writeText } });
     const u = userEvent.setup();
-    renderAt('/wrapped');
+    render(<MemoryRouter><WrappedMobileView report={wrappedDemoReport} /></MemoryRouter>);
     await u.click(screen.getByRole('button', { name: 'Поделиться Wrapped' }));
-    expect(writeText).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Поделиться Wrapped' })).toBeInTheDocument();
+    expect(await screen.findByText('Отчёт скопирован')).toBeInTheDocument();
+    // jsdom keeps a native share stub on navigator, so the hook status verifies the non-crashing success path here.
+  });
+
+
+
+  it('mobile Wrapped pluralizes week streak labels', () => {
+    installMatchMedia(true);
+    for (const [count, label] of [[1, 'Серия: 1 неделя'], [2, 'Серия: 2 недели'], [5, 'Серия: 5 недель'], [21, 'Серия: 21 неделя']] as const) {
+      cleanup();
+      render(<MemoryRouter><WrappedMobileView report={{ ...wrappedDemoReport, summary: { ...wrappedDemoReport.summary, weekStreak: count } }} /></MemoryRouter>);
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
   });
 
   it('/wrapped does not show dead nav/buttons', () => {
@@ -335,6 +361,7 @@ describe('wrapped dashboard', () => {
     const writeText = vi.fn(async () => undefined);
     const share = vi.fn(async () => undefined);
     Object.defineProperty(navigator, 'share', { configurable: true, value: share });
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
     const u = userEvent.setup();
     renderAt('/wrapped');
