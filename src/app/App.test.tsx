@@ -10,6 +10,29 @@ afterEach(() => {
   window.history.pushState(null, '', '/');
 });
 
+
+function installMatchMedia(initialMatches: boolean) {
+  let matches = initialMatches;
+  const listeners = new Set<(event: MediaQueryListEvent) => void>();
+  const mql = {
+    media: '(max-width: 900px)',
+    get matches() { return matches; },
+    onchange: null,
+    addEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => listeners.add(listener),
+    removeEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => listeners.delete(listener),
+    addListener: (listener: (event: MediaQueryListEvent) => void) => listeners.add(listener),
+    removeListener: (listener: (event: MediaQueryListEvent) => void) => listeners.delete(listener),
+    dispatchEvent: () => true,
+  };
+  Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => mql) });
+  return {
+    setMatches(next: boolean) {
+      matches = next;
+      listeners.forEach((listener) => listener({ matches, media: '(max-width: 900px)' } as MediaQueryListEvent));
+    },
+  };
+}
+
 const renderAt = (path: string) => render(<MemoryRouter initialEntries={[path]}><App /></MemoryRouter>);
 const renderHashAt = (hashPath: string) => {
   window.history.pushState(null, '', `/uzor/${hashPath}`);
@@ -223,6 +246,7 @@ describe('wrapped dashboard', () => {
     expect(document.body.textContent).toMatch(/Wrapped|УЗОР/i);
   });
   it('/wrapped renders core MVP blocks', () => {
+    installMatchMedia(false);
     renderAt('/wrapped');
     expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
     expect(screen.getByText('Ваш итог недели')).toBeInTheDocument();
@@ -235,6 +259,69 @@ describe('wrapped dashboard', () => {
     expect(screen.getByText('Ваш прогресс')).toBeInTheDocument();
   });
 
+
+  it('/wrapped renders only mobile story at 900px and below', () => {
+    installMatchMedia(true);
+    renderAt('/wrapped');
+    expect(screen.getByTestId('wrapped-mobile-root')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Статус Wrapped')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Личный Wrapped реальности' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Сигналов за неделю')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Ранний наблюдатель' })).toBeInTheDocument();
+  });
+
+  it('/wrapped renders only desktop view above 900px', () => {
+    installMatchMedia(false);
+    renderAt('/wrapped');
+    expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    expect(screen.queryByTestId('wrapped-mobile-root')).not.toBeInTheDocument();
+  });
+
+  it('/wrapped switches responsive views without remounting data state', async () => {
+    const media = installMatchMedia(true);
+    renderAt('/wrapped');
+    expect(screen.getByTestId('wrapped-mobile-root')).toBeInTheDocument();
+    media.setMatches(false);
+    expect(await screen.findByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 900px)');
+  });
+
+  it('mobile Wrapped shows story content and share through navigator.share', async () => {
+    installMatchMedia(true);
+    const share = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'share', { configurable: true, value: share });
+    const u = userEvent.setup();
+    renderAt('/wrapped');
+    expect(screen.getByText('6–12 июля')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: 'Ранний наблюдатель' })).toHaveLength(1);
+    expect(screen.getByText('Вы замечаете сдвиги раньше круга.')).toBeInTheDocument();
+    expect(screen.getByText('23')).toBeInTheDocument();
+    expect(screen.getByText('14')).toBeInTheDocument();
+    expect(screen.getByText('62%')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Добавить Дельту' })[0]).toHaveAttribute('href', '/contribute');
+    await u.click(screen.getByRole('button', { name: 'Поделиться Wrapped' }));
+    await waitFor(() => expect(share).toHaveBeenCalled());
+    expect(await screen.findByText('Отчёт скопирован')).toBeInTheDocument();
+    expect(screen.getAllByText('Транспорт')[0]).toBeInTheDocument();
+    expect(screen.getByText('Рост цен на топливо')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Открыть карту' })).toHaveAttribute('href', '/map');
+    expect(screen.getByRole('progressbar', { name: 'Прогресс XP' })).toHaveAttribute('aria-valuenow', '77');
+    expect(screen.getByText('Серия: 3 неделя')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Статус Wrapped')).not.toBeInTheDocument();
+  });
+
+  it('mobile Wrapped uses clipboard fallback and concise empty states', async () => {
+    installMatchMedia(true);
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'share', { configurable: true, value: null });
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    const u = userEvent.setup();
+    renderAt('/wrapped');
+    await u.click(screen.getByRole('button', { name: 'Поделиться Wrapped' }));
+    expect(writeText).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Поделиться Wrapped' })).toBeInTheDocument();
+  });
+
   it('/wrapped does not show dead nav/buttons', () => {
     renderAt('/wrapped');
     expect(screen.queryByText('Биржа ожиданий')).not.toBeInTheDocument();
@@ -244,6 +331,7 @@ describe('wrapped dashboard', () => {
   });
 
   it('share button works and Add signal CTA goes to /contribute', async () => {
+    installMatchMedia(false);
     const writeText = vi.fn(async () => undefined);
     const share = vi.fn(async () => undefined);
     Object.defineProperty(navigator, 'share', { configurable: true, value: share });

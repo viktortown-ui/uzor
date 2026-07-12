@@ -1,24 +1,19 @@
 import { useEffect, useState } from 'react';
 import { isDemoMode, isProductionConfigured } from '../../app/appMode';
+import { ProductShell } from '../../app/ProductShell';
 import { getMyWrappedReport, WrappedApiError } from './wrappedApi';
 import { wrappedDemoReport } from './wrappedDemoData';
 import { normalizeWrappedReport } from './wrappedLogic';
 import type { WrappedReport } from './wrappedTypes';
-import { WrappedCard } from './components/WrappedCard';
-import { WrappedHeader } from './components/WrappedHeader';
-import { WrappedHero } from './components/WrappedHero';
-import { WrappedMetricCards } from './components/WrappedMetricCards';
-import { WrappedProgress } from './components/WrappedProgress';
-import { WrappedRightSignals } from './components/WrappedRightSignals';
-import { WrappedSidebar } from './components/WrappedSidebar';
 import { WrappedState } from './components/WrappedState';
-import { WrappedTopThemes } from './components/WrappedTopThemes';
-import { ProductShell } from '../../app/ProductShell';
+import { WrappedDesktopView } from './WrappedDesktopView';
+import { WrappedMobileView } from './mobile/WrappedMobileView';
+import { useMediaQuery } from './useMediaQuery';
 import './wrapped.css';
-
 export function WrappedPage() {
   const [state, setState] = useState<'loading' | 'ready' | 'empty' | 'join' | 'missing-rpc' | 'error'>(isDemoMode || !isProductionConfigured ? 'ready' : 'loading');
   const [report, setReport] = useState<WrappedReport>(wrappedDemoReport);
+  const isMobile = useMediaQuery('(max-width: 900px)');
 
   useEffect(() => {
     if (isDemoMode || !isProductionConfigured) return;
@@ -44,28 +39,5 @@ export function WrappedPage() {
   if (state === 'error') return <ProductShell><WrappedState title="Не удалось загрузить Wrapped" body="Проверьте соединение и попробуйте позже." /></ProductShell>;
   if (state === 'loading') return <ProductShell><WrappedState title="Собираем Wrapped" body="Сверяем ваши наблюдения с контуром круга…" /></ProductShell>;
 
-  return (
-    <ProductShell className="wrapped-page">
-      <div className="wrapped-dashboard wrapped-dashboard-mvp">
-        <WrappedSidebar report={report} />
-        <WrappedHeader report={report} />
-        <WrappedHero report={report} />
-        <WrappedMetricCards report={report} />
-        <div className="wrapped-mvp-grid">
-          <WrappedCard className="wrapped-themes-card">
-            <div className="wrapped-card-head"><h2>Что вы замечали</h2><span>топ-3 темы</span></div>
-            <WrappedTopThemes themes={report.topThemes} />
-          </WrappedCard>
-          <WrappedCard className="wrapped-right-card">
-            <div className="wrapped-card-head"><h2>Где вы были правы</h2><span>подтверждено кругом</span></div>
-            <WrappedRightSignals signals={report.rightSignals} />
-          </WrappedCard>
-          <WrappedCard className="wrapped-progress-card wide">
-            <div className="wrapped-card-head"><h2>Ваш прогресс</h2><span>уровень и XP</span></div>
-            <WrappedProgress report={report} />
-          </WrappedCard>
-        </div>
-      </div>
-    </ProductShell>
-  );
+  return <ProductShell className="wrapped-page">{isMobile ? <WrappedMobileView report={report} /> : <WrappedDesktopView report={report} />}</ProductShell>;
 }
