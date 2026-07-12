@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ProductShell } from '../../app/ProductShell';
 import { isWithinPermMvpArea } from './deltaGeoLogic';
@@ -28,8 +28,10 @@ describe('Delta production shell safeguards', () => {
     expect(screen.getAllByText('Wrapped').find((el) => el.closest('a')?.getAttribute('aria-current') === 'page')).toBeTruthy();
   });
   it('keeps mobile navigation labels available', () => {
-    render(<ShellAt route="/contribute" />);
-    expect(screen.getAllByLabelText('Основная навигация на мобильном').length).toBeGreaterThan(0);
+    const view = render(<ShellAt route="/contribute" />);
+    const mobileNav = view.container.querySelector('.product-bottom-nav');
+    expect(mobileNav).toHaveAttribute('aria-label', 'Основная мобильная навигация');
+    expect(within(mobileNav as HTMLElement).getByRole('link', { name: 'Добавить', hidden: true })).toHaveAttribute('aria-current', 'page');
   });
   it('accepts Perm points and rejects outside-Perm points', () => {
     expect(isWithinPermMvpArea(58.0105, 56.2502)).toBe(true);
