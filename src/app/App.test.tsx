@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HashRouter, MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -359,20 +359,36 @@ describe('delta create lab route', () => {
 });
 
 describe('ProductShell shared navigation routes', () => {
-  it('показывает общую навигацию и активный пункт на Wrapped, карте и добавлении Дельты', async () => {
-    for (const [route, activeLabel] of [
-      ['/wrapped', 'Wrapped'],
-      ['/map', 'Карта дельт'],
-      ['/contribute', 'Добавить Дельту'],
-    ] as const) {
-      const view = renderAt(route);
-      expect(screen.getByRole('navigation', { name: 'Основная навигация на мобильном' })).toBeInTheDocument();
-      expect(screen.getByRole('complementary', { name: 'Основная навигация' })).toBeInTheDocument();
-      expect(screen.getAllByText('Wrapped').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Карта дельт').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Добавить Дельту').length).toBeGreaterThan(0);
-      expect(screen.getByRole('link', { name: new RegExp(activeLabel) })).toHaveAttribute('aria-current', 'page');
-      view.unmount();
-    }
+  it('keeps separate desktop and mobile navigation models', async () => {
+    const view = renderAt('/wrapped');
+
+    expect(view.container.querySelector('.product-mobile-header')).not.toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: 'Основная навигация' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Основная мобильная навигация' })).toBeInTheDocument();
+
+    const desktopNav = screen.getByRole('complementary', { name: 'Основная навигация' });
+    expect(desktopNav).toHaveTextContent('Wrapped');
+    expect(desktopNav).toHaveTextContent('Карта дельт');
+    expect(desktopNav).toHaveTextContent('Добавить Дельту');
+
+    const mobileNav = screen.getByRole('navigation', { name: 'Основная мобильная навигация' });
+    expect(Array.from(mobileNav.querySelectorAll('a')).map((link) => link.textContent)).toEqual(['Итоги', 'Добавить', 'Карта']);
+
+    const mobileLinks = mobileNav.querySelectorAll('a');
+    expect(mobileLinks[1]).toHaveAttribute('href', '/contribute');
+    expect(mobileLinks[1]).toHaveClass('product-bottom-nav__primary');
+
+    view.unmount();
+  });
+
+  it.each([
+    ['/wrapped', 'Итоги'],
+    ['/contribute', 'Добавить'],
+    ['/map', 'Карта'],
+  ] as const)('marks %s active in the mobile navigation', async (route, activeLabel) => {
+    const view = renderAt(route);
+    const mobileNav = screen.getByRole('navigation', { name: 'Основная мобильная навигация' });
+    expect(within(mobileNav).getByRole('link', { name: activeLabel })).toHaveAttribute('aria-current', 'page');
+    view.unmount();
   });
 });

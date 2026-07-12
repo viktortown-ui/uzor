@@ -14,7 +14,6 @@ describe('ProductShell CSS ownership', () => {
       '.wrapped-pulse',
       '.wrapped-nav',
       '.product-sidebar',
-      '.product-mobile-header',
       '.product-bottom-nav',
     ]) {
       expect(productShellCss, `${selector} should be owned by ProductShell`).toContain(selector);
@@ -25,7 +24,6 @@ describe('ProductShell CSS ownership', () => {
       'wrapped-pulse',
       'wrapped-nav',
       'product-sidebar',
-      'product-mobile-header',
       'product-bottom-nav',
     ]) {
       expect(wrappedCss, `${selector} should not be redeclared by Wrapped`).not.toContain(selector);
@@ -45,10 +43,16 @@ describe('ProductShell CSS ownership', () => {
     expect(deltaMapCss).not.toMatch(/@media\s*\(max-width:\s*800px\)\s*\{[\s\S]*?\.delta-map-page\s*\{[\s\S]*?display:\s*block/);
   });
 
-  it('does not add a second mobile bottom-nav safe-area allowance in Wrapped', () => {
-    expect(productShellCss).toContain('padding-bottom: calc(84px + env(safe-area-inset-bottom));');
+  it('keeps mobile safe-area spacing owned only by ProductShell', () => {
+    expect(productShellCss).toContain('--product-mobile-nav-space: calc(var(--product-mobile-nav-height) + env(safe-area-inset-bottom));');
+    expect(productShellCss).toContain('padding-bottom: var(--product-mobile-nav-space);');
     expect(wrappedCss).not.toMatch(/wrapped-dashboard-mvp[\s\S]*?safe-area-inset-bottom/);
     expect(wrappedCss).not.toContain('calc(96px + env(safe-area-inset-bottom))');
     expect(wrappedCss).toContain('padding: 14px clamp(12px, 3.8vw, 18px) 20px;');
+  });
+
+  it('does not reserve the removed persistent mobile top header', () => {
+    expect(productShellCss).not.toContain('padding-top: 56px;');
+    expect(productShellCss).not.toContain('product-mobile-header');
   });
 });
