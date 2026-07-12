@@ -198,3 +198,10 @@
     min-height: calc(100dvh - 140px);
   }
 }
+
+@media (max-width: 350px) {
+  .product-bottom-nav a {
+    flex-direction: column;
+    gap: 2px;
+  }
+}
