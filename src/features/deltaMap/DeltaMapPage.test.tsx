@@ -40,4 +40,30 @@ describe('DeltaMapPage request deduplication',()=>{
   await new Promise((resolve)=>window.setTimeout(resolve,20));
   expect(listDeltasInView).toHaveBeenCalledTimes(2);
  });
+
+ it('явный retry в error state повторяет запрос с теми же bounds, но обычный identical viewport дедуплицируется', async()=>{
+  vi.stubEnv('VITE_APP_MODE','production'); vi.stubEnv('VITE_SUPABASE_URL','https://example.supabase.co'); vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY','key');
+  const listDeltasInView=vi.fn().mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce([]);
+  vi.doMock('../../lib/supabase/auth',()=>({ hasSupabaseSession: vi.fn().mockResolvedValue(true) }));
+  vi.doMock('../../lib/supabase/api',()=>({ loadActiveTheme: vi.fn().mockResolvedValue({ circleId:'circle-1' }) }));
+  vi.doMock('../deltas/deltaApi',()=>({
+   DeltaApiError: class DeltaApiError extends Error { code: string; constructor(code: string){ super(code); this.code=code; } },
+   listDeltasInView,
+   loadDeltaCategories: vi.fn().mockResolvedValue([{ slug:'transport', title:'Транспорт', iconKey:'transport' }]),
+   loadDeltaCities: vi.fn().mockResolvedValue([{ slug:'perm', centerLat:58.0105, centerLng:56.2502, defaultZoom:11.5 }]),
+   getDeltaCard: vi.fn(), reactToDelta: vi.fn(),
+  }));
+  const Page=await loadPage();
+  render(<MemoryRouter><Page/></MemoryRouter>);
+  await screen.findByText('Направление');
+  await userEvent.click(screen.getByText('viewport'));
+  await waitFor(()=>expect(listDeltasInView).toHaveBeenCalledTimes(1));
+  await userEvent.click(screen.getByText('viewport'));
+  await new Promise((resolve)=>window.setTimeout(resolve,20));
+  expect(listDeltasInView).toHaveBeenCalledTimes(1);
+  expect(await screen.findByText('Не удалось загрузить основу карты')).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button',{name:'Повторить'}));
+  await waitFor(()=>expect(listDeltasInView).toHaveBeenCalledTimes(2));
+  expect(listDeltasInView).toHaveBeenLastCalledWith(expect.objectContaining({ minLat:57, minLng:55, maxLat:59, maxLng:57 }));
+ });
 });
