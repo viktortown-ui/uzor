@@ -357,3 +357,22 @@ describe('delta create lab route', () => {
   });
 
 });
+
+describe('ProductShell shared navigation routes', () => {
+  it('показывает общую навигацию и активный пункт на Wrapped, карте и добавлении Дельты', async () => {
+    for (const [route, activeLabel] of [
+      ['/wrapped', 'Wrapped'],
+      ['/map', 'Карта дельт'],
+      ['/contribute', 'Добавить Дельту'],
+    ] as const) {
+      const view = renderAt(route);
+      expect(screen.getByRole('navigation', { name: 'Основная навигация на мобильном' })).toBeInTheDocument();
+      expect(screen.getByRole('complementary', { name: 'Основная навигация' })).toBeInTheDocument();
+      expect(screen.getAllByText('Wrapped').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Карта дельт').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Добавить Дельту').length).toBeGreaterThan(0);
+      expect(screen.getByRole('link', { name: new RegExp(activeLabel) })).toHaveAttribute('aria-current', 'page');
+      view.unmount();
+    }
+  });
+});
