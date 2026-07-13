@@ -504,34 +504,38 @@ describe('delta create lab route', () => {
 
 describe('ProductShell shared navigation routes', () => {
   it('keeps separate desktop and mobile navigation models', async () => {
+    installMatchMedia(false);
     const view = renderAt('/wrapped');
 
-    expect(view.container.querySelector('.product-mobile-header')).not.toBeInTheDocument();
     expect(screen.getByRole('complementary', { name: 'Основная навигация' })).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Основная мобильная навигация' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Мобильная навигация' })).not.toBeInTheDocument();
 
     const desktopNav = screen.getByRole('complementary', { name: 'Основная навигация' });
     expect(desktopNav).toHaveTextContent('Wrapped');
     expect(desktopNav).toHaveTextContent('Карта дельт');
     expect(desktopNav).toHaveTextContent('Добавить Дельту');
 
-    const mobileNav = screen.getByRole('navigation', { name: 'Основная мобильная навигация' });
-    expect(Array.from(mobileNav.querySelectorAll('a')).map((link) => link.textContent)).toEqual(['Итоги', 'Добавить', 'Карта']);
-
-    const mobileLinks = mobileNav.querySelectorAll('a');
-    expect(mobileLinks[1]).toHaveAttribute('href', '/contribute');
-    expect(mobileLinks[1]).toHaveClass('product-bottom-nav__primary');
-
     view.unmount();
+
+    installMatchMedia(true);
+    const mobileView = renderAt('/pulse');
+    expect(screen.queryByRole('complementary', { name: 'Основная навигация' })).not.toBeInTheDocument();
+    const mobileNav = screen.getByRole('navigation', { name: 'Мобильная навигация' });
+    expect(Array.from(mobileNav.querySelectorAll('a')).map((link) => link.textContent)).toEqual(['Пульс', 'Добавить', 'Карта']);
+    expect(mobileNav.querySelectorAll('a')[1]).toHaveAttribute('href', '/contribute');
+    expect(mobileNav.querySelectorAll('a')[1]).toHaveClass('mobile-app-dock__primary');
+    mobileView.unmount();
   });
 
   it.each([
-    ['/wrapped', 'Итоги'],
+    ['/pulse', 'Пульс'],
+    ['/wrapped', 'Пульс'],
     ['/contribute', 'Добавить'],
     ['/map', 'Карта'],
   ] as const)('marks %s active in the mobile navigation', async (route, activeLabel) => {
+    installMatchMedia(true);
     const view = renderAt(route);
-    const mobileNav = screen.getByRole('navigation', { name: 'Основная мобильная навигация' });
+    const mobileNav = screen.getByRole('navigation', { name: 'Мобильная навигация' });
     expect(within(mobileNav).getByRole('link', { name: activeLabel })).toHaveAttribute('aria-current', 'page');
     view.unmount();
   });

@@ -9,7 +9,7 @@ export function useMediaQuery(query: string) {
     const media = window.matchMedia(query);
     const onChange = () => setMatches(media.matches);
     onChange();
-    if (media.addEventListener) {
+    if (typeof media.addEventListener === 'function') {
       media.addEventListener('change', onChange);
       return () => media.removeEventListener('change', onChange);
     }

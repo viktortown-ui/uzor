@@ -9,23 +9,10 @@ describe('ProductShell CSS ownership', () => {
   const deltaMapCss = readCss('src/features/deltaMap/deltaMap.css');
 
   it('keeps shared navigation and mobile shell selectors in productShell.css only', () => {
-    for (const selector of [
-      '.wrapped-brand',
-      '.wrapped-pulse',
-      '.wrapped-nav',
-      '.product-sidebar',
-      '.product-bottom-nav',
-    ]) {
+    for (const selector of ['.wrapped-brand', '.wrapped-pulse', '.wrapped-nav', '.product-sidebar', '.mobile-app-shell', '.mobile-app-dock']) {
       expect(productShellCss, `${selector} should be owned by ProductShell`).toContain(selector);
     }
-
-    for (const selector of [
-      'wrapped-brand',
-      'wrapped-pulse',
-      'wrapped-nav',
-      'product-sidebar',
-      'product-bottom-nav',
-    ]) {
+    for (const selector of ['wrapped-brand', 'wrapped-pulse', 'wrapped-nav', 'product-sidebar', 'mobile-app-dock']) {
       expect(wrappedCss, `${selector} should not be redeclared by Wrapped`).not.toContain(selector);
     }
   });
@@ -37,27 +24,24 @@ describe('ProductShell CSS ownership', () => {
     expect(deltaMapCss).toMatch(/\.delta-map-page\{[^}]*overflow:hidden/);
   });
 
-  it('keeps the tablet/mobile map width controlled by ProductShell below 900px', () => {
-    expect(productShellCss).toMatch(/@media\s*\(max-width:\s*900px\)\s*\{[\s\S]*?\.product-shell\s*\{[\s\S]*?display:\s*block/);
-    expect(productShellCss).toMatch(/@media\s*\(max-width:\s*900px\)\s*\{[\s\S]*?\.product-sidebar\s*\{[\s\S]*?display:\s*none/);
+  it('keeps mobile app shell structure owned by ProductShell without CSS-hiding desktop shell', () => {
+    expect(productShellCss).toContain('.mobile-app-shell');
+    expect(productShellCss).toContain('.mobile-app-main');
+    expect(productShellCss).toContain('.mobile-app-dock');
+    expect(productShellCss).not.toMatch(/@media\s*\(max-width:\s*900px\)\s*\{[\s\S]*?\.product-sidebar\s*\{[\s\S]*?display:\s*none/);
     expect(deltaMapCss).not.toMatch(/@media\s*\(max-width:\s*800px\)\s*\{[\s\S]*?\.delta-map-page\s*\{[\s\S]*?display:\s*block/);
   });
 
   it('keeps mobile protected navigation geometry owned only by ProductShell', () => {
-    expect(productShellCss).toContain('--product-mobile-nav-surface-height: 80px;');
-    expect(productShellCss).toContain('--product-mobile-nav-overhang: 10px;');
-    expect(productShellCss).toMatch(
-      /--product-mobile-nav-space:\s*calc\(\s*var\(--product-mobile-nav-surface-height\) \+\s*var\(--product-mobile-nav-overhang\) \+\s*env\(safe-area-inset-bottom\)\s*\);/,
-    );
-    expect(productShellCss).toContain('padding-bottom: var(--product-mobile-nav-space);');
-    expect(productShellCss).toContain('min-height: calc(100dvh - var(--product-mobile-nav-space));');
-    expect(productShellCss).toMatch(
-      /\.product-bottom-nav\s*\{[\s\S]*?min-height:\s*calc\(\s*var\(--product-mobile-nav-surface-height\) \+\s*env\(safe-area-inset-bottom\)\s*\);/,
-    );
-    expect(productShellCss).toContain('translateY(calc(-1 * var(--product-mobile-nav-overhang)))');
+    expect(productShellCss).toContain('--mobile-app-dock-height: 64px;');
+    expect(productShellCss).toContain('--mobile-app-dock-overhang: 6px;');
+    expect(productShellCss).toMatch(/--mobile-app-dock-space:\s*calc\(var\(--mobile-app-dock-height\) \+ var\(--mobile-app-dock-overhang\) \+ env\(safe-area-inset-bottom\)\);/);
+    expect(productShellCss).toContain('--product-mobile-nav-space: var(--mobile-app-dock-space);');
+    expect(productShellCss).toContain('padding-bottom:var(--mobile-app-dock-space)');
+    expect(productShellCss).toMatch(/\.mobile-app-dock\{[\s\S]*?min-height:calc\(var\(--mobile-app-dock-height\) \+ env\(safe-area-inset-bottom\)\)/);
+    expect(productShellCss).toContain('translateY(calc(-1 * var(--mobile-app-dock-overhang)))');
     expect(wrappedCss).not.toMatch(/wrapped-dashboard-mvp[\s\S]*?safe-area-inset-bottom/);
     expect(wrappedCss).not.toContain('calc(96px + env(safe-area-inset-bottom))');
-    expect(wrappedCss).toContain('padding: 14px clamp(12px, 3.8vw, 18px) 20px;');
   });
 
   it('does not reserve the removed persistent mobile top header', () => {
