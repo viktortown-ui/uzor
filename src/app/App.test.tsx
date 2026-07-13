@@ -3,13 +3,16 @@ import userEvent from '@testing-library/user-event';
 import { HashRouter, MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
-import { WrappedMobileView } from '../features/wrapped/mobile/WrappedMobileView';
+import { WrappedMobileView, wrappedPeriodLabel } from '../features/wrapped/mobile/WrappedMobileView';
+import { shareWrappedReportText, wrappedShareText } from '../features/wrapped/useWrappedShare';
 import { wrappedDemoReport } from '../features/wrapped/wrappedDemoData';
 
 afterEach(() => {
   cleanup();
   localStorage.clear();
   window.history.pushState(null, '', '/');
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 
@@ -291,8 +294,7 @@ describe('wrapped dashboard', () => {
   it('mobile Wrapped shows story content and share through navigator.share', async () => {
     installMatchMedia(true);
     const share = vi.fn(async () => undefined);
-    Object.defineProperty(navigator, 'share', { configurable: true, value: share });
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+    vi.stubGlobal('navigator', { share, clipboard: undefined });
     const u = userEvent.setup();
     renderAt('/wrapped');
     expect(screen.getByText('6–12 июля')).toBeInTheDocument();
@@ -326,18 +328,48 @@ describe('wrapped dashboard', () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start', behavior: 'smooth' });
   });
 
-  it('mobile Wrapped uses clipboard fallback and concise empty states', async () => {
+  it('mobile Wrapped uses clipboard fallback and reports copy failures honestly', async () => {
     installMatchMedia(true);
+    const shareText = wrappedShareText(wrappedDemoReport);
     const writeText = vi.fn(async () => undefined);
+
+    await expect(shareWrappedReportText({ share: undefined, clipboard: { writeText } as unknown as Clipboard }, shareText)).resolves.toBe('success');
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(writeText).toHaveBeenCalledWith(shareText);
+    expect(shareText).toContain('Мой Wrapped недели');
+
     vi.stubGlobal('navigator', { share: undefined, clipboard: { writeText } });
     const u = userEvent.setup();
     render(<MemoryRouter><WrappedMobileView report={wrappedDemoReport} /></MemoryRouter>);
     await u.click(screen.getByRole('button', { name: 'Поделиться Wrapped' }));
     expect(await screen.findByText('Отчёт скопирован')).toBeInTheDocument();
-    // jsdom keeps a native share stub on navigator, so the hook status verifies the non-crashing success path here.
+
+    cleanup();
+    const rejectedWriteText = vi.fn(async () => { throw new Error('denied'); });
+    await expect(shareWrappedReportText({ share: undefined, clipboard: { writeText: rejectedWriteText } as unknown as Clipboard }, shareText)).resolves.toBe('failure');
+    vi.stubGlobal('navigator', { share: undefined, clipboard: { writeText: rejectedWriteText } });
+    render(<MemoryRouter><WrappedMobileView report={wrappedDemoReport} /></MemoryRouter>);
+    await u.click(screen.getByRole('button', { name: 'Поделиться Wrapped' }));
+    expect(await screen.findByText('Не удалось поделиться отчётом')).toBeInTheDocument();
   });
 
+  it('mobile Wrapped unavailable and rejected native share paths remain honest', async () => {
+    installMatchMedia(true);
+    const shareText = wrappedShareText(wrappedDemoReport);
+    await expect(shareWrappedReportText({ share: undefined, clipboard: undefined }, shareText)).resolves.toBe('failure');
 
+    const nativeShare = vi.fn(async () => { throw new Error('cancelled'); });
+    await expect(shareWrappedReportText({ share: nativeShare, clipboard: undefined }, shareText)).resolves.toBe('cancelled');
+    expect(nativeShare).toHaveBeenCalledTimes(1);
+
+    expect(screen.queryByText('Отчёт скопирован')).not.toBeInTheDocument();
+  });
+
+  it('mobile Wrapped formats Russian periods across month boundaries', () => {
+    expect(wrappedPeriodLabel('2026-07-06', '2026-07-12')).toBe('6–12 июля');
+    expect(wrappedPeriodLabel('2026-07-29', '2026-08-04')).toBe('29 июля — 4 августа');
+    expect(wrappedPeriodLabel('bad-date', '2026-08-04')).toBe('bad-date — 2026-08-04');
+  });
 
   it('mobile Wrapped pluralizes week streak labels', () => {
     installMatchMedia(true);
@@ -358,11 +390,8 @@ describe('wrapped dashboard', () => {
 
   it('share button works and Add signal CTA goes to /contribute', async () => {
     installMatchMedia(false);
-    const writeText = vi.fn(async () => undefined);
     const share = vi.fn(async () => undefined);
-    Object.defineProperty(navigator, 'share', { configurable: true, value: share });
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    vi.stubGlobal('navigator', { share, clipboard: undefined });
     const u = userEvent.setup();
     renderAt('/wrapped');
     expect(screen.getByRole('link', { name: 'Добавить сигнал' })).toHaveAttribute('href', '/contribute');

@@ -6,11 +6,14 @@ import './wrappedMobile.css';
 const fmt = (n: number) => n.toLocaleString('ru-RU');
 const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 const day = new Intl.DateTimeFormat('ru-RU', { day: 'numeric' });
-const periodLabel = (start: string, end: string) => {
+const formatDayMonth = (date: Date) => `${day.format(date)} ${monthNames[date.getMonth()]}`;
+
+export const wrappedPeriodLabel = (start: string, end: string) => {
   const a = new Date(`${start}T00:00:00`);
   const b = new Date(`${end}T00:00:00`);
   if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return start && end ? `${start} — ${end}` : 'Эта неделя';
-  return `${day.format(a)}–${day.format(b)} ${monthNames[b.getMonth()]}`;
+  if (a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()) return `${day.format(a)}–${day.format(b)} ${monthNames[b.getMonth()]}`;
+  return `${formatDayMonth(a)} — ${formatDayMonth(b)}`;
 };
 
 export const wrappedWeekLabel = (count: number) => {
@@ -58,7 +61,7 @@ export function WrappedMobileView({ report }: { report: WrappedReport }) {
     <article className="wrapped-mobile-root" data-testid="wrapped-mobile-root">
       <section className="wrapped-mobile-hero" aria-labelledby="wrapped-mobile-title">
         <div className="wrapped-mobile-topline">
-          <span>{periodLabel(report.period.weekStart, report.period.weekEnd)}</span>
+          <span>{wrappedPeriodLabel(report.period.weekStart, report.period.weekEnd)}</span>
           <button type="button" onClick={share} aria-label="Поделиться Wrapped">Поделиться</button>
         </div>
         {status && <p className="wrapped-mobile-share-status" role="status">{status}</p>}
