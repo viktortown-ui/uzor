@@ -53,11 +53,12 @@ function MobileAppDock() {
   })}</nav>;
 }
 
-export function MobileProductShell({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`mobile-app-shell ${className}`} data-testid="mobile-product-shell"><main className="mobile-app-main">{children}</main><MobileAppDock /></div>;
+export function MobileProductShell({ children, className = '', mobileDock = 'visible' }: { children: ReactNode; className?: string; mobileDock?: 'visible' | 'hidden' }) {
+  const dockHidden = mobileDock === 'hidden';
+  return <div className={`mobile-app-shell ${dockHidden ? 'mobile-app-shell--dock-hidden' : ''} ${className}`} data-testid="mobile-product-shell"><main className="mobile-app-main">{children}</main>{!dockHidden && <MobileAppDock />}</div>;
 }
 
-export function ProductShell({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function ProductShell({ children, className = '', mobileDock = 'visible' }: { children: ReactNode; className?: string; mobileDock?: 'visible' | 'hidden' }) {
   const isMobile = useMediaQuery('(max-width: 900px)');
-  return isMobile ? <MobileProductShell className={className}>{children}</MobileProductShell> : <DesktopProductShell className={className}>{children}</DesktopProductShell>;
+  return isMobile ? <MobileProductShell className={className} mobileDock={mobileDock}>{children}</MobileProductShell> : <DesktopProductShell className={className}>{children}</DesktopProductShell>;
 }
