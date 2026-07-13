@@ -2,6 +2,8 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import { HashRouter, MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { getInitialPulseState, TraceContent } from '../features/mobilePulse/MobilePulsePage';
+import { wrappedDemoReport } from '../features/wrapped/wrappedDemoData';
 
 function installMatchMedia(initialMatches: boolean) {
   let matches = initialMatches;
@@ -103,6 +105,12 @@ describe('mobile stage 1 shell and routing', () => {
 });
 
 describe('MobilePulsePage', () => {
+  it('production without configuration starts in error, never ready demo data', () => {
+    expect(getInitialPulseState({ demoMode: false, productionConfigured: false, demoReportEmpty: false })).toBe('error');
+    expect(getInitialPulseState({ demoMode: false, productionConfigured: true, demoReportEmpty: false })).toBe('loading');
+    expect(getInitialPulseState({ demoMode: true, productionConfigured: false, demoReportEmpty: false })).toBe('ready');
+  });
+
   it('shows Pulse composition and ready Wrapped summary entry', () => {
     installMatchMedia(true);
     renderAt('/pulse');
@@ -113,6 +121,22 @@ describe('MobilePulsePage', () => {
     expect(screen.getByText('Открыть итог недели')).toHaveAttribute('href', '/wrapped');
     expect(screen.queryByText(/после 3 Дельт/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Статус Wrapped')).not.toBeInTheDocument();
+    expect(screen.getByText('за неделю')).toBeInTheDocument();
+    expect(screen.getByText('подтверждено')).toBeInTheDocument();
+    expect(screen.getByText('серия')).toBeInTheDocument();
     expect(screen.queryByText('Пока Wrapped не собран')).not.toBeInTheDocument();
+  });
+
+  it('uses count-independent metric labels for single values', () => {
+    const report = {
+      ...wrappedDemoReport,
+      summary: { ...wrappedDemoReport.summary, signalsThisWeek: 1, confirmedSignals: 1, weekStreak: 1 },
+    };
+    render(<MemoryRouter><TraceContent state="ready" report={report} /></MemoryRouter>);
+    expect(screen.getByText('за неделю')).toBeInTheDocument();
+    expect(screen.getByText('подтверждено')).toBeInTheDocument();
+    expect(screen.getByText('серия')).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain('1 Дельты');
+    expect(document.body.textContent).not.toContain('1 недели');
   });
 });
