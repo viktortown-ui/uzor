@@ -40,7 +40,6 @@ describe('ProductShell CSS ownership', () => {
     expect(productShellCss).toContain('padding-bottom: var(--mobile-app-dock-space);');
     expect(productShellCss).toContain('min-height: calc(100svh - var(--mobile-app-dock-space));');
     expect(productShellCss).toContain('min-height: calc(100dvh - var(--mobile-app-dock-space));');
-    expect(productShellCss).not.toMatch(/\.mobile-app-main\s*\{[\s\S]*?min-height:\s*100dvh/);
     expect(productShellCss).toMatch(/\.mobile-app-dock\s*\{[\s\S]*?min-height:\s*calc\(var\(--mobile-app-dock-height\) \+ env\(safe-area-inset-bottom\)\)/);
     expect(productShellCss).toContain('translateY(calc(-1 * var(--mobile-app-dock-overhang)))');
     expect(wrappedCss).not.toMatch(/wrapped-dashboard-mvp[\s\S]*?safe-area-inset-bottom/);
@@ -51,4 +50,11 @@ describe('ProductShell CSS ownership', () => {
     expect(productShellCss).not.toContain('padding-top: 56px;');
     expect(productShellCss).not.toContain('product-mobile-header');
   });
+  it('declares hidden dock geometry on shell owner', () => {
+    expect(productShellCss).toContain('.mobile-app-shell--dock-hidden {');
+    expect(productShellCss).toContain('padding-bottom: 0;');
+    expect(productShellCss).toContain('.mobile-app-shell--dock-hidden .mobile-app-main');
+    expect(productShellCss).toContain('min-height: 100dvh;');
+  });
+
 });
