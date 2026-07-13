@@ -37,8 +37,11 @@ describe('ProductShell CSS ownership', () => {
     expect(productShellCss).toContain('--mobile-app-dock-overhang: 6px;');
     expect(productShellCss).toMatch(/--mobile-app-dock-space:\s*calc\(var\(--mobile-app-dock-height\) \+ var\(--mobile-app-dock-overhang\) \+ env\(safe-area-inset-bottom\)\);/);
     expect(productShellCss).toContain('--product-mobile-nav-space: var(--mobile-app-dock-space);');
-    expect(productShellCss).toContain('padding-bottom:var(--mobile-app-dock-space)');
-    expect(productShellCss).toMatch(/\.mobile-app-dock\{[\s\S]*?min-height:calc\(var\(--mobile-app-dock-height\) \+ env\(safe-area-inset-bottom\)\)/);
+    expect(productShellCss).toContain('padding-bottom: var(--mobile-app-dock-space);');
+    expect(productShellCss).toContain('min-height: calc(100svh - var(--mobile-app-dock-space));');
+    expect(productShellCss).toContain('min-height: calc(100dvh - var(--mobile-app-dock-space));');
+    expect(productShellCss).not.toMatch(/\.mobile-app-main\s*\{[\s\S]*?min-height:\s*100dvh/);
+    expect(productShellCss).toMatch(/\.mobile-app-dock\s*\{[\s\S]*?min-height:\s*calc\(var\(--mobile-app-dock-height\) \+ env\(safe-area-inset-bottom\)\)/);
     expect(productShellCss).toContain('translateY(calc(-1 * var(--mobile-app-dock-overhang)))');
     expect(wrappedCss).not.toMatch(/wrapped-dashboard-mvp[\s\S]*?safe-area-inset-bottom/);
     expect(wrappedCss).not.toContain('calc(96px + env(safe-area-inset-bottom))');
