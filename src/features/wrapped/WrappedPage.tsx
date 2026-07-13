@@ -8,7 +8,7 @@ import type { WrappedReport } from './wrappedTypes';
 import { WrappedState } from './components/WrappedState';
 import { WrappedDesktopView } from './WrappedDesktopView';
 import { WrappedMobileView } from './mobile/WrappedMobileView';
-import { useMediaQuery } from './useMediaQuery';
+import { useMediaQuery } from '../../app/useMediaQuery';
 import './wrapped.css';
 export function WrappedPage() {
   const [state, setState] = useState<'loading' | 'ready' | 'empty' | 'join' | 'missing-rpc' | 'error'>(isDemoMode || !isProductionConfigured ? 'ready' : 'loading');

@@ -9,7 +9,14 @@ function ShellAt({ route }: { route: string }) {
   return <MemoryRouter initialEntries={[route]}><ProductShell><h1>Page</h1></ProductShell></MemoryRouter>;
 }
 
-afterEach(() => cleanup());
+function installMatchMedia(matches: boolean) {
+  Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn((query: string) => ({
+    media: query, matches: query === '(max-width: 900px)' ? matches : false, onchange: null,
+    addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn(),
+  })) });
+}
+
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('Delta production shell safeguards', () => {
   it('shows shared navigation on /contribute with brand and active item', () => {
@@ -28,9 +35,10 @@ describe('Delta production shell safeguards', () => {
     expect(screen.getAllByText('Wrapped').find((el) => el.closest('a')?.getAttribute('aria-current') === 'page')).toBeTruthy();
   });
   it('keeps mobile navigation labels available', () => {
+    installMatchMedia(true);
     const view = render(<ShellAt route="/contribute" />);
-    const mobileNav = view.container.querySelector('.product-bottom-nav');
-    expect(mobileNav).toHaveAttribute('aria-label', 'Основная мобильная навигация');
+    const mobileNav = view.container.querySelector('.mobile-app-dock');
+    expect(mobileNav).toHaveAttribute('aria-label', 'Мобильная навигация');
     expect(within(mobileNav as HTMLElement).getByRole('link', { name: 'Добавить', hidden: true })).toHaveAttribute('aria-current', 'page');
   });
   it('accepts Perm points and rejects outside-Perm points', () => {
