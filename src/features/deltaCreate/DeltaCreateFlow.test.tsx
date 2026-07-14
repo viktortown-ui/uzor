@@ -22,7 +22,7 @@ describe('Delta production shell safeguards', () => {
   it('shows shared navigation on /contribute with brand and active item', () => {
     render(<ShellAt route="/contribute" />);
     expect(screen.getAllByText('УЗОР')[0].closest('a')).toHaveAttribute('href', '/wrapped');
-    expect(screen.getAllByText('Wrapped').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Итог недели').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Карта дельт').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Добавить Дельту').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Добавить Дельту')[0].closest('a')).toHaveAttribute('aria-current', 'page');
@@ -32,7 +32,7 @@ describe('Delta production shell safeguards', () => {
     expect(screen.getAllByText('Карта дельт').find((el) => el.closest('a')?.getAttribute('aria-current') === 'page')).toBeTruthy();
     cleanup();
     render(<ShellAt route="/wrapped" />);
-    expect(screen.getAllByText('Wrapped').find((el) => el.closest('a')?.getAttribute('aria-current') === 'page')).toBeTruthy();
+    expect(screen.getAllByText('Итог недели').find((el) => el.closest('a')?.getAttribute('aria-current') === 'page')).toBeTruthy();
   });
   it('keeps mobile navigation labels available', () => {
     installMatchMedia(true);

@@ -4,9 +4,9 @@ export function createDeltaMarkerElement(delta: DeltaMapItem, onSelect: (delta: 
   const visual = getDeltaMarkerVisual(delta);
   const button = document.createElement('button');
   button.type = 'button'; button.className = `delta-marker core-${visual.coreTone} ring-${visual.ringTone}${visual.pulse ? ' is-pulsing' : ''}${highlight ? ' is-highlighted' : ''}`;
-  button.style.setProperty('--marker-size', `${visual.size}px`);
+  button.style.setProperty('--marker-size', `${Math.max(24, visual.size)}px`);
   button.setAttribute('aria-label', `${delta.statement}. ${visual.statusLabel}`);
-  button.innerHTML = `<span class="delta-marker__ring"></span><span class="delta-marker__core"><span class="delta-marker__icon delta-marker__icon--${visual.categoryIcon}" aria-hidden="true"></span></span>`;
+  button.innerHTML = `<span class="delta-marker__hit" aria-hidden="true"><span class="delta-marker__mast"></span><span class="delta-marker__flag"></span><span class="delta-marker__tail"></span><span class="delta-marker__status"></span>${visual.ringTone === 'fork' ? '<span class="delta-marker__flag delta-marker__flag--fork"></span>' : ''}</span>`;
   button.addEventListener('click', () => onSelect(delta));
   button.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(delta); } });
   return button;

@@ -8,7 +8,7 @@ type NavIcon = 'summary' | 'map' | 'add' | 'pulse';
 type NavItem = { label: string; to: string; icon: NavIcon; primary?: boolean };
 
 const desktopItems: NavItem[] = [
-  { label: 'Wrapped', to: '/wrapped', icon: 'summary' },
+  { label: 'Итог недели', to: '/wrapped', icon: 'summary' },
   { label: 'Карта дельт', to: '/map', icon: 'map' },
   { label: 'Добавить Дельту', to: '/contribute', icon: 'add' },
 ];

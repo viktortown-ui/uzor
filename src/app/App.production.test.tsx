@@ -85,7 +85,7 @@ describe('production fallback', () => {
   it('production visitor без session на / попадает на безопасный Wrapped entry и не вызывает get_my_active_theme', async () => {
     const rpc = await renderProduction('/', { hasSession: false });
     expect(await screen.findByRole('heading', { name: 'Войдите в закрытый круг' })).toBeInTheDocument();
-    expect(screen.getByText('Wrapped собирается только для участников круга.')).toBeInTheDocument();
+    expect(screen.getByText('Итог недели собирается только для участников круга.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Войти по приглашению' })).toHaveAttribute('href', '/join');
     expect(screen.queryByRole('heading', { name: 'Куда уходит твой час?' })).not.toBeInTheDocument();
     expect(rpc).not.toHaveBeenCalledWith('get_my_active_theme');
@@ -100,7 +100,7 @@ describe('production fallback', () => {
 
   it('после production RPC root остаётся Wrapped MVP entry', async () => {
     await renderProduction('/');
-    expect(await screen.findByRole('heading', { name: /Wrapped|Войдите в закрытый круг|Пока Wrapped не собран/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Итог недели|Войдите в закрытый круг|Пока итог недели не собран/ })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Куда уходит твой час?' })).not.toBeInTheDocument();
   });
 
@@ -121,7 +121,7 @@ describe('production fallback', () => {
 
   it('успешный join сохраняет активный context и ведёт на Wrapped', async () => {
     const rpc = await renderProduction('/join?code=INVITE_CODE_123456', { hasSession: false });
-    expect(await screen.findByRole('heading', { name: /Wrapped|Пока Wrapped не собран/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Итог недели|Пока итог недели не собран/ })).toBeInTheDocument();
     expect(rpc).toHaveBeenCalledWith('join_circle_by_code', { input_code: 'INVITE_CODE_123456' });
     expect(localStorage.getItem('activeCircleId')).toBe('circle-1');
     expect(localStorage.getItem('activeThemeId')).toBe('theme-1');

@@ -333,3 +333,25 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+.mobile-delta-boundary-host { min-height: 100svh; min-height: 100dvh; display: contents; }
+.mobile-delta-flow { height: 100svh; height: 100dvh; overflow: hidden; }
+.mobile-delta-content { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 0; }
+.mobile-delta-actionbar { position: relative; flex: 0 0 auto; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: #061112; }
+.mobile-delta-actionbar .mobile-delta-primary { width: min(100%, 488px); }
+.mobile-delta-flow--location { height: 100svh; height: 100dvh; overflow: hidden; }
+.mobile-delta-flow--location .mobile-delta-content { overflow: hidden; }
+.mobile-delta-location { flex: 1; min-height: 0; overflow: hidden; }
+.mobile-delta-map-wrap { flex: 1 1 auto; min-height: 280px; }
+.mobile-delta-bottom-sheet { flex: 0 0 auto; max-height: 38svh; max-height: 38dvh; overflow-y: auto; padding-bottom: 14px; }
+.mobile-delta-chip { min-width: 0; height: auto; min-height: 48px; line-height: 1.2; overflow-wrap: break-word; display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 8px; }
+.mobile-delta-chip::before { content: ''; width: 18px; height: 18px; border-radius: 999px; border: 1px solid rgba(188,244,229,.28); }
+.mobile-delta-chip.active { border-width: 2px; border-color: #69f0d0; background: rgba(45, 212, 191, .24); color: #f4fffc; }
+.mobile-delta-chip.active::before { content: '✓'; display: grid; place-items: center; border-color: #8fffea; background: #1ccfb1; color: #03221d; font-weight: 900; font-size: 13px; }
+.mobile-delta-segment .mobile-delta-chip:first-child.active { border-color: #ff8c7a; background: rgba(251, 113, 92, .24); }
+.mobile-delta-segment .mobile-delta-chip:first-child.active::before { background: #ff8c7a; border-color: #ffc3ba; color: #2a0805; }
+.mobile-delta-segment .mobile-delta-chip:nth-child(2).active { border-color: #67e8f9; background: rgba(34, 211, 238, .22); }
+.mobile-delta-screen, .mobile-delta-screen * { min-width: 0; overflow-wrap: break-word; }
+.mobile-delta-error-boundary { align-items: center; justify-content: center; text-align: center; padding: 24px; gap: 14px; }
+.mobile-delta-error-boundary a { color: #d9fff4; min-height: 44px; display: inline-flex; align-items: center; }
+@media (max-width: 340px) { .mobile-delta-screen { padding-inline: 12px; gap: 14px; } .mobile-delta-tiles { grid-template-columns: 1fr; } .mobile-delta-screen h1 { font-size: 24px; } }
