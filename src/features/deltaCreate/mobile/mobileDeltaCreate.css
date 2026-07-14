@@ -1,0 +1,335 @@
+.mobile-delta-shell .mobile-app-main {
+  padding: 0;
+  background: #061112;
+  color: #edfdf8;
+}
+
+.mobile-delta-flow {
+  min-height: 100svh;
+  min-height: 100dvh;
+  background: radial-gradient(circle at 50% 0%, rgba(47, 215, 178, 0.14), transparent 36%), #061112;
+  color: #edfdf8;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-delta-header {
+  height: calc(56px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 12px 0;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.mobile-delta-header button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: #edfdf8;
+}
+
+.mobile-delta-header svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+.mobile-delta-header span {
+  text-align: center;
+  font-weight: 700;
+}
+
+.mobile-delta-header small {
+  text-align: right;
+  color: #9fc7bd;
+}
+
+.mobile-delta-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.mobile-delta-screen {
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding: 8px 16px 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.mobile-delta-screen h1 {
+  font-size: 28px;
+  margin: 4px 0 0;
+}
+
+.mobile-delta-screen p {
+  font-size: 15px;
+  color: #b9d2cb;
+  margin: 0;
+}
+
+.mobile-delta-screen fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-delta-screen legend {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.mobile-delta-segment,
+.mobile-delta-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mobile-delta-chip {
+  min-height: 44px;
+  border-radius: 16px;
+  border: 1px solid rgba(188, 244, 229, 0.18);
+  background: rgba(255, 255, 255, 0.055);
+  color: #edfdf8;
+  text-align: left;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.mobile-delta-chip.active {
+  border-color: #55e0bf;
+  background: rgba(85, 224, 191, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(85, 224, 191, 0.22);
+}
+
+.mobile-delta-screen label {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.mobile-delta-screen input,
+.mobile-delta-screen textarea,
+.mobile-delta-screen select {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 16px;
+  border: 1px solid rgba(188, 244, 229, 0.2);
+  background: #0d1b1d;
+  color: #fff;
+  min-height: 48px;
+  padding: 12px;
+  font: inherit;
+}
+
+.mobile-delta-screen textarea {
+  min-height: 96px;
+}
+
+.mobile-delta-preview,
+.mobile-delta-summary,
+.mobile-delta-similar article,
+.mobile-delta-resume,
+.mobile-delta-result-card {
+  border: 1px solid rgba(188, 244, 229, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-delta-preview span {
+  color: #8ce6ce;
+  font-size: 13px;
+}
+
+.mobile-delta-preview strong,
+.mobile-delta-summary strong,
+.mobile-delta-result-card strong {
+  font-size: 18px;
+}
+
+.mobile-delta-preview button,
+.mobile-delta-screen button:not(.mobile-delta-primary),
+.mobile-delta-result-card button,
+.mobile-delta-result-card a:not(.mobile-delta-primary) {
+  min-height: 44px;
+  color: #d9fff4;
+  background: transparent;
+  border: 1px solid rgba(188, 244, 229, 0.2);
+  border-radius: 14px;
+  padding: 10px 12px;
+  text-decoration: none;
+}
+
+.mobile-delta-actionbar {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, rgba(6, 17, 18, 0.82) 12%, #061112);
+  display: flex;
+  justify-content: center;
+}
+
+.mobile-delta-primary {
+  min-height: 52px;
+  border: 0;
+  border-radius: 18px;
+  background: #55e0bf;
+  color: #04201b;
+  font-weight: 800;
+  padding: 0 18px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-delta-primary:disabled {
+  opacity: 0.5;
+}
+
+.mobile-delta-alert {
+  border: 1px solid rgba(255, 183, 77, 0.45);
+  border-radius: 16px;
+  background: rgba(255, 183, 77, 0.1);
+  padding: 12px;
+  color: #ffe8bf;
+}
+
+.mobile-delta-location {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.mobile-delta-location h1 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.mobile-delta-map-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.mobile-delta-map {
+  position: absolute;
+  inset: 0;
+}
+
+.mobile-delta-locate {
+  position: absolute;
+  right: 16px;
+  bottom: 168px;
+  z-index: 2;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(188, 244, 229, 0.35);
+  background: #102124;
+  color: #dffff7;
+  font-size: 24px;
+}
+
+.mobile-delta-map-error {
+  position: absolute;
+  inset: 16px;
+  z-index: 3;
+  margin: auto;
+  max-height: 180px;
+  border-radius: 18px;
+  background: #102124;
+  padding: 16px;
+}
+
+.mobile-delta-bottom-sheet {
+  border-radius: 22px 22px 0 0;
+  background: #081719;
+  border-top: 1px solid rgba(188, 244, 229, 0.18);
+  padding: 16px 16px 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-delta-bottom-sheet h2,
+.mobile-delta-bottom-sheet p {
+  margin: 0;
+}
+
+.mobile-delta-bottom-sheet p {
+  color: #b9d2cb;
+}
+
+.mobile-delta-similar {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-delta-similar article.strong {
+  border-color: rgba(85, 224, 191, 0.45);
+}
+
+.mobile-delta-result {
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.mobile-delta-result-card {
+  width: min(100%, 460px);
+  text-align: center;
+}
+
+.mobile-delta-marker {
+  margin: 0 auto;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(85, 224, 191, 0.16);
+  border: 1px solid rgba(85, 224, 191, 0.45);
+  color: #7df0d2;
+  font-size: 28px;
+}
+
+.mobile-delta-resume {
+  width: min(100% - 32px, 460px);
+  margin: auto;
+}
+
+.mobile-delta-resume button {
+  min-height: 52px;
+  border-radius: 16px;
+}
+
+.mobile-delta-resume h1 {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

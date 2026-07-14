@@ -259,3 +259,12 @@
 .mobile-app-dock a:focus-visible {
   outline: 3px solid rgba(243, 247, 250, 0.92);
 }
+.mobile-app-shell--dock-hidden {
+  padding-bottom: 0;
+}
+
+.mobile-app-shell--dock-hidden .mobile-app-main {
+  min-height: 100svh;
+  min-height: 100dvh;
+  padding-bottom: 0;
+}

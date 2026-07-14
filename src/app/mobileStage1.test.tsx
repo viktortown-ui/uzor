@@ -90,7 +90,7 @@ describe('mobile stage 1 shell and routing', () => {
     expect(screen.getByRole('link', { name: 'Пульс' })).toHaveAttribute('aria-current', 'page');
     cleanup();
     render(<MemoryRouter initialEntries={['/contribute']}><App /></MemoryRouter>);
-    expect(screen.getByRole('link', { name: 'Добавить' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('navigation', { name: 'Мобильная навигация' })).not.toBeInTheDocument();
     cleanup();
     render(<MemoryRouter initialEntries={['/map']}><App /></MemoryRouter>);
     expect(screen.getByRole('link', { name: 'Карта' })).toHaveAttribute('aria-current', 'page');

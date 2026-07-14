@@ -530,13 +530,20 @@ describe('ProductShell shared navigation routes', () => {
   it.each([
     ['/pulse', 'Пульс'],
     ['/wrapped', 'Пульс'],
-    ['/contribute', 'Добавить'],
-    ['/map', 'Карта'],
+        ['/map', 'Карта'],
   ] as const)('marks %s active in the mobile navigation', async (route, activeLabel) => {
     installMatchMedia(true);
     const view = renderAt(route);
     const mobileNav = screen.getByRole('navigation', { name: 'Мобильная навигация' });
     expect(within(mobileNav).getByRole('link', { name: activeLabel })).toHaveAttribute('aria-current', 'page');
+    view.unmount();
+  });
+
+  it('hides the mobile dock during /contribute focused creation', async () => {
+    installMatchMedia(true);
+    const view = renderAt('/contribute');
+    expect(screen.queryByRole('navigation', { name: 'Мобильная навигация' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Что изменилось?' })).toBeInTheDocument();
     view.unmount();
   });
 });
