@@ -33,11 +33,11 @@ export function WrappedPage() {
       });
   }, []);
 
-  if (state === 'empty') return <ProductShell><WrappedState title="Пока Wrapped не собран" body="Оставьте несколько наблюдений в течение недели — и здесь появится ваш личный отчёт." to="/contribute" label="Добавить Дельту" /></ProductShell>;
-  if (state === 'join') return <ProductShell><WrappedState title="Войдите в закрытый круг" body="Wrapped собирается только для участников круга." to="/join" label="Войти по приглашению" /></ProductShell>;
+  if (state === 'empty') return <ProductShell><WrappedState title="Пока итог недели не собран" body="Оставьте несколько наблюдений в течение недели — и здесь появится ваш личный отчёт." to="/contribute" label="Добавить Дельту" /></ProductShell>;
+  if (state === 'join') return <ProductShell><WrappedState title="Войдите в закрытый круг" body="Итог недели собирается только для участников круга." to="/join" label="Войти по приглашению" /></ProductShell>;
   if (state === 'missing-rpc') return <ProductShell><WrappedState title="Нужно применить migration 005_fix_wrapped_report_sql_and_confirmation.sql" body="После применения Supabase RPC get_my_wrapped_report экран загрузит реальные агрегаты." /></ProductShell>;
-  if (state === 'error') return <ProductShell><WrappedState title="Не удалось загрузить Wrapped" body="Проверьте соединение и попробуйте позже." /></ProductShell>;
-  if (state === 'loading') return <ProductShell><WrappedState title="Собираем Wrapped" body="Сверяем ваши наблюдения с контуром круга…" /></ProductShell>;
+  if (state === 'error') return <ProductShell><WrappedState title="Не удалось загрузить итог недели" body="Проверьте соединение и попробуйте позже." /></ProductShell>;
+  if (state === 'loading') return <ProductShell><WrappedState title="Собираем итог недели" body="Сверяем ваши наблюдения с контуром круга…" /></ProductShell>;
 
   return <ProductShell className="wrapped-page">{isMobile ? <WrappedMobileView report={report} /> : <WrappedDesktopView report={report} />}</ProductShell>;
 }

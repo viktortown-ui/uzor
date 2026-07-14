@@ -62,7 +62,7 @@ describe('mobile stage 1 shell and routing', () => {
     cleanup();
     installMatchMedia(false);
     renderAt('/');
-    expect(await screen.findByRole('heading', { name: /Личный Wrapped реальности|Wrapped/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Личный итог недели|Wrapped/ })).toBeInTheDocument();
     cleanup();
     installMatchMedia(true);
     window.history.pushState(null, '', '/uzor/#/');
@@ -74,7 +74,7 @@ describe('mobile stage 1 shell and routing', () => {
   it('desktop /pulse redirects to /wrapped, mobile /wrapped remains valid', async () => {
     installMatchMedia(false);
     renderAt('/pulse');
-    expect(await screen.findByRole('heading', { name: /Личный Wrapped реальности|Wrapped/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Личный итог недели|Wrapped/ })).toBeInTheDocument();
     cleanup();
     installMatchMedia(true);
     renderAt('/wrapped');
@@ -100,7 +100,7 @@ describe('mobile stage 1 shell and routing', () => {
     installMatchMedia(false);
     renderAt('/wrapped');
     const nav = screen.getByRole('complementary', { name: 'Основная навигация' });
-    expect(within(nav).getAllByRole('link').slice(1).map((link) => link.textContent)).toEqual(['Wrapped', 'Карта дельт', 'Добавить Дельту']);
+    expect(within(nav).getAllByRole('link').slice(1).map((link) => link.textContent)).toEqual(['Итог недели', 'Карта дельт', 'Добавить Дельту']);
   });
 });
 
@@ -120,11 +120,11 @@ describe('MobilePulsePage', () => {
     expect(screen.getByText('Ваш след')).toBeInTheDocument();
     expect(screen.getByText('Открыть итог недели')).toHaveAttribute('href', '/wrapped');
     expect(screen.queryByText(/после 3 Дельт/i)).not.toBeInTheDocument();
-    expect(screen.queryByText('Статус Wrapped')).not.toBeInTheDocument();
+    expect(screen.queryByText('Статус итога недели')).not.toBeInTheDocument();
     expect(screen.getByText('за неделю')).toBeInTheDocument();
     expect(screen.getByText('подтверждено')).toBeInTheDocument();
     expect(screen.getByText('серия')).toBeInTheDocument();
-    expect(screen.queryByText('Пока Wrapped не собран')).not.toBeInTheDocument();
+    expect(screen.queryByText('Пока итог недели не собран')).not.toBeInTheDocument();
   });
 
   it('uses count-independent metric labels for single values', () => {

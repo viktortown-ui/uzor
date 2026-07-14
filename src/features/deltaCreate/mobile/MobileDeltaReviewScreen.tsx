@@ -4,7 +4,7 @@ import { isDemoMode } from '../../../app/appMode';
 import { findSimilarDeltas } from '../../deltas/deltaApi';
 import type { DeltaCategory, DeltaDirection, DeltaImpactLevel, DeltaStatus } from '../../deltas/deltaTypes';
 import { demoDeltaMapData } from '../../deltaMap/demoDeltaMapData';
-import { getImpactOptions } from '../deltaCreateLogic';
+import { getGeneratedDeltaStatement, getImpactOptions } from '../deltaCreateLogic';
 import type { DeltaCreateDraft } from '../deltaCreateTypes';
 import {
   buildSimilarSearchInput,
@@ -136,13 +136,14 @@ export function MobileDeltaReviewScreen({
   }, [runSearch, searchKey]);
 
   const categoryTitle = categories.find((category) => category.slug === draft.categorySlug)?.title;
+  const finalStatement = getGeneratedDeltaStatement(draft);
   const impact = getImpactLabel(draft.direction, draft.impactLevel);
 
   return (
     <section className="mobile-delta-screen" aria-busy={publishing || status === 'loading'}>
       <h1 ref={headingRef} tabIndex={-1}>Проверьте Дельту</h1>
       <article className="mobile-delta-summary">
-        <strong>{draft.statement}</strong>
+        <strong>{finalStatement}</strong>
         <p>{categoryTitle} · {directionLabels[draft.direction]}</p>
         <p>{periodLabels[draft.observedWindow]} · {impact}</p>
         <p>{draft.locationLabel}</p>

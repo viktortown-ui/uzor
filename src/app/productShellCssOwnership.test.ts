@@ -13,7 +13,7 @@ describe('ProductShell CSS ownership', () => {
       expect(productShellCss, `${selector} should be owned by ProductShell`).toContain(selector);
     }
     for (const selector of ['wrapped-brand', 'wrapped-pulse', 'wrapped-nav', 'product-sidebar', 'mobile-app-dock']) {
-      expect(wrappedCss, `${selector} should not be redeclared by Wrapped`).not.toContain(selector);
+      expect(wrappedCss, `${selector} should not be redeclared by Итог недели`).not.toContain(selector);
     }
   });
 

@@ -387,7 +387,7 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
       : null;
 
   return (
-    <section className="mobile-delta-flow">
+    <section className={`mobile-delta-flow${activeStage === 'location' ? ' mobile-delta-flow--location' : ''}`}>
       <MobileDeltaHeader stage={activeStage} onBack={handleHeaderBack} />
       <div className="mobile-delta-content">
         {activeStage === 'change' && (

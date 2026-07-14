@@ -100,7 +100,7 @@ describe('app', () => {
   it('рендерит Wrapped MVP на root в HashRouter на GitHub Pages base path без basename', () => {
     renderHashAt('#/');
     expect(screen.getByRole('link', { name: /УЗОР/ })).toHaveAttribute('href', '#/wrapped');
-    expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Личный итог недели' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Куда уходит твой час?' })).not.toBeInTheDocument();
   });
 
@@ -214,7 +214,7 @@ describe('wrapped dashboard', () => {
 
   it('/ redirects to Wrapped MVP while old prototype stays available only under lab/demo paths', () => {
     renderAt('/');
-    expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Личный итог недели' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Куда уходит твой час?' })).not.toBeInTheDocument();
     cleanup();
     renderAt('/lab/old-home');
@@ -227,11 +227,11 @@ describe('wrapped dashboard', () => {
     expect(screen.getByRole('link', { name: /УЗОР/ })).toHaveAttribute('href', '/wrapped');
     expect(screen.getByRole('link', { name: /Карта дельт/ })).toHaveAttribute('href', '/map');
     expect(screen.getByRole('link', { name: /Добавить Дельту/ })).toHaveAttribute('href', '/contribute');
-    expect(screen.getByRole('link', { name: /Wrapped/ })).toHaveAttribute('href', '/wrapped');
+    expect(screen.getByRole('link', { name: /Итог недели/ })).toHaveAttribute('href', '/wrapped');
     expect(screen.queryByText('Карта давления')).not.toBeInTheDocument();
     expect(screen.queryByText('Куратор')).not.toBeInTheDocument();
     await u.click(screen.getByRole('link', { name: /УЗОР/ }));
-    expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Личный итог недели' })).toBeInTheDocument();
   });
 
   it('MVP support routes remain available', () => {
@@ -248,12 +248,12 @@ describe('wrapped dashboard', () => {
     expect(screen.getByRole('heading', { name: /Сводка круга/ })).toBeInTheDocument();
     cleanup();
     renderAt('/lab/wrapped-reference-v2');
-    expect(document.body.textContent).toMatch(/Wrapped|УЗОР/i);
+    expect(document.body.textContent).toMatch(/Итог недели|УЗОР/i);
   });
   it('/wrapped renders core MVP blocks', () => {
     installMatchMedia(false);
     renderAt('/wrapped');
-    expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Личный итог недели' })).toBeInTheDocument();
     expect(screen.getByText('Ваш итог недели')).toBeInTheDocument();
     expect(screen.getByText('Сигналов за неделю')).toBeInTheDocument();
     expect(screen.getAllByText('Подтверждено').length).toBeGreaterThan(0);
@@ -269,8 +269,8 @@ describe('wrapped dashboard', () => {
     installMatchMedia(true);
     renderAt('/wrapped');
     expect(screen.getByTestId('wrapped-mobile-root')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Статус Wrapped')).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Личный Wrapped реальности' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Статус итога недели')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Личный итог недели' })).not.toBeInTheDocument();
     expect(screen.queryByText('Сигналов за неделю')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Ранний наблюдатель' })).toBeInTheDocument();
   });
@@ -278,7 +278,7 @@ describe('wrapped dashboard', () => {
   it('/wrapped renders only desktop view above 900px', () => {
     installMatchMedia(false);
     renderAt('/wrapped');
-    expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Личный итог недели' })).toBeInTheDocument();
     expect(screen.queryByTestId('wrapped-mobile-root')).not.toBeInTheDocument();
   });
 
@@ -287,7 +287,7 @@ describe('wrapped dashboard', () => {
     renderAt('/wrapped');
     expect(screen.getByTestId('wrapped-mobile-root')).toBeInTheDocument();
     media.setMatches(false);
-    expect(await screen.findByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Личный итог недели' })).toBeInTheDocument();
     expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 900px)');
   });
 
@@ -304,7 +304,7 @@ describe('wrapped dashboard', () => {
     expect(screen.getByText('14')).toBeInTheDocument();
     expect(screen.getByText('62%')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Добавить Дельту' })[0]).toHaveAttribute('href', '/contribute');
-    await u.click(screen.getByRole('button', { name: 'Поделиться Wrapped' }));
+    await u.click(screen.getByRole('button', { name: 'Поделиться итогом недели' }));
     await waitFor(() => expect(share).toHaveBeenCalled());
     expect(await screen.findByText('Отчёт скопирован')).toBeInTheDocument();
     expect(screen.getAllByText('Транспорт')[0]).toBeInTheDocument();
@@ -312,7 +312,7 @@ describe('wrapped dashboard', () => {
     expect(screen.getByRole('link', { name: 'Открыть карту' })).toHaveAttribute('href', '/map');
     expect(screen.getByRole('progressbar', { name: 'Прогресс XP' })).toHaveAttribute('aria-valuenow', '77');
     expect(screen.getByText('Серия: 3 недели')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Статус Wrapped')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Статус итога недели')).not.toBeInTheDocument();
     expect(screen.getAllByRole('main')).toHaveLength(1);
   });
 
@@ -336,12 +336,12 @@ describe('wrapped dashboard', () => {
     await expect(shareWrappedReportText({ share: undefined, clipboard: { writeText } as unknown as Clipboard }, shareText)).resolves.toBe('success');
     expect(writeText).toHaveBeenCalledTimes(1);
     expect(writeText).toHaveBeenCalledWith(shareText);
-    expect(shareText).toContain('Мой Wrapped недели');
+    expect(shareText).toContain('Мой итог недели');
 
     vi.stubGlobal('navigator', { share: undefined, clipboard: { writeText } });
     const u = userEvent.setup();
     render(<MemoryRouter><WrappedMobileView report={wrappedDemoReport} /></MemoryRouter>);
-    await u.click(screen.getByRole('button', { name: 'Поделиться Wrapped' }));
+    await u.click(screen.getByRole('button', { name: 'Поделиться итогом недели' }));
     expect(await screen.findByText('Отчёт скопирован')).toBeInTheDocument();
 
     cleanup();
@@ -349,7 +349,7 @@ describe('wrapped dashboard', () => {
     await expect(shareWrappedReportText({ share: undefined, clipboard: { writeText: rejectedWriteText } as unknown as Clipboard }, shareText)).resolves.toBe('failure');
     vi.stubGlobal('navigator', { share: undefined, clipboard: { writeText: rejectedWriteText } });
     render(<MemoryRouter><WrappedMobileView report={wrappedDemoReport} /></MemoryRouter>);
-    await u.click(screen.getByRole('button', { name: 'Поделиться Wrapped' }));
+    await u.click(screen.getByRole('button', { name: 'Поделиться итогом недели' }));
     expect(await screen.findByText('Не удалось поделиться отчётом')).toBeInTheDocument();
   });
 
@@ -405,7 +405,7 @@ describe('wrapped dashboard', () => {
     expect(screen.getByRole('heading', { name: /Сводка круга/ })).toBeInTheDocument();
     cleanup();
     renderAt('/lab/wrapped-reference-v2');
-    expect(document.body.textContent).toMatch(/Wrapped|УЗОР/i);
+    expect(document.body.textContent).toMatch(/Итог недели|УЗОР/i);
   });
 });
 
@@ -442,7 +442,7 @@ describe('delta create lab route', () => {
     await u.click(screen.getByRole('button', { name: /Транспорт и дорога/ }));
     await u.click(screen.getByRole('button', { name: 'Стало медленнее' }));
     await u.type(screen.getByLabelText('Что именно изменилось?'), 'ожидание автобуса вечером');
-    expect(screen.getByText('Ожидание автобуса вечером стало дольше')).toBeInTheDocument();
+    expect(screen.getByText('Ожидание автобуса вечером стало медленнее')).toBeInTheDocument();
     await u.click(screen.getByRole('button', { name: 'Уточнить формулировку' }));
     await u.clear(screen.getByLabelText('Формулировка Дельты'));
     await u.type(screen.getByLabelText('Формулировка Дельты'), 'Ожидание автобуса стало заметно дольше');
@@ -475,7 +475,7 @@ describe('delta create lab route', () => {
     expect(screen.getByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
     cleanup();
     renderAt('/wrapped');
-    expect(screen.getByRole('heading', { name: 'Личный Wrapped реальности' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Личный итог недели' })).toBeInTheDocument();
     cleanup();
     renderAt('/map');
     expect(await screen.findByRole('heading', { name: 'Дельты Перми' })).toBeInTheDocument();
@@ -511,7 +511,7 @@ describe('ProductShell shared navigation routes', () => {
     expect(screen.queryByRole('navigation', { name: 'Мобильная навигация' })).not.toBeInTheDocument();
 
     const desktopNav = screen.getByRole('complementary', { name: 'Основная навигация' });
-    expect(desktopNav).toHaveTextContent('Wrapped');
+    expect(desktopNav).toHaveTextContent('Итог недели');
     expect(desktopNav).toHaveTextContent('Карта дельт');
     expect(desktopNav).toHaveTextContent('Добавить Дельту');
 

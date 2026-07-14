@@ -4,12 +4,12 @@ import type { WrappedReport } from './wrappedTypes';
 type WrappedShareNavigator = Partial<Pick<Navigator, 'share' | 'clipboard'>>;
 type WrappedShareResult = 'success' | 'failure' | 'cancelled';
 
-export const wrappedShareText = (report: WrappedReport) => report.shareText ?? `Мой Wrapped недели: ${report.summary.signalsThisWeek} сигналов, ${report.summary.confirmedSignals} подтверждено, точность ${report.summary.accuracy}%, статус — ${report.identity.title}.`;
+export const wrappedShareText = (report: WrappedReport) => report.shareText ?? `Мой итог недели: ${report.summary.signalsThisWeek} сигналов, ${report.summary.confirmedSignals} подтверждено, точность ${report.summary.accuracy}%, статус — ${report.identity.title}.`;
 
 export async function shareWrappedReportText(nav: WrappedShareNavigator, shareText: string): Promise<WrappedShareResult> {
   if (typeof nav.share === 'function') {
     try {
-      await nav.share({ text: shareText, title: 'Личный Wrapped реальности' });
+      await nav.share({ text: shareText, title: 'Личный итог недели' });
       return 'success';
     } catch {
       return 'cancelled';

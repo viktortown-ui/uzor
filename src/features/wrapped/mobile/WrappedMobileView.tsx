@@ -62,7 +62,7 @@ export function WrappedMobileView({ report }: { report: WrappedReport }) {
       <section className="wrapped-mobile-hero" aria-labelledby="wrapped-mobile-title">
         <div className="wrapped-mobile-topline">
           <span>{wrappedPeriodLabel(report.period.weekStart, report.period.weekEnd)}</span>
-          <button type="button" onClick={share} aria-label="Поделиться Wrapped">Поделиться</button>
+          <button type="button" onClick={share} aria-label="Поделиться итогом недели">Поделиться</button>
         </div>
         {status && <p className="wrapped-mobile-share-status" role="status">{status}</p>}
         <IdentityMark />
@@ -131,7 +131,7 @@ export function WrappedMobileView({ report }: { report: WrappedReport }) {
         <p className="wrapped-mobile-progress-note">{report.progress.nextLevelLocked ? 'Следующий уровень пока закрыт. ' : ''}Ещё {fmt(report.summary.xpToNextLevel)} XP до следующего уровня</p>
         <p className="wrapped-mobile-streak">Серия: {fmt(report.summary.weekStreak)} {wrappedWeekLabel(report.summary.weekStreak)}</p>
       </section>
-      <section className="wrapped-mobile-close" aria-label="Следующее действие"><p>Замечайте изменения по ходу недели — следующий Wrapped станет точнее.</p><Link className="wrapped-mobile-cta" to="/contribute">Добавить Дельту</Link></section>
+      <section className="wrapped-mobile-close" aria-label="Следующее действие"><p>Замечайте изменения по ходу недели — следующий итог недели станет точнее.</p><Link className="wrapped-mobile-cta" to="/contribute">Добавить Дельту</Link></section>
     </article>
   );
 }

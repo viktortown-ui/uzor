@@ -1,4 +1,4 @@
-import { createEmptyDeltaDraft, validateDeltaStep } from './deltaCreateLogic';
+import { createEmptyDeltaDraft, getGeneratedDeltaStatement, validateDeltaStep } from './deltaCreateLogic';
 import { isWithinPermMvpArea } from './deltaGeoLogic';
 import type { DeltaCreateDraft } from './deltaCreateTypes';
 import type { CreateDeltaInput, DeltaCard, DeltaCategory, DeltaEffect, ReactToDeltaResult } from '../deltas/deltaTypes';
@@ -9,7 +9,9 @@ export const DELTA_CREATE_PRODUCTION_STORAGE_KEY = 'uzor_delta_create_v1';
 
 export function buildCreateDeltaInput(draft: DeltaCreateDraft, circleId: string): CreateDeltaInput {
   if (!draft.categorySlug || !draft.direction || !draft.changeType || !draft.observedWindow || !draft.impactLevel || draft.lat == null || draft.lng == null || !isWithinPermMvpArea(draft.lat, draft.lng)) throw new Error('invalid_delta_payload');
-  return { circleId, citySlug: 'perm', categorySlug: draft.categorySlug, direction: draft.direction, subject: draft.subject.trim(), changeType: draft.changeType, statement: draft.statement.trim(), details: draft.details.trim() || null, observedWindow: draft.observedWindow, impactLevel: draft.impactLevel, lat: draft.lat, lng: draft.lng, locationLabel: draft.locationLabel.trim(), locationPrecision: draft.locationPrecision };
+  const statement = getGeneratedDeltaStatement(draft);
+  const subject = draft.subject.trim() || statement;
+  return { circleId, citySlug: 'perm', categorySlug: draft.categorySlug, direction: draft.direction, subject, changeType: draft.changeType, statement, details: draft.details.trim() || null, observedWindow: draft.observedWindow, impactLevel: draft.impactLevel, lat: draft.lat, lng: draft.lng, locationLabel: draft.locationLabel.trim(), locationPrecision: draft.locationPrecision };
 }
 
 export function canPublishSeparate(draft: DeltaCreateDraft) { const coreErrors = [2,3].flatMap((step) => validateDeltaStep(draft, step as DeltaCreateDraft['currentStep'])); return coreErrors.length === 0 && typeof draft.lat === 'number' && typeof draft.lng === 'number' && !!draft.locationLabel.trim() && isWithinPermMvpArea(draft.lat, draft.lng); }
