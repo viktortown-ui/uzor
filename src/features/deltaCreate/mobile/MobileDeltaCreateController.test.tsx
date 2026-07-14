@@ -187,6 +187,7 @@ describe('MobileDeltaCreateFlow controller', () => {
     expect(await screen.findByRole('heading', { name: 'Дельта опубликована' })).toBeInTheDocument();
 
     cleanup();
+    localStorage.clear();
     vi.mocked(findSimilarDeltas).mockResolvedValueOnce([{ id: 'delta-existing', statement: 'Автобус ходит реже', status: 'new', confirmCount: 1, disconfirmCount: 0, distanceMeters: 100, locationLabel: 'Остановка', createdAt: '2026-01-01T00:00:00.000Z' }]);
     vi.mocked(reactToDelta).mockRejectedValueOnce(new Error('author_reaction_locked'));
     renderFlow();

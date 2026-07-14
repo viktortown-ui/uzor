@@ -5,7 +5,7 @@ import { createDelta, getDeltaCard, loadDeltaCategories, reactToDelta } from '..
 import type { DeltaCard, DeltaCategory, DeltaEffect, ReactToDeltaResult } from '../../deltas/deltaTypes';
 import { demoCard, demoDeltaMapData } from '../../deltaMap/demoDeltaMapData';
 import { loadDeltaMapContext } from '../../deltaMap/deltaMapLogic';
-import { createEmptyDeltaDraft, resetDependentFields, restoreDeltaDraft, serializeDeltaDraft, validateDeltaStep } from '../deltaCreateLogic';
+import { createEmptyDeltaDraft, resetDependentFields, restoreDeltaDraft, serializeDeltaDraft, validateMobileDeltaStep } from '../deltaCreateLogic';
 import {
   buildCreateDeltaInput,
   canPublishSeparate,
@@ -50,7 +50,7 @@ function MobileDeltaHeader({ stage, onBack }: HeaderProps) {
 }
 
 function isChangeComplete(draft: DeltaCreateDraft) {
-  return validateDeltaStep(draft, 2).concat(validateDeltaStep(draft, 3)).length === 0;
+  return validateMobileDeltaStep(draft, 2).concat(validateMobileDeltaStep(draft, 3)).length === 0;
 }
 
 function isLocationStageComplete(draft: DeltaCreateDraft) {
@@ -156,7 +156,7 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
   const update = useCallback((patch: Partial<DeltaCreateDraft>, changed?: string) => {
     setDraft((current) => {
       let next = { ...current, ...patch };
-      if (changed === 'direction' || changed === 'subject' || changed === 'changeType') next = resetDependentFields(next, changed);
+      if (changed === 'direction' || changed === 'categorySlug' || changed === 'subject' || changed === 'changeType') next = resetDependentFields(next, changed);
       if (changed && shouldResetSimilarDecision(changed)) next = { ...next, selectedSimilarDeltaId: null, similarDecision: null };
       return next;
     });
@@ -218,7 +218,7 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
   };
 
   const continueChange = () => {
-    const nextErrors = [...validateDeltaStep(draft, 2), ...validateDeltaStep(draft, 3)];
+    const nextErrors = [...validateMobileDeltaStep(draft, 2), ...validateMobileDeltaStep(draft, 3)];
     setErrors(nextErrors);
     if (nextErrors.length) {
       document.querySelector('.mobile-delta-alert')?.scrollIntoView({ block: 'center' });

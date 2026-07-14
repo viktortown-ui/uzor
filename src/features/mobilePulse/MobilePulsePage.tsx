@@ -24,7 +24,7 @@ export function TraceContent({ state, report }: { state: PulseState; report: Wra
   if (state === 'loading') return <div className="mobile-pulse-trace__loading" role="status"><span>Собираем ваш след…</span><i /><i /></div>;
   if (state === 'join') return <div className="mobile-pulse-trace__message"><p>Подключитесь к кругу, чтобы видеть личный прогресс.</p><Link to="/join">Войти по приглашению</Link></div>;
   if (state === 'error') return <div className="mobile-pulse-trace__message" role="alert"><p>Личный итог сейчас не загрузился. Карта и добавление наблюдений доступны.</p></div>;
-  if (state === 'empty') return <div className="mobile-pulse-trace__message"><strong>Личный итог ещё собирается</strong><p>Добавляйте наблюдения по ходу недели.<br />Когда данных станет достаточно,<br />здесь появится итог недели.</p><Link to="/contribute">Добавить первую Дельту</Link></div>;
+  if (state === 'empty') return <div className="mobile-pulse-trace__message"><strong>Личный итог ещё собирается</strong><p>Добавляйте наблюдения по ходу недели. Когда данных станет достаточно, здесь появится итог недели.</p><Link to="/contribute">Добавить первую Дельту</Link></div>;
   return <div className="mobile-pulse-summary"><div><strong>{report.summary.signalsThisWeek}</strong><span>за неделю</span></div><div><strong>{report.summary.confirmedSignals}</strong><span>подтверждено</span></div><div><strong>{report.summary.weekStreak}</strong><span>серия</span></div><Link to="/wrapped">Открыть итог недели</Link></div>;
 }
 
