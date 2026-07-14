@@ -77,7 +77,20 @@ describe('MobileDeltaMapPicker', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Сейчас Дельты можно добавлять только в Перми');
   });
 
-  it('retry destroys old map exactly once and creates one replacement', async () => {
+
+
+  it('transient tile failure after map load does not block the map', () => {
+    const onPick = vi.fn();
+    render(<MobileDeltaMapPicker lat={null} lng={null} onPick={onPick} />);
+
+    mocks.handlers.load({ lngLat: { lat: 0, lng: 0 } });
+    mocks.handlers.error({ lngLat: { lat: 0, lng: 0 }, error: { message: 'Failed to load tile' } });
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Повторить' })).not.toBeInTheDocument();
+  });
+
+  it('initial fatal style failure shows retry and retry destroys old map exactly once', async () => {
     const onPick = vi.fn();
     render(<MobileDeltaMapPicker lat={null} lng={null} onPick={onPick} />);
     mocks.handlers.error({ lngLat: { lat: 0, lng: 0 }, error: { message: 'style failed' } });

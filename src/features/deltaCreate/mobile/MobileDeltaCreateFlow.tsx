@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { isDemoMode } from '../../../app/appMode';
 import { createDelta, getDeltaCard, loadDeltaCategories, reactToDelta } from '../../deltas/deltaApi';
 import type { DeltaCard, DeltaCategory, DeltaEffect, ReactToDeltaResult } from '../../deltas/deltaTypes';
@@ -96,6 +96,7 @@ function fallbackDeltaCard(id: string, draft: DeltaCreateDraft, categories: Delt
 export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab' }) {
   const production = mode === 'production';
   const [params, setParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const requestedStage = (params.get('stage') as Stage | null) || 'change';
   const activeStage: Stage = requestedStage === 'review' ? 'review' : requestedStage === 'location' ? 'location' : 'change';
@@ -197,8 +198,9 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
     return () => window.clearTimeout(id);
   }, [activeStage]);
 
-  const goStage = (stage: Stage, replace = false) => {
-    setParams(stage === 'change' ? {} : { stage }, { replace });
+  const goStage = (stage: Stage, replace = false, from: Stage = activeStage) => {
+    const search = stage === 'change' ? '' : `?stage=${stage}`;
+    navigate({ pathname: location.pathname, search }, { replace, state: { deltaFlowFrom: from } });
   };
 
   const handleHeaderBack = () => {
@@ -206,7 +208,13 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
       navigate('/pulse');
       return;
     }
-    goStage(activeStage === 'review' ? 'location' : 'change', true);
+    const expectedPrevious = activeStage === 'review' ? 'location' : 'change';
+    const state = location.state as { deltaFlowFrom?: Stage } | null;
+    if (state?.deltaFlowFrom === expectedPrevious) {
+      navigate(-1);
+      return;
+    }
+    goStage(expectedPrevious, true, activeStage);
   };
 
   const continueChange = () => {

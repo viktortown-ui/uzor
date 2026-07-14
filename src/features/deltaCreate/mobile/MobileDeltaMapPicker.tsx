@@ -21,6 +21,7 @@ export function MobileDeltaMapPicker({ lat, lng, onPick }: Props) {
   const pickRef = useRef(onPick);
   const coordsRef = useRef({ lat, lng });
   const mountedRef = useRef(false);
+  const usableMapRef = useRef(false);
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
 
@@ -33,6 +34,7 @@ export function MobileDeltaMapPicker({ lat, lng, onPick }: Props) {
     const map = mapRef.current;
     markerRef.current = null;
     mapRef.current = null;
+    usableMapRef.current = false;
     marker?.remove();
     map?.remove();
   }, []);
@@ -76,11 +78,15 @@ export function MobileDeltaMapPicker({ lat, lng, onPick }: Props) {
     }
 
     mapRef.current = map;
+    usableMapRef.current = false;
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'bottom-right');
     map.on('click', (event) => choosePoint(event.lngLat.lat, event.lngLat.lng, 'map'));
+    map.on('load', () => {
+      usableMapRef.current = true;
+    });
     map.on('error', (event) => {
       const maybeError = event as { error?: { message?: string } };
-      if (/style|load|sprite|glyph/i.test(maybeError.error?.message ?? '')) {
+      if (!usableMapRef.current && /style/i.test(maybeError.error?.message ?? '')) {
         safeSetError('Не удалось открыть карту');
       }
     });
