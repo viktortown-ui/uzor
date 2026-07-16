@@ -2,6 +2,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PERM_FALLBACK } from '../../deltaMap/deltaMapLogic';
+import { isFatalMapLibreError } from '../../maps/mapLibreErrorPolicy';
 import { isWithinPermMvpArea, PERM_MVP_AREA_ERROR } from '../deltaGeoLogic';
 
 const styleUrl = import.meta.env.VITE_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty';
@@ -17,6 +18,7 @@ export function MobileDeltaMapPicker({ lat, lng, onPick }: Props) {
   const pickRef = useRef(onPick);
   const coordsRef = useRef({ lat, lng });
   const mountedRef = useRef(false);
+  const usableMapRef = useRef(false);
   const [error, setError] = useState('');
   const [fatalError, setFatalError] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -32,6 +34,7 @@ export function MobileDeltaMapPicker({ lat, lng, onPick }: Props) {
     const map = mapRef.current;
     markerRef.current = null;
     mapRef.current = null;
+    usableMapRef.current = false;
     try { marker?.remove(); } catch { /* noop */ }
     try { map?.remove(); } catch { /* noop */ }
   }, []);
@@ -55,11 +58,9 @@ export function MobileDeltaMapPicker({ lat, lng, onPick }: Props) {
       const nav = new maplibregl.NavigationControl({ visualizePitch: false });
       map.addControl(nav, 'bottom-right');
       const clickHandler = (event: maplibregl.MapMouseEvent) => choosePoint(event.lngLat.lat, event.lngLat.lng, 'map');
-      const loadHandler = () => guard(() => map && typeof map.resize === 'function' && map.resize());
+      const loadHandler = () => guard(() => { if (map && typeof map.resize === 'function') map.resize(); usableMapRef.current = true; });
       const errorHandler = (event?: maplibregl.ErrorEvent) => {
-        const message = event?.error?.message ?? '';
-        if (/style/i.test(message) && !/tile|resource|image|glyph|sprite/i.test(message)) failMap();
-        /* Tile/style resource errors are non-fatal: keep the picker alive. */
+        if (isFatalMapLibreError(event, usableMapRef.current)) failMap();
       };
       map.on('click', clickHandler);
       map.on('load', loadHandler);
