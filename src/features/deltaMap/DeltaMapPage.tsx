@@ -35,7 +35,23 @@ export function DeltaMapPage() {
  useEffect(()=>{ if (!boundsRef.current) return; const id = window.setTimeout(()=>{ void fetchDeltas(boundsRef.current ?? undefined,{force:true}); },0); return ()=>window.clearTimeout(id); },[filters,fetchDeltas]);
  useEffect(()=>{ if (!context || !boundsRef.current || isDemoMode) return; const id = window.setTimeout(()=>{ void fetchDeltas(boundsRef.current ?? undefined,{force:true}); },0); return ()=>window.clearTimeout(id); },[context,fetchDeltas]);
  useEffect(()=>{ if (searchParams.get('delta')) return; if (!(selectedId && !deltas.some(d=>d.id===selectedId && deltaMatchesFilters(d,filters)))) return; const id = window.setTimeout(()=>{ setSelectedId(null); setCard(null); },0); return ()=>window.clearTimeout(id); },[filters,deltas,selectedId,searchParams]);
- const openDeltaId=useCallback((id:string)=>{ setSelectedId(id); setCardLoading(true); setEffect(''); setCardError(''); (async()=>{ try { const loaded = isDemoMode ? demoCard(id) : await getDeltaCard(id); setCard(loaded); } catch { setCardError('Не удалось открыть карточку дельты.'); } finally { setCardLoading(false); } })(); },[]);
+ const openDeltaId = useCallback((id: string) => {
+  setSelectedId(id);
+  setCard(null);
+  setCardLoading(true);
+  setEffect('');
+  setCardError('');
+  void (async () => {
+    try {
+      const loaded = isDemoMode ? demoCard(id) : await getDeltaCard(id);
+      setCard(loaded);
+    } catch {
+      setCardError('Не удалось открыть Дельту');
+    } finally {
+      setCardLoading(false);
+    }
+  })();
+ }, []);
  const selectDelta=useCallback((delta:DeltaMapItem)=>{ void openDeltaId(delta.id); },[openDeltaId]);
  useEffect(()=>{ const queried=searchParams.get('delta'); if(!queried||selectedId) return; const id=window.setTimeout(()=>void openDeltaId(queried),0); return()=>window.clearTimeout(id); },[searchParams,selectedId,openDeltaId]);
 
@@ -43,5 +59,44 @@ export function DeltaMapPage() {
  const resetFilters=()=>setFilters(defaultDeltaMapFilters);
  const resetToPerm=useCallback(()=>setPermResetKey((key)=>key+1),[]);
  const retryCurrentViewport=useCallback(()=>{ const currentBounds=boundsRef.current; if (!currentBounds) return; void fetchDeltas(currentBounds,{force:true}); },[fetchDeltas]);
- return <ProductShell className="delta-map-page"><div className="delta-map-main">{isMobile?<MobileDeltaMapChrome filters={filters} categories={categories} onChange={setFilters} collapsed={mobileChromeCollapsed} onCollapsedChange={setMobileChromeCollapsed}/>:<DesktopDeltaMapChrome loading={status==='loading'&&deltas.length>0} filters={filters} categories={categories} onChange={setFilters}/>} {status==='no-circle'?<DeltaMapState kind="no-circle"/>:status==='missing-migration'?<DeltaMapState kind="missing-migration" onRetry={retryCurrentViewport}/>:<><DeltaMapCanvas city={center} deltas={deltas} selectedId={selectedId} highlightedId={highlightedId} onViewport={fetchDeltas} onSelect={selectDelta} onResetPerm={resetToPerm} permResetKey={permResetKey} onInteraction={()=>isMobile&&setMobileChromeCollapsed(true)}/>{status==='loading'&&deltas.length===0&&<DeltaMapState kind="loading"/>}{status==='empty'&&<div className="delta-empty"><h2>В этой части карты пока нет дельт</h2><p>Переместите карту или сбросьте фильтры.</p><button onClick={resetToPerm}>К центру Перми</button>{areFiltersActive(filters)&&<button onClick={resetFilters}>Сбросить фильтры</button>}<Link className="primary" to="/contribute">Добавить Дельту</Link></div>}{status==='error'&&<DeltaMapState kind="error" onRetry={retryCurrentViewport}/>}</>} {selectedId&&(isMobile?<MobileDeltaMapCard key={selectedId} card={card} loading={cardLoading} reacting={reacting} effect={effect} error={cardError} onClose={()=>{setSelectedId(null);setCard(null);if(searchParams.get('delta'))setSearchParams({})}} onReact={handleReact}/>:<DesktopDeltaMapCard card={card} loading={cardLoading} reacting={reacting} effect={effect} error={cardError} onClose={()=>{setSelectedId(null);setCard(null);if(searchParams.get('delta'))setSearchParams({})}} onReact={handleReact}/>)}</div></ProductShell>;
+ const closeCard = () => {
+  setSelectedId(null);
+  setCard(null);
+  if (searchParams.get('delta')) setSearchParams({});
+ };
+ const cardProps = {
+  card,
+  loading: cardLoading,
+  reacting,
+  effect,
+  error: cardError,
+  onRetry: () => selectedId && openDeltaId(selectedId),
+  onClose: closeCard,
+  onReact: handleReact,
+ };
+ return <ProductShell className="delta-map-page">
+  <div className="delta-map-main">
+   {isMobile
+    ? <MobileDeltaMapChrome filters={filters} categories={categories} onChange={setFilters} collapsed={mobileChromeCollapsed} onCollapsedChange={setMobileChromeCollapsed} />
+    : <DesktopDeltaMapChrome loading={status === 'loading' && deltas.length > 0} filters={filters} categories={categories} onChange={setFilters} />}
+   {status === 'no-circle'
+    ? <DeltaMapState kind="no-circle" />
+    : status === 'missing-migration'
+     ? <DeltaMapState kind="missing-migration" onRetry={retryCurrentViewport} />
+     : <>
+      <DeltaMapCanvas city={center} deltas={deltas} selectedId={selectedId} highlightedId={highlightedId} onViewport={fetchDeltas} onSelect={selectDelta} onResetPerm={resetToPerm} permResetKey={permResetKey} onInteraction={() => isMobile && setMobileChromeCollapsed(true)} />
+      {status === 'loading' && deltas.length === 0 && <DeltaMapState kind="loading" />}
+      {status === 'empty' && <div className="delta-empty">
+       <h2>В этой части карты пока нет дельт</h2><p>Переместите карту или сбросьте фильтры.</p>
+       <button onClick={resetToPerm}>К центру Перми</button>
+       {areFiltersActive(filters) && <button onClick={resetFilters}>Сбросить фильтры</button>}
+       <Link className="primary" to="/contribute">Добавить Дельту</Link>
+      </div>}
+      {status === 'error' && <DeltaMapState kind="error" onRetry={retryCurrentViewport} />}
+     </>}
+   {selectedId && (isMobile
+    ? <MobileDeltaMapCard key={selectedId} {...cardProps} />
+    : <DesktopDeltaMapCard {...cardProps} />)}
+  </div>
+ </ProductShell>;
 }
