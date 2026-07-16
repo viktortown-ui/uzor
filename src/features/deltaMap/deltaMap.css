@@ -1,4 +1,106 @@
-.delta-map-page{min-height:100vh;min-height:100dvh;background:#07101f;color:#ecfeff;overflow:hidden}.delta-map-main{position:relative;min-height:inherit;height:100%;overflow:hidden}.delta-map-header{position:absolute;z-index:5;top:18px;left:18px;max-width:430px;padding:16px 18px;border:1px solid rgba(125,249,255,.22);border-radius:22px;background:rgba(7,16,31,.72);backdrop-filter:blur(16px);box-shadow:0 0 34px rgba(34,211,238,.13)}.delta-map-header h1{margin:.1rem 0;font-size:clamp(1.7rem,4vw,3rem)}.delta-map-header p{margin:.2rem 0;color:#b7c7d8}.delta-map-refresh{display:inline-block;margin-top:8px;color:#67e8f9}.delta-map-filters{position:absolute;z-index:6;top:180px;left:18px;display:flex;gap:10px;max-width:calc(100% - 40px);overflow-x:auto}.delta-map-filters label{display:grid;gap:4px;color:#b7c7d8;font-size:.72rem;text-transform:uppercase}.delta-map-filters select,.delta-map-button,.delta-empty button,.delta-map-reset,.delta-card-actions button{border:1px solid rgba(125,249,255,.25);border-radius:999px;background:rgba(11,25,48,.84);color:#ecfeff;padding:9px 12px}.delta-map-canvas,.delta-map-surface{position:absolute;inset:0}.delta-map-reset{position:absolute;z-index:4;left:20px;bottom:24px}.delta-map-state,.delta-empty{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100% - 36px));padding:24px;border:1px solid rgba(125,249,255,.25);border-radius:24px;background:rgba(7,16,31,.86);box-shadow:0 0 50px rgba(139,92,246,.18);text-align:center}.delta-empty small{display:block;margin-top:12px;color:#94a3b8}.delta-map-card{position:absolute;z-index:9;right:18px;top:110px;bottom:18px;width:min(420px,calc(100% - 36px));overflow:auto;padding:22px;border:1px solid rgba(125,249,255,.25);border-radius:28px;background:rgba(7,16,31,.9);backdrop-filter:blur(18px);box-shadow:0 0 60px rgba(34,211,238,.16)}.delta-card-close{float:right;border:0;background:transparent;color:#ecfeff;font-size:1.5rem}.delta-card-direction{display:inline-flex;border-radius:999px;padding:6px 10px}.delta-card-direction.positive{background:rgba(45,212,191,.16);color:#7dd3fc}.delta-card-direction.negative{background:rgba(251,113,133,.16);color:#fda4af}.delta-map-card dl{display:grid;gap:10px}.delta-map-card dt{color:#94a3b8;font-size:.75rem}.delta-map-card dd{margin:0}.delta-progress{height:8px;border-radius:999px;background:#10213d;overflow:hidden}.delta-progress span{display:block;height:100%;background:linear-gradient(90deg,#22d3ee,#a78bfa)}.delta-effect{padding:12px;border-radius:16px;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25)}.delta-card-error{color:#fecdd3}.delta-card-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.delta-card-actions .active{box-shadow:0 0 0 2px #67e8f9 inset}.delta-card-actions .danger{box-shadow:0 0 0 2px #fb7185 inset}.delta-map-legend i{display:inline-block;width:18px;height:14px;border-radius:2px;margin-right:6px;position:relative}.delta-map-legend i:before{content:"";position:absolute;left:-4px;top:-3px;width:2px;height:20px;background:#dff}.delta-map-legend .positive{background:#2dd4bf}.delta-map-legend .negative{background:#fb7d53}.delta-map-legend .new{background:#2dd4bf;box-shadow:10px -3px 0 -5px #facc15}.delta-map-legend .checking{background:#2dd4bf;box-shadow:0 0 0 3px rgba(245,158,11,.45)}.delta-map-legend .confirmed{background:#2dd4bf;border:2px solid #e0f2fe}.delta-map-legend .fork{background:#a78bfa;box-shadow:7px 5px 0 #7c3aed}.delta-marker{--marker-size:28px;width:44px;height:44px;border:0;background:transparent;padding:0;cursor:pointer;position:relative;display:grid;place-items:center}.delta-marker:focus-visible{outline:3px solid #fff;outline-offset:2px;border-radius:12px}.delta-marker__hit{position:relative;width:var(--marker-size);height:34px;display:block}.delta-marker__mast{position:absolute;left:4px;top:2px;width:3px;height:30px;border-radius:3px;background:#f8ffff;box-shadow:0 1px 5px rgba(0,0,0,.45)}.delta-marker__flag{position:absolute;left:7px;top:3px;width:22px;height:15px;border-radius:3px 4px 4px 1px;clip-path:polygon(0 0,100% 0,82% 55%,100% 100%,0 100%);box-shadow:0 2px 9px rgba(0,0,0,.35)}.delta-marker__tail{position:absolute;left:1px;bottom:0;width:10px;height:8px;background:#f8ffff;clip-path:polygon(50% 0,100% 100%,0 100%)}.core-positive .delta-marker__flag{background:linear-gradient(135deg,#34d399,#22d3ee)}.core-negative .delta-marker__flag{background:linear-gradient(135deg,#fb7185,#f97316)}.delta-marker__status{position:absolute;right:1px;top:0;width:9px;height:9px;border-radius:50%;background:transparent}.ring-new .delta-marker__status{background:#facc15;box-shadow:0 0 0 2px rgba(7,16,31,.9)}.ring-checking .delta-marker__flag{box-shadow:0 0 0 4px rgba(245,158,11,.32),0 0 18px rgba(245,158,11,.5)}.ring-confirmed .delta-marker__flag{border:2px solid #e0f2fe}.ring-fork .delta-marker__flag{background:#a78bfa}.ring-fork .delta-marker__flag--fork{left:13px;top:9px;background:#7c3aed;z-index:-1;opacity:.9}.is-highlighted .delta-marker__hit{animation:delta-pop .45s ease}.is-pulsing:before{content:"";position:absolute;inset:4px;border-radius:14px;border:1px solid rgba(125,249,255,.45);animation:delta-pulse 2.4s infinite}@keyframes delta-pulse{0%{transform:scale(.85);opacity:.7}100%{transform:scale(1.8);opacity:0}}@keyframes delta-pop{50%{transform:scale(1.35)}}@media (prefers-reduced-motion:reduce){.is-pulsing:before,.is-highlighted .delta-marker__hit{animation:none}}@media (max-width:800px){.delta-map-main{min-height:inherit}.delta-map-header{left:10px;right:10px;top:10px;max-width:none;padding:12px}.delta-map-filters{top:145px;left:10px}.delta-map-card{position:absolute;top:auto;left:0;right:0;bottom:0;width:auto;max-height:70vh;border-radius:28px 28px 0 0}.delta-map-legend{max-height:42px;overflow:hidden;right:10px;left:auto;bottom:64px}}
+/* Layer order: canvas 0; markers 2; controls 4; toolbar 6; card 8; sheet 10; application dock is owned by ProductShell. */
+/* Map scene */
+.delta-map-page{min-height: 100vh; min-height: 100dvh; overflow:hidden; overflow-x: hidden; background: #07101f; color: #ecfeff; }
+.delta-map-main { position: relative; min-height: inherit; height: 100%; overflow: hidden; }
+.delta-map-canvas, .delta-map-surface { position: absolute; inset: 0; }
 
-.delta-map-local-error{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);width:min(390px,calc(100% - 32px));padding:20px;border:1px solid rgba(251,191,36,.35);border-radius:22px;background:rgba(7,16,31,.9);text-align:center;box-shadow:0 0 44px rgba(251,191,36,.12)}
-@media (max-width:800px){.delta-map-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;overflow:visible;right:10px;max-width:none}.delta-map-filters label{min-width:0}.delta-map-filters label:nth-child(3){grid-column:1/-1}.delta-map-filters select{width:100%;min-width:0;white-space:normal;height:auto;min-height:40px;border-radius:14px}.delta-map-header h1,.delta-map-header p,.delta-map-filters label{overflow-wrap:break-word}.delta-map-page{overflow-x:hidden}}
+/* Desktop chrome */
+.delta-map-header { position: absolute; z-index: 5; top: 18px; left: 18px; max-width: 430px; padding: 16px 18px; border: 1px solid rgba(125,249,255,.22); border-radius: 22px; background: rgba(7,16,31,.78); backdrop-filter: blur(16px); }
+.delta-map-header h1 { margin: .1rem 0; font-size: clamp(1.7rem,4vw,3rem); }
+.delta-map-header p { margin: .2rem 0; color: #b7c7d8; }
+.delta-map-filters { position: absolute; z-index: 6; top: 180px; left: 18px; display: flex; gap: 10px; max-width: calc(100% - 40px); }
+.delta-map-filters label { display: grid; gap: 4px; color: #b7c7d8; font-size: .72rem; text-transform: uppercase; }
+.delta-map-filters select, .delta-map-button, .delta-empty button, .delta-map-reset, .delta-card-actions button, .delta-card-toggle { min-height: 44px; border: 1px solid rgba(125,249,255,.25); border-radius: 999px; background: rgba(11,25,48,.9); color: #ecfeff; padding: 9px 12px; }
+.delta-map-refresh { display: inline-block; margin-top: 8px; color: #67e8f9; }
+
+/* Mobile toolbar */
+.delta-mobile-toolbar { position: absolute; z-index: 6; top: max(8px, env(safe-area-inset-top)); left: 8px; right: 8px; min-height: 50px; display: flex; align-items: center; gap: 8px; padding: 4px 8px 4px 14px; border: 1px solid rgba(125,249,255,.22); border-radius: 18px; background: rgba(7,16,31,.88); backdrop-filter: blur(14px); }
+.delta-mobile-toolbar strong { margin-right: auto; }
+.delta-mobile-toolbar button { min-height: 44px; border: 0; border-radius: 14px; padding: 0 10px; background: rgba(30,50,78,.9); color: #ecfeff; }
+.delta-mobile-toolbar.is-collapsed { right: auto; padding: 3px; }
+
+/* Filter sheet */
+.delta-filter-backdrop { position: fixed; z-index: 10; inset: 0; display: flex; align-items: flex-end; background: rgba(2,7,17,.62); }
+.delta-filter-sheet { width: 100%; max-height: min(86dvh,760px); overflow-y: auto; overscroll-behavior: contain; padding: 18px max(16px,env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); border-radius: 24px 24px 0 0; background: #0b1930; box-shadow: 0 -20px 50px rgba(0,0,0,.45); }
+.delta-filter-sheet header, .delta-filter-sheet footer { display: flex; align-items: center; gap: 10px; }
+.delta-filter-sheet header h2 { margin: 0 auto 0 0; }
+.delta-filter-sheet header button, .delta-filter-sheet footer button { min-height: 44px; border: 1px solid rgba(125,249,255,.25); border-radius: 14px; background: #10213d; color: #fff; padding: 8px 16px; }
+.delta-filter-sheet footer { position: sticky; bottom: 0; padding-top: 12px; background: #0b1930; }
+.delta-filter-sheet footer button { flex: 1; }
+.delta-filter-sheet footer .primary { background: #256b72; }
+.delta-filter-sheet fieldset { display: grid; gap: 2px; margin: 12px 0; padding: 0; border: 0; }
+.delta-filter-sheet legend { margin-bottom: 5px; color: #9fb5ca; font-weight: 700; }
+.delta-filter-sheet label { min-height: 44px; display: flex; align-items: center; gap: 10px; overflow-wrap: anywhere; }
+.delta-filter-sheet input { width: 20px; height: 20px; flex: 0 0 auto; accent-color: #2dd4bf; }
+.delta-filter-sheet details { margin: 8px 0; }
+.delta-filter-sheet summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; }
+
+/* Canvas controls */
+.delta-map-reset { position: absolute; z-index: 4; left: 20px; bottom: calc(24px + env(safe-area-inset-bottom)); }
+.maplibregl-ctrl-bottom-right { bottom: calc(8px + env(safe-area-inset-bottom)); }
+
+/* Cluster layers and DOM markers */
+.delta-marker { width: 44px; height: 44px; position: relative; display: block; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.delta-marker:focus-visible { outline: 3px solid #fff; outline-offset: 2px; border-radius: 12px; }
+.delta-marker__visual { position: absolute; left: 50%; bottom: 0; width: var(--marker-size); height: 38px; transform: translateX(-50%); transform-origin: 50% 100%; }
+.delta-marker__mast { position: absolute; left: 50%; bottom: 0; width: 3px; height: 34px; margin-left: -1.5px; border-radius: 3px; background: #f8ffff; box-shadow: 0 1px 5px rgba(0,0,0,.45); }
+.delta-marker__flag { position: absolute; left: 50%; top: 3px; width: 22px; height: 15px; border-radius: 2px 4px 4px 1px; clip-path: polygon(0 0,100% 0,82% 55%,100% 100%,0 100%); box-shadow: 0 2px 9px rgba(0,0,0,.35); }
+.delta-marker__status { position: absolute; left: calc(50% + 17px); top: 0; width: 9px; height: 9px; border-radius: 50%; }
+.core-positive .delta-marker__flag { background: linear-gradient(135deg,#34d399,#22d3ee); }
+.core-negative .delta-marker__flag { background: linear-gradient(135deg,#fb7185,#f97316); }
+.ring-new .delta-marker__status { background: #facc15; box-shadow: 0 0 0 2px rgba(7,16,31,.9); }
+.ring-checking .delta-marker__flag { box-shadow: 0 0 0 4px rgba(245,158,11,.32),0 0 18px rgba(245,158,11,.5); }
+.ring-confirmed .delta-marker__flag { border: 2px solid #e0f2fe; }
+.ring-fork .delta-marker__flag { background: #a78bfa; }
+.ring-fork .delta-marker__flag--fork { left: calc(50% + 6px); top: 9px; z-index: -1; background: #7c3aed; }
+.is-highlighted .delta-marker__visual { animation: delta-pop .45s ease; }
+.is-pulsing::before { content: ""; position: absolute; inset: 4px; border: 1px solid rgba(125,249,255,.45); border-radius: 14px; animation: delta-pulse 2.4s infinite; }
+
+/* Desktop card */
+.delta-map-card { position: absolute; z-index: 8; border: 1px solid rgba(125,249,255,.25); background: rgba(7,16,31,.94); backdrop-filter: blur(18px); box-shadow: 0 0 60px rgba(34,211,238,.16); }
+.delta-map-card--desktop { top: 110px; right: 18px; bottom: 18px; width: min(420px,calc(100% - 36px)); overflow: auto; padding: 22px; border-radius: 28px; }
+.delta-card-close { float: right; min-width: 44px; min-height: 44px; border: 0; background: transparent; color: #ecfeff; font-size: 1.5rem; }
+.delta-card-direction { display: inline-flex; margin: 0; border-radius: 999px; padding: 6px 10px; }
+.delta-card-direction.positive { background: rgba(45,212,191,.16); color: #7dd3fc; }
+.delta-card-direction.negative { background: rgba(251,113,133,.16); color: #fda4af; }
+.delta-map-card h2 { margin: 10px 0; overflow-wrap: anywhere; }
+.delta-card-category, .delta-card-location, .delta-card-status { margin: 4px 0; color: #b7c7d8; }
+.delta-card-details dl { display: grid; gap: 10px; }
+.delta-card-details dt { color: #94a3b8; font-size: .75rem; }
+.delta-card-details dd { margin: 0; }
+.delta-progress { height: 8px; overflow: hidden; border-radius: 999px; background: #10213d; }
+.delta-progress span { display: block; height: 100%; background: linear-gradient(90deg,#22d3ee,#a78bfa); }
+.delta-effect { padding: 12px; border: 1px solid rgba(34,211,238,.25); border-radius: 16px; background: rgba(34,211,238,.12); }
+.delta-card-error { color: #fecdd3; }
+.delta-card-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.delta-card-actions .active { box-shadow: 0 0 0 2px #67e8f9 inset; }
+.delta-card-actions .danger { box-shadow: 0 0 0 2px #fb7185 inset; }
+
+/* Mobile card */
+.delta-map-card--mobile { left: 8px; right: 8px; bottom: calc(72px + env(safe-area-inset-bottom)); padding: 10px 16px 14px; overflow-y: auto; border-radius: 24px; }
+.delta-map-card--mobile.is-compact { max-height: 190px; }
+.delta-map-card--mobile.is-expanded { max-height: 72dvh; }
+.delta-card-handle { display: block; width: 42px; height: 4px; margin: 0 auto 4px; border-radius: 9px; background: #64748b; }
+.delta-map-card--mobile h2 { margin: 5px 44px 3px 0; font-size: 1.15rem; }
+.delta-map-card--mobile .delta-card-category, .delta-map-card--mobile .delta-card-location, .delta-map-card--mobile .delta-card-status { display: inline; margin-right: 8px; font-size: .84rem; }
+.delta-card-toggle { margin-top: 9px; }
+
+/* Legend */
+.delta-map-legend { position: absolute; z-index: 4; right: 18px; bottom: 24px; padding: 12px; border-radius: 18px; background: rgba(7,16,31,.82); }
+.delta-map-legend p { margin: 5px 0; }
+.delta-map-legend i { display: inline-block; width: 18px; height: 14px; margin-right: 6px; border-radius: 2px; }
+.delta-map-legend .positive,.delta-map-legend .new,.delta-map-legend .checking,.delta-map-legend .confirmed { background: #2dd4bf; }
+.delta-map-legend .negative { background: #fb7d53; }
+.delta-map-legend .fork { background: #a78bfa; }
+.delta-filter-sheet .delta-map-legend { position: static; background: transparent; padding: 4px 0; }
+
+/* States and errors */
+.delta-map-state,.delta-empty,.delta-map-local-error { position: absolute; z-index: 9; top: 50%; left: 50%; width: min(440px,calc(100% - 36px)); padding: 24px; transform: translate(-50%,-50%); border: 1px solid rgba(125,249,255,.25); border-radius: 24px; background: rgba(7,16,31,.92); text-align: center; }
+.delta-empty small { display: block; margin-top: 12px; color: #94a3b8; }
+
+@keyframes delta-pulse { from { transform: scale(.85); opacity: .7; } to { transform: scale(1.8); opacity: 0; } }
+@keyframes delta-pop { 50% { transform: translateX(-50%) scale(1.35); } }
+@media (max-width:900px) { .delta-map-reset { left: 10px; bottom: calc(72px + env(safe-area-inset-bottom)); max-width: 130px; } .maplibregl-ctrl-bottom-right { bottom: calc(70px + env(safe-area-inset-bottom)); } }
+@media (max-width:340px) { .delta-mobile-toolbar { font-size: .82rem; } .delta-mobile-toolbar button { padding-inline: 6px; } .delta-map-card--mobile { left: 4px; right: 4px; } }
+/* Reduced motion */
+@media (prefers-reduced-motion:reduce) { .is-pulsing::before,.is-highlighted .delta-marker__visual { animation: none; } }
