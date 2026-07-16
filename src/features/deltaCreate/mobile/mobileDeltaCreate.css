@@ -70,6 +70,30 @@
   margin: 4px 0 0;
 }
 
+.mobile-observation-screen { gap: 14px; }
+.mobile-observation-categories { display: flex; gap: 7px; overflow-x: auto; padding-block: 2px; }
+.mobile-observation-categories button { flex: 0 0 auto; min-height: 38px; padding: 7px 13px; border-radius: 999px; border: 1px solid rgba(188,244,229,.2); background: transparent; color: #dffbf4; font: inherit; }
+.mobile-observation-categories button.active { border-color: #55e0bf; background: rgba(85,224,191,.17); }
+.mobile-observation-list { display: grid; gap: 0; }
+.mobile-observation-list h2, .mobile-observation-custom h2 { font-size: 17px; margin: 8px 0; }
+.mobile-observation-row { width: 100%; min-height: 52px; padding: 10px 4px 10px 14px; display: grid; grid-template-columns: minmax(0,1fr) 32px; align-items: center; gap: 8px; border: 0; border-bottom: 1px solid rgba(188,244,229,.12); background: transparent; color: #edfdf8; text-align: left; font: 600 16px/1.3 inherit; overflow-wrap: break-word; }
+.mobile-observation-row::before { content: ''; position: absolute; }
+.mobile-observation-row.negative { border-left: 3px solid #ff8c7a; }
+.mobile-observation-row.positive { border-left: 3px solid #55e0bf; }
+.mobile-observation-row.active { background: rgba(85,224,191,.13); }
+.mobile-observation-row b { color: #8ce6ce; text-align: center; font-size: 19px; }
+.mobile-observation-custom { display: grid; gap: 14px; }
+.mobile-observation-back { justify-self: start; border: 0 !important; padding: 4px 0 !important; }
+.mobile-observation-custom small, .mobile-review-details small { color: #9fc7bd; text-align: right; }
+.mobile-review-details { display: grid; gap: 16px; }
+.mobile-review-details[open] { padding-bottom: 8px; }
+.mobile-review-details summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
+.mobile-review-details > *:not(summary) { margin-top: 16px; }
+.mobile-direction-tag { width: fit-content; border-radius: 999px; padding: 5px 10px; font-size: 13px; font-weight: 800; text-transform: none; }
+.mobile-direction-tag.negative { color: #ffc7be; background: rgba(255,140,122,.15); }
+.mobile-direction-tag.positive { color: #a6f7df; background: rgba(85,224,191,.15); }
+.mobile-location-observation { font-size: 17px; overflow-wrap: break-word; }
+
 .mobile-delta-screen p {
   font-size: 15px;
   color: #b9d2cb;

@@ -1,40 +1,112 @@
-import type { RefObject, ReactNode } from 'react';
-import type { DeltaCategory } from '../../deltas/deltaTypes';
-import { buildDeltaStatement, getChangeTypeOptions, getImpactOptions, getSubjectPlaceholder } from '../deltaCreateLogic';
-import type { DeltaCreateDraft } from '../deltaCreateTypes';
+import { useMemo, useState, type RefObject } from 'react';
+import type { DeltaCategory, DeltaDirection } from '../../deltas/deltaTypes';
+import type { DeltaCreateCategorySlug, DeltaCreateDraft } from '../deltaCreateTypes';
+import {
+  MOBILE_TITLE_MAX_LENGTH,
+  MOBILE_TITLE_MIN_LENGTH,
+  normalizeMobileTitle,
+  validateMobileTitle,
+} from './mobileQuickObservation';
+import {
+  MOBILE_OBSERVATION_PRESETS,
+  matchMobileObservationPreset,
+  type MobileObservationPreset,
+} from './mobileObservationPresets';
 
-const periods = [
-  { value: 'today', label: 'Сегодня' },
-  { value: 'last_3_days', label: 'Последние 3 дня' },
-  { value: 'last_week', label: 'Неделя' },
-  { value: 'last_2_4_weeks', label: '2–4 недели' },
-] as const;
+type CustomPatch = Partial<DeltaCreateDraft> & Pick<DeltaCreateDraft,
+  'categorySlug' | 'direction' | 'changeType' | 'subject' | 'statement'
+  | 'statementMode' | 'observedWindow' | 'impactLevel'>;
 
 type Props = {
   draft: DeltaCreateDraft;
-  update: (patch: Partial<DeltaCreateDraft>, changed?: string) => void;
   categories: DeltaCategory[];
   catStatus: string;
   retry: () => void;
   errors: string[];
   headingRef?: RefObject<HTMLHeadingElement | null>;
+  onPreset: (preset: MobileObservationPreset) => void;
+  onCustomSubmit: (patch: CustomPatch) => void;
 };
 
-function Chip({ active, children, onClick }: { active: boolean; children: ReactNode; onClick: () => void }) {
-  return (
-    <button type="button" className={active ? 'mobile-delta-chip active' : 'mobile-delta-chip'} aria-pressed={active} onClick={onClick}>
-      {children}
-    </button>
+const labels: Record<DeltaCreateCategorySlug, string> = {
+  transport: 'Транспорт',
+  services: 'Услуги',
+  'urban-environment': 'Город',
+};
+
+export function MobileDeltaChangeScreen({
+  draft,
+  categories,
+  catStatus,
+  retry,
+  errors,
+  headingRef,
+  onPreset,
+  onCustomSubmit,
+}: Props) {
+  const matched = matchMobileObservationPreset(draft);
+  const hasExistingObservation = Boolean(
+    draft.subject.trim()
+    || draft.statement.trim()
+    || draft.categorySlug
+    || draft.direction
+    || draft.changeType,
   );
-}
+  const availableCategorySlugs = useMemo(
+    () => new Set(categories.map((category) => category.slug)),
+    [categories],
+  );
+  const availableCategories = categories.filter(
+    (category): category is DeltaCategory & { slug: DeltaCreateCategorySlug } => category.slug in labels,
+  );
+  const initialCategory = draft.categorySlug && availableCategorySlugs.has(draft.categorySlug)
+    ? draft.categorySlug
+    : '';
+  const [category, setCategory] = useState<DeltaCreateCategorySlug | ''>(initialCategory);
+  const [custom, setCustom] = useState(!matched && hasExistingObservation);
+  const [direction, setDirection] = useState<DeltaDirection | ''>(draft.direction);
+  const [title, setTitle] = useState(draft.subject || draft.statement);
+  const [titleEdited, setTitleEdited] = useState(false);
 
-export function MobileDeltaChangeScreen({ draft, update, categories, catStatus, retry, errors, headingRef }: Props) {
-  const preview = draft.statementMode === 'auto' ? buildDeltaStatement(draft) : draft.statement;
+  const availablePresets = MOBILE_OBSERVATION_PRESETS.filter(
+    (item) => availableCategorySlugs.has(item.categorySlug),
+  );
+  const shown = category
+    ? availablePresets.filter((item) => item.categorySlug === category)
+    : availablePresets.filter((item) => item.featured);
+  const titleError = title ? validateMobileTitle(title) : null;
+  const canSubmit = Boolean(category && direction && !titleError);
+
+  const openGlobalCustom = () => {
+    setCategory('');
+    setCustom(true);
+  };
+
+  const openCategoryCustom = (slug: DeltaCreateCategorySlug) => {
+    setCategory(slug);
+    setCustom(true);
+  };
+
+  const submitCustom = () => {
+    if (!category || !direction || validateMobileTitle(title)) return;
+    const normalizedTitle = normalizeMobileTitle(title);
+    const preserveLegacyStatement = !matched && hasExistingObservation && !titleEdited;
+    onCustomSubmit({
+      categorySlug: category,
+      direction,
+      changeType: 'other',
+      subject: normalizedTitle,
+      statement: preserveLegacyStatement ? draft.statement : normalizedTitle,
+      statementMode: preserveLegacyStatement ? draft.statementMode : 'manual',
+      observedWindow: 'today',
+      impactLevel: 'noticeable',
+    });
+  };
 
   return (
-    <section className="mobile-delta-screen">
-      <h1 ref={headingRef} tabIndex={-1}>Что изменилось?</h1>
-      <p>Опишите одно заметное изменение рядом с вами.</p>
+    <section className="mobile-delta-screen mobile-observation-screen">
+      <h1 ref={headingRef} tabIndex={-1}>Что заметили?</h1>
+      <p>Выберите готовое наблюдение или опишите своё.</p>
 
       {errors.length > 0 && (
         <div role="alert" className="mobile-delta-alert">
@@ -42,79 +114,105 @@ export function MobileDeltaChangeScreen({ draft, update, categories, catStatus, 
         </div>
       )}
 
-      <fieldset>
-        <legend>Направление</legend>
-        <div className="mobile-delta-segment">
-          <Chip active={draft.direction === 'negative'} onClick={() => update({ direction: 'negative' }, 'direction')}>Стало хуже</Chip>
-          <Chip active={draft.direction === 'positive'} onClick={() => update({ direction: 'positive' }, 'direction')}>Стало лучше</Chip>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Где проявилось изменение?</legend>
-        {catStatus === 'loading' && <p role="status">Загружаем категории…</p>}
-        {catStatus === 'error' && <p role="alert">Не удалось загрузить категории <button type="button" onClick={retry}>Повторить</button></p>}
-        {catStatus === 'empty' && <p role="alert">Категории Дельт пока не настроены <button type="button" onClick={retry}>Повторить</button></p>}
-        {catStatus === 'ready' && (
-          <div className="mobile-delta-tiles">
-            {categories.map((category) => (
-              <Chip key={category.slug} active={draft.categorySlug === category.slug} onClick={() => update({ categorySlug: category.slug as DeltaCreateDraft['categorySlug'] }, 'categorySlug')}>
-                {category.title}
-              </Chip>
-            ))}
-          </div>
-        )}
-      </fieldset>
-
-      {draft.direction && (
-        <fieldset>
-          <legend>Как именно изменилось?</legend>
-          <div className="mobile-delta-tiles">
-            {getChangeTypeOptions(draft.direction).map((option) => (
-              <Chip key={option.value} active={draft.changeType === option.value} onClick={() => update({ changeType: option.value }, 'changeType')}>
-                {option.label}
-              </Chip>
-            ))}
-          </div>
-        </fieldset>
+      {catStatus === 'loading' && <p role="status">Загружаем категории…</p>}
+      {(catStatus === 'error' || catStatus === 'empty' || (catStatus === 'ready' && availableCategories.length === 0)) && (
+        <p role="alert" className="mobile-delta-alert">
+          Нет доступных категорий наблюдений. <button type="button" onClick={retry}>Повторить</button>
+        </p>
       )}
 
-      <label>
-        Коротко опишите изменение
-        <input value={draft.subject} maxLength={80} onChange={(event) => update({ subject: event.target.value }, 'subject')} placeholder={getSubjectPlaceholder(draft.categorySlug)} />
-      </label>
+      {catStatus === 'ready' && availableCategories.length > 0 && (
+        <>
+          {!custom && (
+            <>
+              <div className="mobile-observation-categories" aria-label="Категории">
+                {availableCategories.map((item) => (
+                  <button
+                    type="button"
+                    className={category === item.slug ? 'active' : ''}
+                    aria-pressed={category === item.slug}
+                    key={item.slug}
+                    onClick={() => setCategory(item.slug)}
+                  >
+                    {labels[item.slug]}
+                  </button>
+                ))}
+                <button type="button" onClick={openGlobalCustom}>Другое</button>
+              </div>
+              <div className="mobile-observation-list">
+                <h2>{category ? labels[category] : 'Часто отмечают'}</h2>
+                {shown.map((item) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    className={`mobile-observation-row ${item.direction}${matched?.id === item.id ? ' active' : ''}`}
+                    onClick={() => onPreset(item)}
+                  >
+                    <span>{item.title}</span>
+                    <b aria-hidden="true">{matched?.id === item.id ? '✓' : '›'}</b>
+                  </button>
+                ))}
+                {category && (
+                  <button type="button" className="mobile-observation-row custom" onClick={() => openCategoryCustom(category)}>
+                    <span>Другое изменение</span><b aria-hidden="true">›</b>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
 
-      {preview && (
-        <article className="mobile-delta-preview">
-          <span>Ваша Дельта</span>
-          {draft.statementMode === 'manual' ? (
-            <textarea value={draft.statement} maxLength={180} onChange={(event) => update({ statement: event.target.value }, 'statement')} aria-label="Формулировка Дельты" />
-          ) : <strong>{preview}</strong>}
-          <button type="button" onClick={() => update({ statementMode: draft.statementMode === 'manual' ? 'auto' : 'manual', statement: preview }, 'statement')}>
-            {draft.statementMode === 'manual' ? 'Вернуть автоматическую формулировку' : 'Уточнить формулировку'}
-          </button>
-        </article>
+          {custom && (
+            <div className="mobile-observation-custom">
+              <button type="button" className="mobile-observation-back" onClick={() => setCustom(false)}>
+                ← Готовые наблюдения
+              </button>
+              <h2>Другое изменение</h2>
+              <fieldset>
+                <legend>Категория</legend>
+                <div className="mobile-observation-categories">
+                  {availableCategories.map((item) => (
+                    <button
+                      type="button"
+                      className={category === item.slug ? 'active' : ''}
+                      aria-pressed={category === item.slug}
+                      key={item.slug}
+                      onClick={() => setCategory(item.slug)}
+                    >
+                      {labels[item.slug]}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend>Направление</legend>
+                <div className="mobile-delta-segment">
+                  <button type="button" className={direction === 'negative' ? 'mobile-delta-chip active' : 'mobile-delta-chip'} onClick={() => setDirection('negative')}>Стало хуже</button>
+                  <button type="button" className={direction === 'positive' ? 'mobile-delta-chip active' : 'mobile-delta-chip'} onClick={() => setDirection('positive')}>Стало лучше</button>
+                </div>
+              </fieldset>
+              <label>
+                Короткий заголовок
+                <input
+                  aria-label="Короткий заголовок"
+                  value={title}
+                  maxLength={MOBILE_TITLE_MAX_LENGTH}
+                  onChange={(event) => {
+                    setTitle(event.target.value);
+                    setTitleEdited(true);
+                  }}
+                  placeholder="Очередь у врача стала длиннее"
+                />
+              </label>
+              <small>{title.length}/{MOBILE_TITLE_MAX_LENGTH}</small>
+              {titleError && <p className="mobile-inline-error" role="alert">{titleError}</p>}
+              {!title && <p className="mobile-field-hint">От {MOBILE_TITLE_MIN_LENGTH} до {MOBILE_TITLE_MAX_LENGTH} символов</p>}
+              <button className="mobile-delta-primary" type="button" disabled={!canSubmit} onClick={submitCustom}>
+                Указать место
+              </button>
+            </div>
+          )}
+        </>
       )}
-
-      <fieldset>
-        <legend>Когда заметили?</legend>
-        <div className="mobile-delta-tiles">
-          {periods.map((option) => <Chip key={option.value} active={draft.observedWindow === option.value} onClick={() => update({ observedWindow: option.value })}>{option.label}</Chip>)}
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Насколько влияет?</legend>
-        <div className="mobile-delta-tiles">
-          {getImpactOptions(draft.direction).map((option) => <Chip key={option.value} active={draft.impactLevel === option.value} onClick={() => update({ impactLevel: option.value })}>{option.label}</Chip>)}
-        </div>
-      </fieldset>
-
-      <details>
-        <summary>+ Добавить подробность</summary>
-        <textarea value={draft.details} maxLength={500} onChange={(event) => update({ details: event.target.value })} />
-        <p>{draft.details.length}/500</p>
-      </details>
     </section>
   );
 }
