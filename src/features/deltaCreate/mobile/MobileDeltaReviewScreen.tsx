@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { isDemoMode } from '../../../app/appMode';
 import { findSimilarDeltas } from '../../deltas/deltaApi';
@@ -80,15 +80,26 @@ export function MobileDeltaReviewScreen({
   const sequenceRef = useRef(0);
   const lastAutomaticSearchKeyRef = useRef<string | null>(null);
   const searchKey = getSimilarSearchKey(draft);
+  const circleId = circleContext?.circleId ?? null;
+  const similaritySnapshot = useMemo(() => ({
+    categorySlug: draft.categorySlug,
+    direction: draft.direction,
+    changeType: draft.changeType,
+    lat: draft.lat,
+    lng: draft.lng,
+    locationLabel: 'Место в Перми',
+    locationSource: 'map' as const,
+  }), [draft.categorySlug, draft.direction, draft.changeType, draft.lat, draft.lng]);
+  const restoredDecision = draft.similarDecision;
 
   const runSearch = useCallback(async (force = false) => {
-    if (!draft.categorySlug || !draft.direction || !draft.changeType || !isLocationComplete(draft) || !isWithinPermMvpArea(draft.lat, draft.lng)) {
+    if (!similaritySnapshot.categorySlug || !similaritySnapshot.direction || !similaritySnapshot.changeType || !isLocationComplete(similaritySnapshot) || !isWithinPermMvpArea(similaritySnapshot.lat, similaritySnapshot.lng)) {
       setStatus('error');
       setError(PERM_MVP_AREA_ERROR);
       return;
     }
 
-    if (!force && draft.similarDecision === 'separate') {
+    if (!force && restoredDecision === 'separate') {
       setStatus('ready');
       return;
     }
@@ -101,7 +112,7 @@ export function MobileDeltaReviewScreen({
 
     try {
       if (isDemoMode) {
-        const result = findDemoSimilarDeltas(draft, demoDeltaMapData);
+        const result = findDemoSimilarDeltas(similaritySnapshot, demoDeltaMapData);
         if (id === sequenceRef.current) {
           setRows(result);
           setStatus(result.length ? 'found' : 'empty');
@@ -109,12 +120,12 @@ export function MobileDeltaReviewScreen({
         return;
       }
 
-      if (!circleContext) {
+      if (!circleId) {
         setStatus('no-circle');
         return;
       }
 
-      const input = buildSimilarSearchInput(draft, circleContext.circleId);
+      const input = buildSimilarSearchInput(similaritySnapshot, circleId);
       if (!input) throw new Error('invalid_coordinates');
 
       const result = await findSimilarDeltas(input);
@@ -128,7 +139,7 @@ export function MobileDeltaReviewScreen({
         setStatus('error');
       }
     }
-  }, [circleContext, draft, searchKey]);
+  }, [circleId, restoredDecision, searchKey, similaritySnapshot]);
 
   useEffect(() => {
     const id = window.setTimeout(() => void runSearch(false), 0);
