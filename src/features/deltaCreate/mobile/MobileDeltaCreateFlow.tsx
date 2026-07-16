@@ -224,7 +224,12 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
   };
 
   const applyObservation = (patch: Partial<DeltaCreateDraft>) => {
-    const next = { ...draft, ...patch };
+    const next = {
+      ...draft,
+      ...patch,
+      selectedSimilarDeltaId: null,
+      similarDecision: null,
+    };
     const nextErrors = validateMobileQuickObservation(next);
     setErrors(nextErrors);
     if (nextErrors.length) {
@@ -438,7 +443,6 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
             error={locationError}
             onError={setLocationError}
             onAccept={acceptLocation}
-            onContinue={() => goStage('review')}
           />
         )}
         {activeStage === 'review' && (

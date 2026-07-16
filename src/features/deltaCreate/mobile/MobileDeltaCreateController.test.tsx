@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { MobileDeltaCreateFlow } from './MobileDeltaCreateFlow';
 import { DELTA_CREATE_PRODUCTION_STORAGE_KEY } from '../deltaCreateProductionLogic';
@@ -119,6 +119,17 @@ describe('MobileDeltaCreateFlow observation controller', () => {
     expect(await screen.findByRole('heading', { name: 'Проверить' })).toBeInTheDocument();
   });
 
+  it('commits a manually entered landmark atomically into review and persistence', async () => {
+    renderFlow();
+    fireEvent.click(await screen.findByRole('button', { name: 'Автобус приходится ждать дольше' }));
+    mapMocks.handlers.click({ lngLat: { lat: 58.02, lng: 56.26 } });
+    fireEvent.click(await screen.findByText('Добавить ориентир'));
+    fireEvent.change(screen.getByPlaceholderText('Остановка Попова или участок улицы Ленина'), { target: { value: 'Остановка Попова' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Использовать эту точку' }));
+    expect(await screen.findByText('Остановка Попова')).toBeInTheDocument();
+    await waitFor(() => expect(localStorage.getItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY)).toContain('"locationLabel":"Остановка Попова"'));
+  });
+
   it('restores an unmatched older draft as custom without discarding its text or details', async () => {
     const oldDraft = {
       ...createEmptyDeltaDraft(),
@@ -135,6 +146,80 @@ describe('MobileDeltaCreateFlow observation controller', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Продолжить' }));
     expect(await screen.findByRole('heading', { name: 'Другое изменение' })).toBeInTheDocument();
     expect(screen.getByLabelText('Короткий заголовок')).toHaveValue('Старое наблюдение автобуса');
-    expect(localStorage.getItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY)).toContain('Важная сохранённая подробность');
+    fireEvent.click(screen.getByRole('button', { name: 'Указать место' }));
+    expect(await screen.findByRole('heading', { name: 'Где это?' })).toBeInTheDocument();
+    const saved = localStorage.getItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY) || '';
+    expect(saved).toContain('Важная сохранённая подробность');
+    expect(saved).toContain('Старая ручная формулировка');
+    expect(saved).toContain('"statementMode":"manual"');
+  });
+
+  it('preserves an untouched legacy automatic statement', async () => {
+    const oldDraft = {
+      ...createEmptyDeltaDraft(),
+      categorySlug: 'transport' as const,
+      direction: 'negative' as const,
+      changeType: 'slower' as const,
+      subject: 'Старый заголовок автобуса',
+      statement: 'Старый заголовок автобуса стал медленнее',
+      statementMode: 'auto' as const,
+    };
+    localStorage.setItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY, serializeDeltaDraft(oldDraft));
+    renderFlow();
+    fireEvent.click(await screen.findByRole('button', { name: 'Продолжить' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Указать место' }));
+    const saved = localStorage.getItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY) || '';
+    expect(saved).toContain('Старый заголовок автобуса стал медленнее');
+    expect(saved).toContain('"statementMode":"auto"');
+  });
+
+  it('synchronizes a legacy statement after title editing', async () => {
+    const oldDraft = {
+      ...createEmptyDeltaDraft(),
+      categorySlug: 'transport' as const,
+      direction: 'negative' as const,
+      changeType: 'slower' as const,
+      subject: 'Старый заголовок автобуса',
+      statement: 'Старый заголовок автобуса стал медленнее',
+      statementMode: 'auto' as const,
+    };
+    localStorage.setItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY, serializeDeltaDraft(oldDraft));
+    renderFlow();
+    fireEvent.click(await screen.findByRole('button', { name: 'Продолжить' }));
+    fireEvent.change(screen.getByLabelText('Короткий заголовок'), { target: { value: 'Новый заголовок автобуса' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Указать место' }));
+    const saved = localStorage.getItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY) || '';
+    expect(saved).toContain('"statement":"Новый заголовок автобуса"');
+    expect(saved).toContain('"statementMode":"manual"');
+    expect(saved).not.toContain('стал медленнее');
+  });
+
+  it('clears a stale similarity decision before reviewing a different custom observation', async () => {
+    const staleDraft = {
+      ...createEmptyDeltaDraft(),
+      categorySlug: 'transport' as const,
+      direction: 'negative' as const,
+      changeType: 'other' as const,
+      subject: 'Старое наблюдение',
+      statement: 'Старое наблюдение',
+      statementMode: 'manual' as const,
+      observedWindow: 'today' as const,
+      impactLevel: 'noticeable' as const,
+      selectedSimilarDeltaId: 'old-delta-id',
+      similarDecision: 'separate' as const,
+    };
+    localStorage.setItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY, serializeDeltaDraft(staleDraft));
+    renderFlow();
+    fireEvent.click(await screen.findByRole('button', { name: 'Продолжить' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Назад' }));
+    fireEvent.change(screen.getByLabelText('Короткий заголовок'), { target: { value: 'Совсем другое наблюдение' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Указать место' }));
+    mapMocks.handlers.click({ lngLat: { lat: 58.02, lng: 56.26 } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Использовать эту точку' }));
+    expect(await screen.findByText('Похожих изменений рядом не найдено')).toBeInTheDocument();
+    expect(findSimilarDeltas).toHaveBeenCalledTimes(1);
+    const saved = localStorage.getItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY) || '';
+    expect(saved).toContain('"selectedSimilarDeltaId":null');
+    expect(saved).toContain('"similarDecision":null');
   });
 });

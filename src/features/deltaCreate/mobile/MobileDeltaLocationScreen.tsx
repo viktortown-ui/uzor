@@ -18,7 +18,6 @@ type Props = {
   error: string;
   onError: (message: string) => void;
   onAccept: (selection: LocationSelection) => void;
-  onContinue: () => void;
   headingRef?: RefObject<HTMLHeadingElement | null>;
 };
 
@@ -32,7 +31,6 @@ export function MobileDeltaLocationScreen({
   error,
   onError,
   onAccept,
-  onContinue,
   headingRef,
 }: Props) {
   const [locating, setLocating] = useState(false);
@@ -81,7 +79,20 @@ export function MobileDeltaLocationScreen({
         {draft.locationSource === 'map' && (
           <>
             <h2>Место выбрано</h2>
-            <button className="mobile-delta-primary" type="button" onClick={onContinue}>
+            <button
+              className="mobile-delta-primary"
+              type="button"
+              onClick={() => {
+                if (draft.lat == null || draft.lng == null) return;
+                onAccept({
+                  lat: draft.lat,
+                  lng: draft.lng,
+                  source: 'map',
+                  label: draft.locationHint.trim() || draft.locationLabel || 'Выбранная точка в Перми',
+                  autoAdvance: true,
+                });
+              }}
+            >
               Использовать эту точку
             </button>
           </>

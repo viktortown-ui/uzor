@@ -66,6 +66,7 @@ export function MobileDeltaChangeScreen({
   const [custom, setCustom] = useState(!matched && hasExistingObservation);
   const [direction, setDirection] = useState<DeltaDirection | ''>(draft.direction);
   const [title, setTitle] = useState(draft.subject || draft.statement);
+  const [titleEdited, setTitleEdited] = useState(false);
 
   const availablePresets = MOBILE_OBSERVATION_PRESETS.filter(
     (item) => availableCategorySlugs.has(item.categorySlug),
@@ -89,13 +90,14 @@ export function MobileDeltaChangeScreen({
   const submitCustom = () => {
     if (!category || !direction || validateMobileTitle(title)) return;
     const normalizedTitle = normalizeMobileTitle(title);
+    const preserveLegacyStatement = !matched && hasExistingObservation && !titleEdited;
     onCustomSubmit({
       categorySlug: category,
       direction,
       changeType: 'other',
       subject: normalizedTitle,
-      statement: normalizedTitle,
-      statementMode: 'manual',
+      statement: preserveLegacyStatement ? draft.statement : normalizedTitle,
+      statementMode: preserveLegacyStatement ? draft.statementMode : 'manual',
       observedWindow: 'today',
       impactLevel: 'noticeable',
     });
@@ -194,7 +196,10 @@ export function MobileDeltaChangeScreen({
                   aria-label="Короткий заголовок"
                   value={title}
                   maxLength={MOBILE_TITLE_MAX_LENGTH}
-                  onChange={(event) => setTitle(event.target.value)}
+                  onChange={(event) => {
+                    setTitle(event.target.value);
+                    setTitleEdited(true);
+                  }}
                   placeholder="Очередь у врача стала длиннее"
                 />
               </label>

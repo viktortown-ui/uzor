@@ -134,6 +134,7 @@ export function MobileDeltaReviewScreen({
 
   const categoryTitle = categories.find((category) => category.slug === draft.categorySlug)?.title;
   const titleError = validateMobileTitle(draft.subject);
+  const canCreateSeparate = !publishing && !titleError;
   const summaryTitle = draft.subject || draft.statement || 'Изменение без заголовка';
   return (
     <section className="mobile-delta-screen" aria-busy={publishing || status === 'loading'}>
@@ -239,7 +240,7 @@ export function MobileDeltaReviewScreen({
       {(status === 'empty' || status === 'ready') && (
         <>
           <p>{status === 'empty' ? 'Похожих изменений рядом не найдено' : 'Проверка похожих изменений пропущена'}</p>
-          <button className="mobile-delta-primary" type="button" disabled={publishing || Boolean(titleError)} onClick={onCreateSeparate}>
+          <button className="mobile-delta-primary" type="button" disabled={!canCreateSeparate} onClick={onCreateSeparate}>
             {publishing ? 'Публикуем…' : 'Опубликовать'}
           </button>
         </>
@@ -263,7 +264,7 @@ export function MobileDeltaReviewScreen({
               >
                 {publishing ? 'Подтверждаем Дельту…' : 'Это то же изменение'}
               </button>
-              <button type="button" disabled={publishing} onClick={() => setConfirmSeparate(true)}>Это другое изменение</button>
+              <button type="button" disabled={!canCreateSeparate} onClick={() => setConfirmSeparate(true)}>Это другое изменение</button>
             </article>
           ))}
           {confirmSeparate && (
@@ -271,7 +272,7 @@ export function MobileDeltaReviewScreen({
               <h2>Создать отдельную Дельту?</h2>
               <p>Рядом уже есть похожее изменение. Создавайте новую только если место или характер изменения отличаются.</p>
               <button type="button" onClick={() => setConfirmSeparate(false)}>Вернуться</button>
-              <button className="mobile-delta-primary" type="button" disabled={publishing} onClick={onCreateSeparate}>Создать отдельную</button>
+              <button className="mobile-delta-primary" type="button" disabled={!canCreateSeparate} onClick={onCreateSeparate}>Создать отдельную</button>
             </div>
           )}
         </div>

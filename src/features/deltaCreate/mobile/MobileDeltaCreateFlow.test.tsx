@@ -138,6 +138,55 @@ describe('MobileDeltaReviewScreen', () => {
     expect(onConfirmExisting).toHaveBeenCalledWith('delta-1');
     expect(mockedFindSimilar).toHaveBeenCalledTimes(1);
   });
+
+  it('invalid title blocks publication when no similar Delta exists', async () => {
+    const onCreateSeparate = vi.fn();
+    mockedFindSimilar.mockResolvedValueOnce([]);
+    render(
+      <MemoryRouter>
+        <MobileDeltaReviewScreen
+          draft={validDraft({ subject: 'мало', statement: 'мало' })}
+          update={vi.fn()}
+          categories={categories}
+          circleContext={{ circleId: 'circle-1', citySlug: 'perm' }}
+          publishing={false}
+          onCreateSeparate={onCreateSeparate}
+          onConfirmExisting={vi.fn()}
+          publishError=""
+          authorLocked={false}
+          onRetryFailed={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole('button', { name: 'Опубликовать' })).toBeDisabled();
+    expect(screen.getByText('Минимум 8 символов')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Опубликовать' }));
+    expect(onCreateSeparate).not.toHaveBeenCalled();
+  });
+
+  it('invalid title blocks the separate path while existing confirmation remains available', async () => {
+    const onCreateSeparate = vi.fn();
+    mockedFindSimilar.mockResolvedValueOnce([{ id: 'delta-2', statement: 'Похожее изменение', status: 'new', confirmCount: 1, disconfirmCount: 0, distanceMeters: 50, locationLabel: 'Рядом', createdAt: '2026-01-01T00:00:00.000Z' }]);
+    render(
+      <MemoryRouter>
+        <MobileDeltaReviewScreen
+          draft={validDraft({ subject: 'мало', statement: 'мало' })}
+          update={vi.fn()}
+          categories={categories}
+          circleContext={{ circleId: 'circle-1', citySlug: 'perm' }}
+          publishing={false}
+          onCreateSeparate={onCreateSeparate}
+          onConfirmExisting={vi.fn()}
+          publishError=""
+          authorLocked={false}
+          onRetryFailed={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole('button', { name: 'Это другое изменение' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Это то же изменение' })).toBeEnabled();
+    expect(onCreateSeparate).not.toHaveBeenCalled();
+  });
 });
 
 describe('MobileDeltaCreateResult', () => {
