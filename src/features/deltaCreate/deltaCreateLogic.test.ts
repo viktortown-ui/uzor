@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDeltaStatement, createEmptyDeltaDraft, getChangeTypeOptions, resetDependentFields, restoreDeltaDraft, serializeDeltaDraft, validateDeltaDraft, validateDeltaStep } from './deltaCreateLogic';
+import { buildDeltaStatement, createEmptyDeltaDraft, getChangeTypeOptions, resetDependentFields, restoreDeltaDraft, serializeDeltaDraft, validateDeltaDraft, validateDeltaStep, validateMobileDeltaStep } from './deltaCreateLogic';
 import type { DeltaCreateDraft } from './deltaCreateTypes';
 
 const valid = (direction: 'positive' | 'negative' = 'positive'): DeltaCreateDraft => ({ ...createEmptyDeltaDraft(), currentStep: 4, districtCode: 'leninsky', districtLabel: 'Ленинский район', direction, categorySlug: 'transport', changeType: direction === 'positive' ? 'faster' : 'slower', subject: 'ожидание автобуса вечером', statement: direction === 'positive' ? 'Ожидание автобуса вечером стало быстрее' : 'Ожидание автобуса вечером стало медленнее', observedWindow: 'today', impactLevel: 'noticeable' });
@@ -21,8 +21,9 @@ describe('delta create logic', () => {
   it('пустой direction блокирует шаг 2', () => expect(validateDeltaStep({ ...valid(), direction: '' }, 2)).toContain('Выберите: стало лучше или хуже'));
   it('пустая category блокирует шаг 2', () => expect(validateDeltaStep({ ...valid(), categorySlug: '' }, 2)).toContain('Выберите категорию'));
   it('пустой changeType блокирует шаг 2', () => expect(validateDeltaStep({ ...valid(), changeType: '' }, 2)).toContain('Выберите тип изменения'));
-  it('subject может быть пустым для конкретного типа изменения', () => expect(validateDeltaStep({ ...valid(), subject: '', statement: '' }, 2)).toEqual([]));
-  it('other требует текст', () => expect(validateDeltaStep({ ...valid(), changeType: 'other', subject: '', statement: '' }, 2)).toContain('Для варианта «Другое» коротко опишите изменение'));
+  it('desktop требует subject', () => expect(validateDeltaStep({ ...valid(), subject: '', statement: '' }, 2)).toContain('Коротко опишите изменение'));
+  it('mobile позволяет пустой subject для конкретного типа изменения', () => expect(validateMobileDeltaStep({ ...valid(), subject: '', statement: '', statementMode: 'auto' }, 2)).toEqual([]));
+  it('mobile other требует текст', () => expect(validateMobileDeltaStep({ ...valid(), changeType: 'other', subject: '', statement: '', statementMode: 'auto' }, 2)).toContain('Для варианта «Другое» коротко опишите изменение'));
   it('statement короче 8 символов блокируется', () => expect(validateDeltaStep({ ...valid(), categorySlug: '', subject: '', statement: '' }, 2)).toContain('Формулировка слишком короткая'));
   it('period обязателен', () => expect(validateDeltaStep({ ...valid(), observedWindow: '' }, 3)).toContain('Выберите период'));
   it('impact обязателен', () => expect(validateDeltaStep({ ...valid(), impactLevel: '' }, 3)).toContain('Укажите степень влияния'));

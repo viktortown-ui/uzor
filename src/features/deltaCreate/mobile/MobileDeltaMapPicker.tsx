@@ -18,10 +18,12 @@ export function MobileDeltaMapPicker({ lat, lng, onPick }: Props) {
   const coordsRef = useRef({ lat, lng });
   const mountedRef = useRef(false);
   const [error, setError] = useState('');
+  const [fatalError, setFatalError] = useState(false);
   const [retry, setRetry] = useState(0);
 
-  const safeSetError = useCallback((message: string) => { if (mountedRef.current) setError(message); }, []);
-  const failMap = useCallback(() => safeSetError('Не удалось открыть карту'), [safeSetError]);
+  const safeSetError = useCallback((message: string, fatal = false) => { if (mountedRef.current) { setError(message); setFatalError(fatal); } }, []);
+  const failMap = useCallback(() => safeSetError('Не удалось открыть карту', true), [safeSetError]);
+  const warnMap = useCallback((message: string) => safeSetError(message, false), [safeSetError]);
 
   const destroyMap = useCallback(() => {
     const cleanups = cleanupRef.current.splice(0);
@@ -35,10 +37,10 @@ export function MobileDeltaMapPicker({ lat, lng, onPick }: Props) {
   }, []);
 
   const choosePoint = useCallback((nextLat: number, nextLng: number, source: Source) => {
-    if (!isWithinPermMvpArea(nextLat, nextLng)) { safeSetError(PERM_MVP_AREA_ERROR); return; }
+    if (!isWithinPermMvpArea(nextLat, nextLng)) { warnMap(PERM_MVP_AREA_ERROR); return; }
     safeSetError('');
     pickRef.current(nextLat, nextLng, source);
-  }, [safeSetError]);
+  }, [safeSetError, warnMap]);
 
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
   useEffect(() => { pickRef.current = onPick; coordsRef.current = { lat, lng }; }, [onPick, lat, lng]);
@@ -54,7 +56,11 @@ export function MobileDeltaMapPicker({ lat, lng, onPick }: Props) {
       map.addControl(nav, 'bottom-right');
       const clickHandler = (event: maplibregl.MapMouseEvent) => choosePoint(event.lngLat.lat, event.lngLat.lng, 'map');
       const loadHandler = () => guard(() => map && typeof map.resize === 'function' && map.resize());
-      const errorHandler = () => failMap();
+      const errorHandler = (event?: maplibregl.ErrorEvent) => {
+        const message = event?.error?.message ?? '';
+        if (/style/i.test(message) && !/tile|resource|image|glyph|sprite/i.test(message)) failMap();
+        /* Tile/style resource errors are non-fatal: keep the picker alive. */
+      };
       map.on('click', clickHandler);
       map.on('load', loadHandler);
       map.on('error', errorHandler);
@@ -83,16 +89,16 @@ export function MobileDeltaMapPicker({ lat, lng, onPick }: Props) {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || lat == null || lng == null || error === 'Не удалось открыть карту') return;
+    if (!map || lat == null || lng == null || fatalError) return;
     try {
       if (!markerRef.current) markerRef.current = new maplibregl.Marker().addTo(map);
       markerRef.current.setLngLat([lng, lat]);
       map.flyTo({ center: [lng, lat], zoom: 13, essential: false });
     } catch { failMap(); destroyMap(); }
-  }, [lat, lng, error, failMap, destroyMap]);
+  }, [lat, lng, fatalError, failMap, destroyMap]);
 
-  const geolocate = () => { safeSetError(''); if (!navigator.geolocation) { safeSetError('Доступ к местоположению не предоставлен. Выберите точку на карте.'); return; } navigator.geolocation.getCurrentPosition((position) => choosePoint(position.coords.latitude, position.coords.longitude, 'geolocation'), () => safeSetError('Доступ к местоположению не предоставлен. Выберите точку на карте.'), { timeout: 10000, enableHighAccuracy: false }); };
+  const geolocate = () => { safeSetError(''); if (!navigator.geolocation) { warnMap('Доступ к местоположению не предоставлен. Выберите точку на карте.'); return; } navigator.geolocation.getCurrentPosition((position) => choosePoint(position.coords.latitude, position.coords.longitude, 'geolocation'), () => warnMap('Доступ к местоположению не предоставлен. Выберите точку на карте.'), { timeout: 10000, enableHighAccuracy: false }); };
   const retryMap = () => { safeSetError(''); destroyMap(); setRetry((value) => value + 1); };
 
-  return <div className="mobile-delta-map-wrap"><div ref={el} className="mobile-delta-map" role="application" aria-label="Карта выбора места Дельты" />{error && <div className="mobile-delta-map-error" role="alert"><p>{error}</p><button type="button" onClick={retryMap}>Повторить</button></div>}<button className="mobile-delta-locate" type="button" onClick={geolocate} aria-label="Выбрать моё местоположение">◎</button></div>;
+  return <div className="mobile-delta-map-wrap"><div ref={el} className="mobile-delta-map" role="application" aria-label="Карта выбора места Дельты" />{error && <div className="mobile-delta-map-error" role="alert"><p>{error}</p>{fatalError && <button type="button" onClick={retryMap}>Повторить</button>}</div>}<button className="mobile-delta-locate" type="button" onClick={geolocate} aria-label="Выбрать моё местоположение">◎</button></div>;
 }

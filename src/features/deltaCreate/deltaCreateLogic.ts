@@ -18,8 +18,7 @@ export function getSubjectPlaceholder(categorySlug: DeltaCreateCategorySlug | ''
 const endings: Record<DeltaChangeType, string> = { faster: 'стало быстрее', slower: 'стало медленнее', cheaper: 'стала ниже', more_expensive: 'стала выше', more_available: 'стала доступнее', less_available: 'стала менее доступной', more: 'стало больше', less: 'стала меньше', appeared: 'появилось', disappeared: 'исчезло', improved: 'стало лучше', worsened: 'стало хуже', other: 'изменилось' };
 const categoryTitles: Record<string, string> = Object.fromEntries(DELTA_CREATE_CATEGORIES.map((category) => [category.slug, category.title]));
 export function getGeneratedDeltaStatement(input: { categorySlug: string; changeType: DeltaChangeType | ''; subject: string; statement: string; statementMode: 'auto' | 'manual'; }) {
-  if (input.statement.trim()) return input.statement.trim();
-  return buildDeltaStatement(input);
+  return input.statementMode === 'manual' ? input.statement.trim() : buildDeltaStatement(input);
 }
 const capitalize = (value: string) => value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
 export function buildDeltaStatement(input: { direction?: DeltaDirection | ''; categorySlug?: string; changeType: DeltaChangeType | ''; subject: string }) {
@@ -31,7 +30,7 @@ export function buildDeltaStatement(input: { direction?: DeltaDirection | ''; ca
   return category ? `${category}: ${endings[input.changeType]}` : '';
 }
 export function createEmptyDeltaDraft(): DeltaCreateDraft { return { currentStep: 1, districtCode: '', districtLabel: '', locationHint: '', lat: null, lng: null, locationLabel: '', locationPrecision: 'point', locationSource: null, selectedSimilarDeltaId: null, similarDecision: null, direction: '', categorySlug: '', changeType: '', subject: '', statement: '', statementMode: 'auto', observedWindow: '', impactLevel: '', details: '' }; }
-export function resetDependentFields(draft: DeltaCreateDraft, changedField: 'direction' | 'subject' | 'changeType'): DeltaCreateDraft {
+export function resetDependentFields(draft: DeltaCreateDraft, changedField: 'direction' | 'categorySlug' | 'subject' | 'changeType'): DeltaCreateDraft {
   const next = { ...draft };
   if (changedField === 'direction' && next.direction && next.changeType && !getChangeTypeOptions(next.direction).some((o) => o.value === next.changeType)) next.changeType = '';
   if (next.statementMode === 'auto') next.statement = buildDeltaStatement(next);
@@ -40,10 +39,16 @@ export function resetDependentFields(draft: DeltaCreateDraft, changedField: 'dir
 export function validateDeltaStep(draft: DeltaCreateDraft, step: DeltaCreateStep): string[] {
   const errors: string[] = [];
   if (step === 1) { if (!draft.districtCode || !draft.districtLabel) errors.push('Выберите район или территорию'); }
-  if (step === 2) { if (!draft.direction) errors.push('Выберите: стало лучше или хуже'); if (!draft.categorySlug) errors.push('Выберите категорию'); if (!draft.changeType) errors.push('Выберите тип изменения'); if (draft.changeType === 'other' && draft.subject.trim().length < 2) errors.push('Для варианта «Другое» коротко опишите изменение'); if (getGeneratedDeltaStatement(draft).length < 8) errors.push('Формулировка слишком короткая'); }
+  if (step === 2) { if (!draft.direction) errors.push('Выберите: стало лучше или хуже'); if (!draft.categorySlug) errors.push('Выберите категорию'); if (!draft.changeType) errors.push('Выберите тип изменения'); if (draft.subject.trim().length < 2) errors.push('Коротко опишите изменение'); if (getGeneratedDeltaStatement(draft).length < 8) errors.push('Формулировка слишком короткая'); }
   if (step === 3) { if (!draft.observedWindow) errors.push('Выберите период'); if (!draft.impactLevel) errors.push('Укажите степень влияния'); if (draft.details.length > 500) errors.push('Пояснение не должно превышать 500 символов'); }
   if (step === 4) { ([1,2,3] as DeltaCreateStep[]).forEach((s) => errors.push(...validateDeltaStep(draft, s))); }
   return errors;
+}
+export function validateMobileDeltaStep(draft: DeltaCreateDraft, step: DeltaCreateStep): string[] {
+  const errors: string[] = [];
+  if (step === 2) { if (!draft.direction) errors.push('Выберите: стало лучше или хуже'); if (!draft.categorySlug) errors.push('Выберите категорию'); if (!draft.changeType) errors.push('Выберите тип изменения'); if (draft.changeType === 'other' && draft.subject.trim().length < 2) errors.push('Для варианта «Другое» коротко опишите изменение'); if (getGeneratedDeltaStatement(draft).length < 8) errors.push('Формулировка слишком короткая'); return errors; }
+  if (step === 4) { ([1,2,3] as DeltaCreateStep[]).forEach((s) => errors.push(...validateMobileDeltaStep(draft, s))); return errors; }
+  return validateDeltaStep(draft, step);
 }
 export function validateDeltaDraft(draft: DeltaCreateDraft) { return validateDeltaStep(draft, 4); }
 export function isStepComplete(draft: DeltaCreateDraft, step: DeltaCreateStep) { return validateDeltaStep(draft, step).length === 0; }
