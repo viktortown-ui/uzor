@@ -5,10 +5,9 @@ import { createDelta, getDeltaCard, loadDeltaCategories, reactToDelta } from '..
 import type { DeltaCard, DeltaCategory, DeltaEffect, ReactToDeltaResult } from '../../deltas/deltaTypes';
 import { demoCard, demoDeltaMapData } from '../../deltaMap/demoDeltaMapData';
 import { loadDeltaMapContext } from '../../deltaMap/deltaMapLogic';
-import { createEmptyDeltaDraft, resetDependentFields, restoreDeltaDraft, serializeDeltaDraft, validateMobileDeltaStep } from '../deltaCreateLogic';
+import { createEmptyDeltaDraft, resetDependentFields, restoreDeltaDraft, serializeDeltaDraft } from '../deltaCreateLogic';
 import {
   buildCreateDeltaInput,
-  canPublishSeparate,
   createDemoDeltaResult,
   createDemoReactionResult,
   DELTA_CREATE_PRODUCTION_STORAGE_KEY,
@@ -20,6 +19,8 @@ import { DELTA_CREATE_CATEGORIES, type DeltaCreateDraft } from '../deltaCreateTy
 import { isLocationComplete, isWithinPermMvpArea, PERM_MVP_AREA_ERROR, shouldResetSimilarDecision } from '../deltaGeoLogic';
 import { MobileDeltaChangeScreen } from './MobileDeltaChangeScreen';
 import type { MobileObservationPreset } from './mobileObservationPresets';
+import { presetDraftPatch } from './mobileObservationPresets';
+import { canPublishMobileSeparate, isMobileObservationComplete, validateMobileQuickObservation } from './mobileQuickObservation';
 import { MobileDeltaCreateResult } from './MobileDeltaCreateResult';
 import { MobileDeltaLocationScreen } from './MobileDeltaLocationScreen';
 import { MobileDeltaReviewScreen } from './MobileDeltaReviewScreen';
@@ -51,7 +52,7 @@ function MobileDeltaHeader({ stage, onBack }: HeaderProps) {
 }
 
 function isChangeComplete(draft: DeltaCreateDraft) {
-  return validateMobileDeltaStep(draft, 2).concat(validateMobileDeltaStep(draft, 3)).length === 0;
+  return isMobileObservationComplete(draft);
 }
 
 function isLocationStageComplete(draft: DeltaCreateDraft) {
@@ -163,6 +164,10 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
     });
   }, []);
 
+  const persistDraft = useCallback((next: DeltaCreateDraft) => {
+    localStorage.setItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY, serializeDeltaDraft(next));
+  }, []);
+
   useEffect(() => {
     const hasDraftData = Boolean(
       draft.direction
@@ -218,35 +223,49 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
     goStage(expectedPrevious, true, activeStage);
   };
 
-  const continueChange = () => {
-    const nextErrors = [...validateMobileDeltaStep(draft, 2), ...validateMobileDeltaStep(draft, 3)];
+  const applyObservation = (patch: Partial<DeltaCreateDraft>) => {
+    const next = { ...draft, ...patch };
+    const nextErrors = validateMobileQuickObservation(next);
     setErrors(nextErrors);
     if (nextErrors.length) {
       document.querySelector('.mobile-delta-alert')?.scrollIntoView({ block: 'center' });
       return;
     }
+    setDraft(next);
+    persistDraft(next);
     goStage('location');
   };
 
-  const continueLocation = (geolocation?: { lat: number; lng: number }) => {
-    if (geolocation) {
-      setLocationError('');
-      goStage('review');
-      return;
-    }
-    if (!isLocationStageComplete(draft)) {
-      setLocationError(!isWithinPermMvpArea(draft.lat, draft.lng) ? PERM_MVP_AREA_ERROR : 'Выберите точку');
+  const acceptLocation = (selection: {
+    lat: number;
+    lng: number;
+    source: 'map' | 'geolocation';
+    label: string;
+    autoAdvance: boolean;
+  }) => {
+    const next: DeltaCreateDraft = {
+      ...draft,
+      lat: selection.lat,
+      lng: selection.lng,
+      locationSource: selection.source,
+      locationPrecision: 'point',
+      locationLabel: selection.label,
+      selectedSimilarDeltaId: null,
+      similarDecision: null,
+    };
+    if (!isLocationStageComplete(next)) {
+      setLocationError(!isWithinPermMvpArea(next.lat, next.lng) ? PERM_MVP_AREA_ERROR : 'Выберите точку');
       return;
     }
     setLocationError('');
-    goStage('review');
+    setDraft(next);
+    persistDraft(next);
+    if (selection.autoAdvance) goStage('review');
   };
 
   const selectPreset = (preset: MobileObservationPreset) => {
-    const next = { ...draft, categorySlug: preset.categorySlug, direction: preset.direction, changeType: preset.changeType, subject: preset.title, statement: preset.title, statementMode: 'manual' as const, observedWindow: 'today' as const, impactLevel: 'noticeable' as const, selectedSimilarDeltaId: null, similarDecision: null };
-    setDraft(next);
-    localStorage.setItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY, serializeDeltaDraft(next));
-    goStage('location');
+    if (!categories.some((category) => category.slug === preset.categorySlug)) return;
+    applyObservation(presetDraftPatch(preset));
   };
 
   const beginPublish = (action: FailedAction) => {
@@ -267,7 +286,7 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
   const createSeparate = useCallback(async () => {
     if (!beginPublish({ kind: 'create' })) return;
     try {
-      if (!canPublishSeparate(draft)) throw new Error('invalid_delta_payload');
+      if (!canPublishMobileSeparate(draft)) throw new Error('invalid_delta_payload');
       if (isDemoMode) {
         const demoResult = createDemoDeltaResult(draft);
         localStorage.removeItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY);
@@ -403,17 +422,24 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
           <MobileDeltaChangeScreen
             headingRef={screenHeadingRef}
             draft={draft}
-            update={update}
             categories={categories}
             catStatus={catStatus}
             retry={retryCategories}
             errors={errors}
             onPreset={selectPreset}
-            onCustom={continueChange}
+            onCustomSubmit={applyObservation}
           />
         )}
         {activeStage === 'location' && (
-          <MobileDeltaLocationScreen headingRef={screenHeadingRef} draft={draft} update={update} error={locationError} onContinue={continueLocation} />
+          <MobileDeltaLocationScreen
+            headingRef={screenHeadingRef}
+            draft={draft}
+            update={update}
+            error={locationError}
+            onError={setLocationError}
+            onAccept={acceptLocation}
+            onContinue={() => goStage('review')}
+          />
         )}
         {activeStage === 'review' && (
           <MobileDeltaReviewScreen

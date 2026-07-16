@@ -6,6 +6,7 @@ import type { DeltaCategory, DeltaDirection, DeltaStatus } from '../../deltas/de
 import { demoDeltaMapData } from '../../deltaMap/demoDeltaMapData';
 import { getImpactOptions } from '../deltaCreateLogic';
 import type { DeltaCreateDraft } from '../deltaCreateTypes';
+import { MOBILE_TITLE_MAX_LENGTH, validateMobileTitle } from './mobileQuickObservation';
 import {
   buildSimilarSearchInput,
   findDemoSimilarDeltas,
@@ -132,22 +133,70 @@ export function MobileDeltaReviewScreen({
   }, [runSearch, searchKey]);
 
   const categoryTitle = categories.find((category) => category.slug === draft.categorySlug)?.title;
+  const titleError = validateMobileTitle(draft.subject);
+  const summaryTitle = draft.subject || draft.statement || 'Изменение без заголовка';
   return (
     <section className="mobile-delta-screen" aria-busy={publishing || status === 'loading'}>
       <h1 ref={headingRef} tabIndex={-1}>Проверить</h1>
       <article className="mobile-delta-summary">
-        <strong>{draft.subject}</strong>
+        <strong>{summaryTitle}</strong>
         <span className={`mobile-direction-tag ${draft.direction}`}>{directionLabels[draft.direction]}</span>
         <p>{categoryTitle}</p>
         <p>{draft.locationLabel}</p>
         <button type="button" onClick={() => update({ currentStep: 1 })}>Изменить место</button>
       </article>
 
-      <details className="mobile-review-details"><summary>Уточнить</summary>
-        <label>Заголовок<input maxLength={48} value={draft.subject} onChange={(event) => update({ subject: event.target.value, statement: event.target.value, statementMode: 'manual' })} /></label>
-        <fieldset><legend>Когда заметили?</legend><div className="mobile-delta-tiles">{Object.entries(periodLabels).filter(([value]) => value).map(([value, label]) => <button type="button" className={draft.observedWindow === value ? 'mobile-delta-chip active' : 'mobile-delta-chip'} key={value} onClick={() => update({ observedWindow: value as DeltaCreateDraft['observedWindow'] })}>{label}</button>)}</div></fieldset>
-        <fieldset><legend>Насколько влияет?</legend><div className="mobile-delta-tiles">{getImpactOptions(draft.direction).map((option) => <button type="button" className={draft.impactLevel === option.value ? 'mobile-delta-chip active' : 'mobile-delta-chip'} key={option.value} onClick={() => update({ impactLevel: option.value })}>{option.label}</button>)}</div></fieldset>
-        <label>Добавить комментарий<textarea maxLength={500} value={draft.details} onChange={(event) => update({ details: event.target.value })} /></label><small>{draft.details.length}/500</small>
+      <details className="mobile-review-details">
+        <summary>Уточнить</summary>
+        <label>
+          Заголовок
+          <input
+            maxLength={MOBILE_TITLE_MAX_LENGTH}
+            value={draft.subject}
+            onChange={(event) => update({
+              subject: event.target.value,
+              statement: event.target.value,
+              statementMode: 'manual',
+            })}
+          />
+        </label>
+        <small>{draft.subject.length}/{MOBILE_TITLE_MAX_LENGTH}</small>
+        {titleError && <p role="alert" className="mobile-inline-error">{titleError}</p>}
+        <fieldset>
+          <legend>Когда заметили?</legend>
+          <div className="mobile-delta-tiles">
+            {Object.entries(periodLabels).filter(([value]) => value).map(([value, label]) => (
+              <button
+                type="button"
+                className={draft.observedWindow === value ? 'mobile-delta-chip active' : 'mobile-delta-chip'}
+                key={value}
+                onClick={() => update({ observedWindow: value as DeltaCreateDraft['observedWindow'] })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Насколько влияет?</legend>
+          <div className="mobile-delta-tiles">
+            {getImpactOptions(draft.direction).map((option) => (
+              <button
+                type="button"
+                className={draft.impactLevel === option.value ? 'mobile-delta-chip active' : 'mobile-delta-chip'}
+                key={option.value}
+                onClick={() => update({ impactLevel: option.value })}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <label>
+          Добавить комментарий
+          <textarea maxLength={500} value={draft.details} onChange={(event) => update({ details: event.target.value })} />
+        </label>
+        <small>{draft.details.length}/500</small>
       </details>
 
       {authorLocked && (
@@ -190,7 +239,7 @@ export function MobileDeltaReviewScreen({
       {(status === 'empty' || status === 'ready') && (
         <>
           <p>{status === 'empty' ? 'Похожих изменений рядом не найдено' : 'Проверка похожих изменений пропущена'}</p>
-          <button className="mobile-delta-primary" type="button" disabled={publishing} onClick={onCreateSeparate}>
+          <button className="mobile-delta-primary" type="button" disabled={publishing || Boolean(titleError)} onClick={onCreateSeparate}>
             {publishing ? 'Публикуем…' : 'Опубликовать'}
           </button>
         </>
