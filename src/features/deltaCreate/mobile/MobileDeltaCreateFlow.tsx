@@ -19,6 +19,7 @@ import {
 import { DELTA_CREATE_CATEGORIES, type DeltaCreateDraft } from '../deltaCreateTypes';
 import { isLocationComplete, isWithinPermMvpArea, PERM_MVP_AREA_ERROR, shouldResetSimilarDecision } from '../deltaGeoLogic';
 import { MobileDeltaChangeScreen } from './MobileDeltaChangeScreen';
+import type { MobileObservationPreset } from './mobileObservationPresets';
 import { MobileDeltaCreateResult } from './MobileDeltaCreateResult';
 import { MobileDeltaLocationScreen } from './MobileDeltaLocationScreen';
 import { MobileDeltaReviewScreen } from './MobileDeltaReviewScreen';
@@ -227,13 +228,25 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
     goStage('location');
   };
 
-  const continueLocation = () => {
+  const continueLocation = (geolocation?: { lat: number; lng: number }) => {
+    if (geolocation) {
+      setLocationError('');
+      goStage('review');
+      return;
+    }
     if (!isLocationStageComplete(draft)) {
       setLocationError(!isWithinPermMvpArea(draft.lat, draft.lng) ? PERM_MVP_AREA_ERROR : 'Выберите точку');
       return;
     }
     setLocationError('');
     goStage('review');
+  };
+
+  const selectPreset = (preset: MobileObservationPreset) => {
+    const next = { ...draft, categorySlug: preset.categorySlug, direction: preset.direction, changeType: preset.changeType, subject: preset.title, statement: preset.title, statementMode: 'manual' as const, observedWindow: 'today' as const, impactLevel: 'noticeable' as const, selectedSimilarDeltaId: null, similarDecision: null };
+    setDraft(next);
+    localStorage.setItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY, serializeDeltaDraft(next));
+    goStage('location');
   };
 
   const beginPublish = (action: FailedAction) => {
@@ -380,11 +393,7 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
     );
   }
 
-  const action = activeStage === 'change'
-    ? <button className="mobile-delta-primary" type="button" onClick={continueChange}>Продолжить</button>
-    : activeStage === 'location'
-      ? <button className="mobile-delta-primary" type="button" disabled={!isLocationStageComplete(draft)} onClick={continueLocation}>{isLocationStageComplete(draft) ? 'Подтвердить место' : 'Выберите точку'}</button>
-      : null;
+  const action = null;
 
   return (
     <section className={`mobile-delta-flow${activeStage === 'location' ? ' mobile-delta-flow--location' : ''}`}>
@@ -399,10 +408,12 @@ export function MobileDeltaCreateFlow({ mode }: { mode: 'production' | 'geo-lab'
             catStatus={catStatus}
             retry={retryCategories}
             errors={errors}
+            onPreset={selectPreset}
+            onCustom={continueChange}
           />
         )}
         {activeStage === 'location' && (
-          <MobileDeltaLocationScreen headingRef={screenHeadingRef} draft={draft} update={update} error={locationError} />
+          <MobileDeltaLocationScreen headingRef={screenHeadingRef} draft={draft} update={update} error={locationError} onContinue={continueLocation} />
         )}
         {activeStage === 'review' && (
           <MobileDeltaReviewScreen

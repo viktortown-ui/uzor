@@ -98,8 +98,7 @@ export function MobileDeltaMapPicker({ lat, lng, onPick }: Props) {
     } catch { failMap(); destroyMap(); }
   }, [lat, lng, fatalError, failMap, destroyMap]);
 
-  const geolocate = () => { safeSetError(''); if (!navigator.geolocation) { warnMap('Доступ к местоположению не предоставлен. Выберите точку на карте.'); return; } navigator.geolocation.getCurrentPosition((position) => choosePoint(position.coords.latitude, position.coords.longitude, 'geolocation'), () => warnMap('Доступ к местоположению не предоставлен. Выберите точку на карте.'), { timeout: 10000, enableHighAccuracy: false }); };
   const retryMap = () => { safeSetError(''); destroyMap(); setRetry((value) => value + 1); };
 
-  return <div className="mobile-delta-map-wrap"><div ref={el} className="mobile-delta-map" role="application" aria-label="Карта выбора места Дельты" />{error && <div className="mobile-delta-map-error" role="alert"><p>{error}</p>{fatalError && <button type="button" onClick={retryMap}>Повторить</button>}</div>}<button className="mobile-delta-locate" type="button" onClick={geolocate} aria-label="Выбрать моё местоположение">◎</button></div>;
+  return <div className="mobile-delta-map-wrap"><div ref={el} className="mobile-delta-map" role="application" aria-label="Карта выбора места Дельты" />{error && <div className="mobile-delta-map-error" role="alert"><p>{error}</p>{fatalError && <button type="button" onClick={retryMap}>Повторить</button>}</div>}</div>;
 }

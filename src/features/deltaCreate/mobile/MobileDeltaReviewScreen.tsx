@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { isDemoMode } from '../../../app/appMode';
 import { findSimilarDeltas } from '../../deltas/deltaApi';
-import type { DeltaCategory, DeltaDirection, DeltaImpactLevel, DeltaStatus } from '../../deltas/deltaTypes';
+import type { DeltaCategory, DeltaDirection, DeltaStatus } from '../../deltas/deltaTypes';
 import { demoDeltaMapData } from '../../deltaMap/demoDeltaMapData';
-import { getGeneratedDeltaStatement, getImpactOptions } from '../deltaCreateLogic';
+import { getImpactOptions } from '../deltaCreateLogic';
 import type { DeltaCreateDraft } from '../deltaCreateTypes';
 import {
   buildSimilarSearchInput,
@@ -55,10 +55,6 @@ type Props = {
 
 function getSimilarSearchKey(draft: DeltaCreateDraft) {
   return [draft.categorySlug || '', draft.direction || '', draft.changeType || '', draft.lat ?? '', draft.lng ?? ''].join('|');
-}
-
-function getImpactLabel(direction: DeltaDirection | '', value: DeltaImpactLevel | '') {
-  return getImpactOptions(direction).find((option) => option.value === value)?.label ?? '';
 }
 
 export function MobileDeltaReviewScreen({
@@ -136,20 +132,23 @@ export function MobileDeltaReviewScreen({
   }, [runSearch, searchKey]);
 
   const categoryTitle = categories.find((category) => category.slug === draft.categorySlug)?.title;
-  const finalStatement = getGeneratedDeltaStatement(draft);
-  const impact = getImpactLabel(draft.direction, draft.impactLevel);
-
   return (
     <section className="mobile-delta-screen" aria-busy={publishing || status === 'loading'}>
-      <h1 ref={headingRef} tabIndex={-1}>Проверьте Дельту</h1>
+      <h1 ref={headingRef} tabIndex={-1}>Проверить</h1>
       <article className="mobile-delta-summary">
-        <strong>{finalStatement}</strong>
-        <p>{categoryTitle} · {directionLabels[draft.direction]}</p>
-        <p>{periodLabels[draft.observedWindow]} · {impact}</p>
+        <strong>{draft.subject}</strong>
+        <span className={`mobile-direction-tag ${draft.direction}`}>{directionLabels[draft.direction]}</span>
+        <p>{categoryTitle}</p>
         <p>{draft.locationLabel}</p>
-        <button type="button" onClick={() => update({ currentStep: 2 })}>Изменить описание</button>
         <button type="button" onClick={() => update({ currentStep: 1 })}>Изменить место</button>
       </article>
+
+      <details className="mobile-review-details"><summary>Уточнить</summary>
+        <label>Заголовок<input maxLength={48} value={draft.subject} onChange={(event) => update({ subject: event.target.value, statement: event.target.value, statementMode: 'manual' })} /></label>
+        <fieldset><legend>Когда заметили?</legend><div className="mobile-delta-tiles">{Object.entries(periodLabels).filter(([value]) => value).map(([value, label]) => <button type="button" className={draft.observedWindow === value ? 'mobile-delta-chip active' : 'mobile-delta-chip'} key={value} onClick={() => update({ observedWindow: value as DeltaCreateDraft['observedWindow'] })}>{label}</button>)}</div></fieldset>
+        <fieldset><legend>Насколько влияет?</legend><div className="mobile-delta-tiles">{getImpactOptions(draft.direction).map((option) => <button type="button" className={draft.impactLevel === option.value ? 'mobile-delta-chip active' : 'mobile-delta-chip'} key={option.value} onClick={() => update({ impactLevel: option.value })}>{option.label}</button>)}</div></fieldset>
+        <label>Добавить комментарий<textarea maxLength={500} value={draft.details} onChange={(event) => update({ details: event.target.value })} /></label><small>{draft.details.length}/500</small>
+      </details>
 
       {authorLocked && (
         <div role="alert" className="mobile-delta-alert">
@@ -190,16 +189,16 @@ export function MobileDeltaReviewScreen({
 
       {(status === 'empty' || status === 'ready') && (
         <>
-          <p>{status === 'empty' ? 'Похожих Дельт рядом не найдено' : 'Проверка похожих Дельт пропущена'}</p>
+          <p>{status === 'empty' ? 'Похожих изменений рядом не найдено' : 'Проверка похожих изменений пропущена'}</p>
           <button className="mobile-delta-primary" type="button" disabled={publishing} onClick={onCreateSeparate}>
-            {publishing ? 'Публикуем Дельту…' : 'Опубликовать Дельту'}
+            {publishing ? 'Публикуем…' : 'Опубликовать'}
           </button>
         </>
       )}
 
       {status === 'found' && (
         <div className="mobile-delta-similar">
-          <h2>Похожая Дельта уже есть рядом</h2>
+          <h2>Похожее изменение уже отметили</h2>
           {rows.slice(0, 3).map((row, index) => (
             <article key={row.id} className={index === 0 ? 'strong' : ''}>
               <strong>{row.statement}</strong>

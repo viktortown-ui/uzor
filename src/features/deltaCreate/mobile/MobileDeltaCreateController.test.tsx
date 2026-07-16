@@ -3,8 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { MobileDeltaCreateFlow } from './MobileDeltaCreateFlow';
 import { DELTA_CREATE_PRODUCTION_STORAGE_KEY } from '../deltaCreateProductionLogic';
-import { serializeDeltaDraft, createEmptyDeltaDraft, buildDeltaStatement } from '../deltaCreateLogic';
-import { createDelta, findSimilarDeltas, getDeltaCard, loadDeltaCategories, reactToDelta } from '../../deltas/deltaApi';
+import { findSimilarDeltas, loadDeltaCategories } from '../../deltas/deltaApi';
 import { loadDeltaMapContext } from '../../deltaMap/deltaMapLogic';
 
 const mapMocks = vi.hoisted(() => {
@@ -42,28 +41,6 @@ vi.mock('../../deltas/deltaApi', async () => {
 
 const categories = [{ slug: 'transport', title: 'Транспорт', iconKey: 'transport' }];
 const circle = { circleId: 'circle-1', citySlug: 'perm' as const };
-const delta = {
-  id: 'delta-1',
-  statement: 'Ожидание автобуса стало дольше',
-  category: categories[0],
-  direction: 'negative',
-  subject: 'ожидание автобуса',
-  changeType: 'slower',
-  details: null,
-  observedWindow: 'today',
-  impactLevel: 'strong',
-  status: 'checking',
-  moderationState: 'visible',
-  confirmCount: 1,
-  disconfirmCount: 0,
-  confirmationTarget: 3,
-  location: { lat: 58.02, lng: 56.26, label: 'Выбранная точка в Перми' },
-  priorityScore: 0,
-  createdAt: '2026-01-01T00:00:00.000Z',
-  lastActivityAt: '2026-01-01T00:00:00.000Z',
-  expiresAt: '2026-01-02T00:00:00.000Z',
-} as const;
-
 function LocationProbe() {
   const location = useLocation();
   return <output aria-label="route">{`${location.pathname}${location.search}`}</output>;
@@ -80,119 +57,49 @@ function renderFlow(initial = '/contribute') {
   );
 }
 
-async function fillValidChange() {
-  fireEvent.click(await screen.findByRole('button', { name: 'Стало хуже' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Транспорт' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Стало медленнее' }));
-  fireEvent.change(screen.getByLabelText('Коротко опишите изменение'), { target: { value: 'ожидание автобуса' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Сегодня' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Сильно мешает' }));
-}
-
-async function reachReview() {
-  await fillValidChange();
-  fireEvent.click(screen.getByRole('button', { name: 'Продолжить' }));
-  await screen.findByRole('heading', { name: 'Где' });
-  mapMocks.handlers.click({ lngLat: { lat: 58.02, lng: 56.26 } });
-  fireEvent.click(await screen.findByRole('button', { name: 'Подтвердить место' }));
-  await screen.findByRole('heading', { name: 'Проверьте Дельту' });
-}
-
 beforeEach(() => {
   vi.mocked(loadDeltaCategories).mockResolvedValue(categories);
   vi.mocked(loadDeltaMapContext).mockResolvedValue(circle);
   vi.mocked(findSimilarDeltas).mockResolvedValue([]);
-  vi.mocked(createDelta).mockResolvedValue({ delta, effect: { type: 'created', previousStatus: null, newStatus: 'checking', message: 'ok', detail: 'Первая отметка закреплена.' } });
-  vi.mocked(reactToDelta).mockResolvedValue({ delta: { id: 'delta-existing', status: 'checking', confirmationTarget: 3, confirmCount: 2, disconfirmCount: 0, progress: { current: 2, target: 3 } }, effect: { type: 'reaction', previousStatus: 'new', newStatus: 'checking', message: 'ok', detail: 'Ваш отклик усилил изменение.' } });
-  vi.mocked(getDeltaCard).mockResolvedValue({ ...delta, id: 'delta-existing' });
 });
 
 afterEach(() => {
-  cleanup();
-  localStorage.clear();
-  vi.clearAllMocks();
+  cleanup(); localStorage.clear(); vi.clearAllMocks();
   Object.keys(mapMocks.handlers).forEach((key) => delete mapMocks.handlers[key]);
 });
 
-describe('MobileDeltaCreateFlow controller', () => {
-  it('invalid change stays on change, valid change advances to location, valid location advances to review', async () => {
+describe('MobileDeltaCreateFlow observation controller', () => {
+  it('shows featured observations without the old questionnaire and opens location in one tap', async () => {
     renderFlow();
-    fireEvent.click(await screen.findByRole('button', { name: 'Продолжить' }));
-    expect(screen.getByRole('heading', { name: 'Что изменилось?' })).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent('Выберите: стало лучше или хуже');
-
-    await reachReview();
-    expect(screen.getByLabelText('route')).toHaveTextContent('/contribute?stage=review');
+    expect(await screen.findByRole('heading', { name: 'Что заметили?' })).toBeInTheDocument();
+    expect(screen.getByText('Часто отмечают')).toBeInTheDocument();
+    expect(screen.queryByText('Когда заметили?')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Продолжить' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Автобус приходится ждать дольше' }));
+    expect(await screen.findByRole('heading', { name: 'Где это?' })).toBeInTheDocument();
+    expect(screen.getByLabelText('route')).toHaveTextContent('/contribute?stage=location');
   });
 
-  it('browser Back and header Back follow stage history without duplicate stages', async () => {
+  it('filters presets and custom mode keeps title canonical', async () => {
     renderFlow();
-    await reachReview();
-
-    fireEvent.click(screen.getByLabelText('Назад'));
-    expect(await screen.findByRole('heading', { name: 'Где' })).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText('Назад'));
-    expect(await screen.findByRole('heading', { name: 'Что изменилось?' })).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText('Закрыть создание Дельты'));
-    expect(await screen.findByRole('heading', { name: 'Пульс' })).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Транспорт' }));
+    expect(screen.getByRole('button', { name: 'Транспорт ходит реже' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Другое изменение' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Стало хуже' }));
+    fireEvent.change(screen.getByLabelText('Короткий заголовок'), { target: { value: 'Очередь у врача стала длиннее' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Указать место' }));
+    expect(await screen.findByText('Очередь у врача стала длиннее')).toBeInTheDocument();
+    const saved = localStorage.getItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY) || '';
+    expect(saved).not.toContain('стала длиннее стало хуже');
   });
 
-  it('direct incomplete review is replaced to change', async () => {
-    renderFlow('/contribute?stage=review');
-    expect(await screen.findByRole('heading', { name: 'Что изменилось?' })).toBeInTheDocument();
-    expect(screen.getByLabelText('route')).toHaveTextContent('/contribute');
-  });
-
-  it('persists draft and derives resume stage', async () => {
-    const draft = { ...createEmptyDeltaDraft(), direction: 'negative' as const, categorySlug: 'transport' as const, changeType: 'slower' as const, subject: 'ожидание автобуса', observedWindow: 'today' as const, impactLevel: 'strong' as const };
-    draft.statement = buildDeltaStatement(draft);
-    localStorage.setItem(DELTA_CREATE_PRODUCTION_STORAGE_KEY, serializeDeltaDraft(draft));
-
+  it('manual map selection requires explicit point confirmation', async () => {
     renderFlow();
-    expect(await screen.findByRole('heading', { name: 'Продолжить Дельту?' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Продолжить' }));
-    expect(await screen.findByRole('heading', { name: 'Где' })).toBeInTheDocument();
-  });
-
-  it('publishes a new Delta once on double click and shows result', async () => {
-    renderFlow();
-    await reachReview();
-    await screen.findByText('Похожих Дельт рядом не найдено');
-    const publish = screen.getByRole('button', { name: 'Опубликовать Дельту' });
-    fireEvent.click(publish);
-    fireEvent.click(publish);
-
-    expect(await screen.findByRole('heading', { name: 'Дельта опубликована' })).toBeInTheDocument();
-    expect(createDelta).toHaveBeenCalledTimes(1);
-  });
-
-  it('confirms existing Delta and falls back when card reload fails', async () => {
-    vi.mocked(findSimilarDeltas).mockResolvedValueOnce([{ id: 'delta-existing', statement: 'Автобус ходит реже', status: 'new', confirmCount: 1, disconfirmCount: 0, distanceMeters: 100, locationLabel: 'Остановка', createdAt: '2026-01-01T00:00:00.000Z' }]);
-    vi.mocked(getDeltaCard).mockRejectedValueOnce(new Error('reload failed'));
-
-    renderFlow();
-    await reachReview();
-    fireEvent.click(await screen.findByRole('button', { name: 'Это то же изменение' }));
-
-    expect(await screen.findByRole('heading', { name: 'Вы подтвердили Дельту' })).toBeInTheDocument();
-    expect(reactToDelta).toHaveBeenCalledTimes(1);
-  });
-
-  it('failed publication can retry and author lock is shown', async () => {
-    vi.mocked(createDelta).mockRejectedValueOnce(new Error('api down')).mockResolvedValueOnce({ delta, effect: { type: 'created', previousStatus: null, newStatus: 'checking', message: 'ok', detail: 'Первая отметка закреплена.' } });
-    renderFlow();
-    await reachReview();
-    fireEvent.click(await screen.findByRole('button', { name: 'Опубликовать Дельту' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Повторить' }));
-    expect(await screen.findByRole('heading', { name: 'Дельта опубликована' })).toBeInTheDocument();
-
-    cleanup();
-    localStorage.clear();
-    vi.mocked(findSimilarDeltas).mockResolvedValueOnce([{ id: 'delta-existing', statement: 'Автобус ходит реже', status: 'new', confirmCount: 1, disconfirmCount: 0, distanceMeters: 100, locationLabel: 'Остановка', createdAt: '2026-01-01T00:00:00.000Z' }]);
-    vi.mocked(reactToDelta).mockRejectedValueOnce(new Error('author_reaction_locked'));
-    renderFlow();
-    await reachReview();
-    fireEvent.click(await screen.findByRole('button', { name: 'Это то же изменение' }));
-    expect(await screen.findByRole('heading', { name: 'Это ваша Дельта' })).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Автобус приходится ждать дольше' }));
+    mapMocks.handlers.click({ lngLat: { lat: 58.02, lng: 56.26 } });
+    expect(await screen.findByRole('button', { name: 'Использовать эту точку' })).toBeInTheDocument();
+    expect(screen.getByLabelText('route')).toHaveTextContent('/contribute?stage=location');
+    fireEvent.click(screen.getByRole('button', { name: 'Использовать эту точку' }));
+    expect(await screen.findByRole('heading', { name: 'Проверить' })).toBeInTheDocument();
   });
 });

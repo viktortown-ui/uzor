@@ -543,7 +543,7 @@ describe('ProductShell shared navigation routes', () => {
     installMatchMedia(true);
     const view = renderAt('/contribute');
     expect(screen.queryByRole('navigation', { name: 'Мобильная навигация' })).not.toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: 'Что изменилось?' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Что заметили?' })).toBeInTheDocument();
     view.unmount();
   });
 });
