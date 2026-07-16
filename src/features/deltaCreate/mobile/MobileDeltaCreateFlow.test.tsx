@@ -63,6 +63,39 @@ afterEach(() => {
 });
 
 describe('MobileDeltaReviewScreen', () => {
+  it('restores a separate decision as ready without searching or hanging', async () => {
+    renderReview(validDraft({ similarDecision: 'separate', selectedSimilarDeltaId: null }));
+    expect(screen.getByText('Проверка похожих изменений пропущена')).toBeInTheDocument();
+    expect(screen.queryByText('Проверяем похожие Дельты рядом…')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Опубликовать' })).toBeEnabled();
+    expect(mockedFindSimilar).not.toHaveBeenCalled();
+  });
+
+  it('restores an existing decision by searching once without confirming automatically', async () => {
+    const onConfirmExisting = vi.fn();
+    mockedFindSimilar.mockResolvedValueOnce([{ id: 'delta-1', statement: 'Автобус ходит реже', status: 'new', confirmCount: 1, disconfirmCount: 0, distanceMeters: 120, locationLabel: 'Остановка Попова', createdAt: '2026-01-01T00:00:00.000Z' }]);
+    render(
+      <MemoryRouter>
+        <MobileDeltaReviewScreen
+          draft={validDraft({ similarDecision: 'existing', selectedSimilarDeltaId: 'delta-1' })}
+          update={vi.fn()}
+          categories={categories}
+          circleContext={{ circleId: 'circle-1', citySlug: 'perm' }}
+          publishing={false}
+          onCreateSeparate={vi.fn()}
+          onConfirmExisting={onConfirmExisting}
+          publishError=""
+          authorLocked={false}
+          onRetryFailed={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Похожее изменение уже отметили')).toBeInTheDocument();
+    expect(screen.queryByText('Проверяем похожие Дельты рядом…')).not.toBeInTheDocument();
+    expect(mockedFindSimilar).toHaveBeenCalledTimes(1);
+    expect(onConfirmExisting).not.toHaveBeenCalled();
+  });
+
   it('runs one automatic similarity search and does not restart after continue without checking', async () => {
     mockedFindSimilar.mockRejectedValueOnce(new Error('network'));
     const update = vi.fn();

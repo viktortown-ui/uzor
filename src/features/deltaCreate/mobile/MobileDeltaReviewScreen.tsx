@@ -72,7 +72,9 @@ export function MobileDeltaReviewScreen({
   headingRef,
 }: Props) {
   const [rows, setRows] = useState<SimilarSearchRow[]>([]);
-  const [status, setStatus] = useState<'loading' | 'empty' | 'found' | 'error' | 'no-circle' | 'ready'>('loading');
+  const [status, setStatus] = useState<'loading' | 'empty' | 'found' | 'error' | 'no-circle' | 'ready'>(
+    () => draft.similarDecision === 'separate' ? 'ready' : 'loading',
+  );
   const [error, setError] = useState('');
   const [confirmSeparate, setConfirmSeparate] = useState(false);
   const sequenceRef = useRef(0);
@@ -86,7 +88,11 @@ export function MobileDeltaReviewScreen({
       return;
     }
 
-    if (!force && (draft.similarDecision || lastAutomaticSearchKeyRef.current === searchKey)) return;
+    if (!force && draft.similarDecision === 'separate') {
+      setStatus('ready');
+      return;
+    }
+    if (!force && lastAutomaticSearchKeyRef.current === searchKey) return;
     lastAutomaticSearchKeyRef.current = searchKey;
 
     const id = ++sequenceRef.current;
