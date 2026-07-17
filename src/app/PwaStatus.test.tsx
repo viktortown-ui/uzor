@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { PwaStatus } from './PwaStatus';
 
 const pwa = vi.hoisted(() => ({
@@ -20,6 +21,10 @@ function setOnline(value: boolean) {
   Object.defineProperty(navigator, 'onLine', { configurable: true, value });
 }
 
+function renderAt(pathname = '/pulse') {
+  return render(<MemoryRouter initialEntries={[pathname]}><PwaStatus /></MemoryRouter>);
+}
+
 describe('PwaStatus', () => {
   beforeEach(() => {
     setOnline(true);
@@ -31,12 +36,12 @@ describe('PwaStatus', () => {
   afterEach(cleanup);
 
   it('does not remain visible without a connectivity or update event', () => {
-    const { container } = render(<PwaStatus />);
+    const { container } = renderAt();
     expect(container).toBeEmptyDOMElement();
   });
 
   it('shows an honest offline message and a recovery message', () => {
-    render(<PwaStatus />);
+    renderAt();
     act(() => window.dispatchEvent(new Event('offline')));
     expect(screen.getByRole('status')).toHaveTextContent('Нет сети. Доступны сохранённые части приложения.');
 
@@ -46,7 +51,7 @@ describe('PwaStatus', () => {
 
   it('shows and postpones a waiting update without reloading', () => {
     pwa.needRefresh = true;
-    render(<PwaStatus />);
+    renderAt();
     expect(screen.getByText('Доступна новая версия')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Позже' }));
@@ -60,7 +65,7 @@ describe('PwaStatus', () => {
     const storageRemove = vi.spyOn(Storage.prototype, 'removeItem');
     const indexedDelete = vi.fn();
     Object.defineProperty(window, 'indexedDB', { configurable: true, value: { deleteDatabase: indexedDelete } });
-    render(<PwaStatus />);
+    renderAt();
 
     fireEvent.click(screen.getByRole('button', { name: 'Обновить' }));
 
@@ -70,5 +75,17 @@ describe('PwaStatus', () => {
     expect(indexedDelete).not.toHaveBeenCalled();
     storageClear.mockRestore();
     storageRemove.mockRestore();
+  });
+
+  it('keeps Pulse notices above the mobile dock', () => {
+    setOnline(false);
+    renderAt('/pulse');
+    expect(screen.getByLabelText('Состояние приложения')).not.toHaveClass('pwa-status-layer--dock-hidden');
+  });
+
+  it('uses safe-area-only positioning when the contribute dock is hidden', () => {
+    setOnline(false);
+    renderAt('/contribute');
+    expect(screen.getByLabelText('Состояние приложения')).toHaveClass('pwa-status-layer--dock-hidden');
   });
 });

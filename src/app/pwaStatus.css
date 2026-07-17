@@ -68,6 +68,10 @@
   .pwa-status-layer {
     bottom: calc(var(--pwa-status-mobile-offset, 0px) + 10px);
   }
+
+  .pwa-status-layer--dock-hidden {
+    bottom: max(16px, env(safe-area-inset-bottom));
+  }
 }
 
 @keyframes pwa-status-in {

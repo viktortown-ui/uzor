@@ -264,7 +264,6 @@
 }
 .mobile-app-shell--dock-hidden {
   padding-bottom: 0;
-  --pwa-status-mobile-offset: env(safe-area-inset-bottom);
 }
 
 .mobile-app-shell--dock-hidden .mobile-app-main {

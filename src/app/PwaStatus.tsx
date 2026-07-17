@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { useLocation } from 'react-router-dom';
 import './pwaStatus.css';
 
 type ConnectivityNotice = 'offline' | 'restored' | null;
 
 export function PwaStatus() {
+  const { pathname } = useLocation();
+  const dockHidden = pathname.startsWith('/contribute');
   const [connectivity, setConnectivity] = useState<ConnectivityNotice>(() => navigator.onLine ? null : 'offline');
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -33,7 +36,7 @@ export function PwaStatus() {
   if (!needRefresh && !connectivity) return null;
 
   return (
-    <aside className="pwa-status-layer" aria-label="Состояние приложения">
+    <aside className={`pwa-status-layer${dockHidden ? ' pwa-status-layer--dock-hidden' : ''}`} aria-label="Состояние приложения">
       {needRefresh && (
         <section className="pwa-status-card pwa-status-card--update" role="alertdialog" aria-label="Доступно обновление приложения">
           <p>Доступна новая версия</p>
