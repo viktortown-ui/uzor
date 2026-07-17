@@ -19,4 +19,12 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
-      - run: npm run build
+      - name: Build PWA at root base
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /
+
+      - name: Build PWA at GitHub Pages base
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /uzor/

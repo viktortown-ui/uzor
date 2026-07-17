@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">УЗОР</title>
+  <desc id="description">Светящийся городской узор на тёмном фоне</desc>
+  <rect width="512" height="512" rx="96" fill="#050b16"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#24cfea" stroke-width="18" opacity=".9"/>
+  <path d="M158 220 207 312 256 194 305 312 354 220" fill="none" stroke="#20e6ce" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="22" fill="#e4fffc"/>
+</svg>
