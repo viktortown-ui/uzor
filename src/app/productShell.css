@@ -20,6 +20,7 @@
   --mobile-app-dock-overhang: 6px;
   --mobile-app-dock-space: calc(var(--mobile-app-dock-height) + var(--mobile-app-dock-overhang) + env(safe-area-inset-bottom));
   --product-mobile-nav-space: var(--mobile-app-dock-space);
+  --pwa-status-mobile-offset: var(--mobile-app-dock-space);
 }
 
 /* Desktop shell */
@@ -147,6 +148,8 @@
   min-height: calc(100dvh - var(--mobile-app-dock-space));
   min-width: 0;
   width: 100%;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* Mobile dock */
@@ -261,6 +264,7 @@
 }
 .mobile-app-shell--dock-hidden {
   padding-bottom: 0;
+  --pwa-status-mobile-offset: env(safe-area-inset-bottom);
 }
 
 .mobile-app-shell--dock-hidden .mobile-app-main {
