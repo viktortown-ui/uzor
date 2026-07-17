@@ -3,7 +3,7 @@
   box-sizing: border-box;
   width: min(100%, 520px);
   margin: 0 auto;
-  padding: calc(12px + env(safe-area-inset-top)) 16px calc(20px + var(--mobile-app-dock-space));
+  padding: calc(12px + env(safe-area-inset-top)) 16px 20px;
   overflow-x: hidden;
   color: var(--mobile-text);
 }

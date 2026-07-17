@@ -30,4 +30,13 @@ export function sortCityItems<T extends Pick<DeltaMapItem, 'id' | 'lastActivityA
 }
 export function titleFor(item: Pick<DeltaMapItem, 'statement'>, card?: Pick<DeltaCard, 'subject'> | null) { return card?.subject.trim() || item.statement.trim() || 'Изменение без заголовка'; }
 export function toPulseItem(item: DeltaMapItem, card?: DeltaCard | null): MobilePulseItem { return { id:item.id, title:titleFor(item, card), fallbackStatement:item.statement, categoryTitle:item.category.title, direction:item.direction, status:item.status, locationLabel:item.location.label, lastActivityAt:item.lastActivityAt, confirmCount:item.confirmCount, disconfirmCount:item.disconfirmCount, priorityScore:item.priorityScore, lat:item.location.lat, lng:item.location.lng }; }
+export function sortNearbyMapItems(items: DeltaMapItem[], lat: number, lng: number) { return items.map(item => ({ ...item, distanceMeters:haversineDistanceM(lat,lng,item.location.lat,item.location.lng) })).sort((a,b)=>a.distanceMeters-b.distanceMeters||a.id.localeCompare(b.id)); }
 export function sortNearby(items: MobilePulseItem[], lat: number, lng: number): MobilePulseItem[] { return items.map(item => ({ ...item, distanceMeters:haversineDistanceM(lat,lng,item.lat,item.lng) })).sort((a,b)=>(a.distanceMeters??Infinity)-(b.distanceMeters??Infinity)||a.id.localeCompare(b.id)); }
+export function formatPulseActivity(lastActivityAt: string, now: Date): string {
+  const time=Date.parse(lastActivityAt); const difference=now.getTime()-time; const tolerance=60_000;
+  if(!Number.isFinite(time)||difference < -tolerance) return 'время активности неизвестно';
+  if(difference < 60_000) return 'активность только что';
+  const minutes=Math.floor(difference/60_000); if(minutes<60) return `активность ${minutes} мин. назад`;
+  const hours=Math.floor(minutes/60); if(hours<24) return `активность ${hours} ч. назад`;
+  return `активность ${Math.floor(hours/24)} дн. назад`;
+}
