@@ -7,6 +7,7 @@ describe('ProductShell CSS ownership', () => {
   const productShellCss = readCss('src/app/productShell.css');
   const wrappedCss = readCss('src/features/wrapped/wrapped.css');
   const deltaMapCss = readCss('src/features/deltaMap/deltaMap.css');
+  const mobilePulseCss = readCss('src/features/mobilePulse/mobilePulse.css');
 
   it('keeps shared navigation and mobile shell selectors in productShell.css only', () => {
     for (const selector of ['.wrapped-brand', '.wrapped-pulse', '.wrapped-nav', '.product-sidebar', '.mobile-app-shell', '.mobile-app-dock']) {
@@ -44,6 +45,12 @@ describe('ProductShell CSS ownership', () => {
     expect(productShellCss).toContain('translateY(calc(-1 * var(--mobile-app-dock-overhang)))');
     expect(wrappedCss).not.toMatch(/wrapped-dashboard-mvp[\s\S]*?safe-area-inset-bottom/);
     expect(wrappedCss).not.toContain('calc(96px + env(safe-area-inset-bottom))');
+  });
+
+  it('keeps dock avoidance in ProductShell rather than Pulse content', () => {
+    expect(productShellCss).toContain('padding-bottom: var(--mobile-app-dock-space);');
+    expect(mobilePulseCss).not.toContain('var(--mobile-app-dock-space)');
+    expect(mobilePulseCss).not.toContain('env(safe-area-inset-bottom)');
   });
 
   it('does not reserve the removed persistent mobile top header', () => {
