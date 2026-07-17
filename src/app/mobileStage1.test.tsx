@@ -58,7 +58,7 @@ describe('mobile stage 1 shell and routing', () => {
   it('root redirect учитывает ширину и HashRouter', async () => {
     installMatchMedia(true);
     renderAt('/');
-    expect(await screen.findByRole('heading', { name: 'Что меняется рядом?' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Что изменилось рядом' })).toBeInTheDocument();
     cleanup();
     installMatchMedia(false);
     renderAt('/');
@@ -67,7 +67,7 @@ describe('mobile stage 1 shell and routing', () => {
     installMatchMedia(true);
     window.history.pushState(null, '', '/uzor/#/');
     render(<HashRouter><App /></HashRouter>);
-    expect(await screen.findByRole('heading', { name: 'Что меняется рядом?' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Что изменилось рядом' })).toBeInTheDocument();
     expect(window.location.hash).toBe('#/pulse');
   });
 
@@ -111,19 +111,19 @@ describe('MobilePulsePage', () => {
     expect(getInitialPulseState({ demoMode: true, productionConfigured: false, demoReportEmpty: false })).toBe('ready');
   });
 
-  it('shows Pulse composition and ready Wrapped summary entry', () => {
+  it('shows Pulse composition and ready Wrapped summary entry', async () => {
     installMatchMedia(true);
     renderAt('/pulse');
-    expect(screen.getByRole('heading', { name: 'Что меняется рядом?' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Посмотреть изменения рядом' })).toHaveAttribute('href', '/map');
-    expect(screen.getByRole('link', { name: 'Добавить Дельту' })).toHaveAttribute('href', '/contribute');
-    expect(screen.getByText('Ваш след')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Что изменилось рядом' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Открыть карту' })).toHaveAttribute('href', '/map');
+    expect(screen.getByRole('link', { name: 'Отметить изменение' })).toHaveAttribute('href', '/contribute');
+    expect(screen.getByText('Ваш след за неделю')).toBeInTheDocument();
     expect(screen.getByText('Открыть итог недели')).toHaveAttribute('href', '/wrapped');
     expect(screen.queryByText(/после 3 Дельт/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Статус итога недели')).not.toBeInTheDocument();
-    expect(screen.getByText('за неделю')).toBeInTheDocument();
-    expect(screen.getByText('подтверждено')).toBeInTheDocument();
-    expect(screen.getByText('серия')).toBeInTheDocument();
+    expect(screen.getByText('Добавлено')).toBeInTheDocument();
+    expect(screen.getByText('Подтверждено')).toBeInTheDocument();
+    expect(screen.getByText('Серия недель')).toBeInTheDocument();
     expect(screen.queryByText('Пока итог недели не собран')).not.toBeInTheDocument();
   });
 
@@ -133,9 +133,9 @@ describe('MobilePulsePage', () => {
       summary: { ...wrappedDemoReport.summary, signalsThisWeek: 1, confirmedSignals: 1, weekStreak: 1 },
     };
     render(<MemoryRouter><TraceContent state="ready" report={report} /></MemoryRouter>);
-    expect(screen.getByText('за неделю')).toBeInTheDocument();
-    expect(screen.getByText('подтверждено')).toBeInTheDocument();
-    expect(screen.getByText('серия')).toBeInTheDocument();
+    expect(screen.getByText('Добавлено')).toBeInTheDocument();
+    expect(screen.getByText('Подтверждено')).toBeInTheDocument();
+    expect(screen.getByText('Серия недель')).toBeInTheDocument();
     expect(document.body.textContent).not.toContain('1 Дельты');
     expect(document.body.textContent).not.toContain('1 недели');
   });
