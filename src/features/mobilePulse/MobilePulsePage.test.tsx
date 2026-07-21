@@ -9,6 +9,7 @@ const mocks=vi.hoisted(()=>({load:vi.fn(),nearby:vi.fn(),wrapped:vi.fn()}));
 vi.mock('../../app/appMode',()=>({isDemoMode:false,isProductionConfigured:true}));
 vi.mock('./mobilePulseData',async(importOriginal)=>{const actual=await importOriginal<typeof import('./mobilePulseData')>();return {...actual,loadMobilePulseData:mocks.load,buildNearbyPulseItems:mocks.nearby};});
 vi.mock('../wrapped/wrappedApi',async(importOriginal)=>{const actual=await importOriginal<typeof import('../wrapped/wrappedApi')>();return {...actual,getMyWrappedReport:mocks.wrapped};});
+vi.mock('../pwa/PwaInstallCard', () => ({ PwaInstallCard: () => null }));
 import { MobilePulseJoinError } from './mobilePulseData';
 import { toPulseItem } from './mobilePulseLogic';
 import { MobilePulsePage } from './MobilePulsePage';

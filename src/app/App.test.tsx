@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import { HashRouter, MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../features/pwa/PwaInstallCard', () => ({ PwaInstallCard: () => null }));
 import { App } from './App';
 import { WrappedMobileView, wrappedPeriodLabel } from '../features/wrapped/mobile/WrappedMobileView';
 import { shareWrappedReportText, wrappedShareText } from '../features/wrapped/useWrappedShare';
