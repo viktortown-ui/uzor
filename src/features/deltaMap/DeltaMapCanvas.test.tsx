@@ -146,14 +146,15 @@ describe('DeltaMapCanvas cluster lifecycle', () => {
     const { map, onSelect } = await renderLoaded(13, [delta('hit')]);
     expect(map.layers.get('delta-mobile-flag-hit')).toEqual(expect.objectContaining({ paint: expect.objectContaining({ 'circle-radius': 22, 'circle-translate': [10, -22] }) }));
     act(() => map.emit('click', { features: [{ properties: { id: 'hit' } }] }, 'delta-mobile-flags'));
+    expect(onSelect).not.toHaveBeenCalled();
     act(() => map.emit('click', { features: [{ properties: { id: 'hit' } }] }, 'delta-mobile-flag-hit'));
-    expect(onSelect).toHaveBeenCalledTimes(2);
+    expect(onSelect).toHaveBeenCalledTimes(1);
   });
 
   it('removes both event overloads during cleanup', async () => {
     const { map, view } = await renderLoaded();
     view.unmount();
-    expect(map.off).toHaveBeenCalledTimes(11);
+    expect(map.off).toHaveBeenCalledTimes(10);
     expect(map.off).toHaveBeenCalledWith('click', 'delta-clusters', expect.any(Function));
     expect(map.off).toHaveBeenCalledWith('load', expect.any(Function));
   });

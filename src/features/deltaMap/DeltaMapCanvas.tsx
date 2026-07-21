@@ -298,7 +298,7 @@ export function DeltaMapCanvas({
       const listeners: unknown[][] = [
         ['load', initialize], ['style.load', initialize], ['error', error], ['moveend', moveend],
         ['zoom', updateZoom], ['dragstart', interaction], ['zoomstart', interaction],
-        ['click', DELTA_CLUSTER_LAYER_ID, clusterClick], ['click', DELTA_POINT_LAYER_ID, pointClick], ['click', DELTA_MOBILE_FLAG_LAYER_ID, pointClick], ['click', DELTA_MOBILE_FLAG_HIT_LAYER_ID, pointClick],
+        ['click', DELTA_CLUSTER_LAYER_ID, clusterClick], ['click', DELTA_POINT_LAYER_ID, pointClick], ['click', DELTA_MOBILE_FLAG_HIT_LAYER_ID, pointClick],
       ];
       for (const args of listeners) {
         (map.on as (...values: unknown[]) => unknown)(...args);
