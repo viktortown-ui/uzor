@@ -12,21 +12,7 @@ import { formatPulseActivity } from './mobilePulseLogic';
 import type { CityPulseState, MobilePulseData, MobilePulseItem, PersonalTraceState } from './mobilePulseTypes';
 import './mobilePulse.css';
 
-type BeforeInstallPromptChoice = { outcome: 'accepted' | 'dismissed'; platform: string };
-type BeforeInstallPromptEvent = Event & { platforms: string[]; prompt: () => Promise<void>; userChoice: Promise<BeforeInstallPromptChoice> };
-type IosNavigator = Navigator & { standalone?: boolean };
-type InstallSurfaceMode = 'hidden' | 'chromium' | 'ios' | 'fallback';
-function isStandaloneDisplay(): boolean { return window.matchMedia?.('(display-mode: standalone)').matches || (navigator as IosNavigator).standalone === true; }
-function isIosSafari(): boolean { return /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent); }
-export function usePwaInstallSurface() {
- const [promptEvent,setPromptEvent]=useState<BeforeInstallPromptEvent|null>(null); const [installed,setInstalled]=useState(()=>typeof window!=='undefined'&&isStandaloneDisplay()); const [dismissed,setDismissed]=useState(()=>sessionStorage.getItem('uzor:pwa-install-dismissed')==='1'); const [instructions,setInstructions]=useState(false);
- useEffect(()=>{const standalone=window.matchMedia('(display-mode: standalone)'); const sync=()=>setInstalled(isStandaloneDisplay()); const before=(event:Event)=>{event.preventDefault(); if(!isStandaloneDisplay()){setPromptEvent(event as BeforeInstallPromptEvent); setInstalled(false);}}; const done=()=>{setInstalled(true); setPromptEvent(null);}; window.addEventListener('beforeinstallprompt',before); window.addEventListener('appinstalled',done); standalone.addEventListener?.('change',sync); return()=>{window.removeEventListener('beforeinstallprompt',before); window.removeEventListener('appinstalled',done); standalone.removeEventListener?.('change',sync);};},[]);
- const install=useCallback(async()=>{const event=promptEvent; if(!event)return; await event.prompt(); const choice=await event.userChoice; setPromptEvent(null); if(choice.outcome==='accepted') setInstructions(false);},[promptEvent]);
- const dismiss=useCallback(()=>{sessionStorage.setItem('uzor:pwa-install-dismissed','1'); setDismissed(true);},[]);
- const mode:InstallSurfaceMode=installed||dismissed?'hidden':promptEvent?'chromium':isIosSafari()?'ios':instructions?'fallback':'fallback';
- return {mode,installed,canInstall:mode==='chromium',showInstructions:instructions||mode==='ios'||mode==='fallback',install,dismiss,openInstructions:()=>setInstructions(true)};
-}
-function PwaInstallCard(){const state=usePwaInstallSurface(); if(state.mode==='hidden')return null; return <section className="mobile-pulse-install" aria-labelledby="mobile-pulse-install-title"><div><h2 id="mobile-pulse-install-title">Установить УЗОР</h2><p>Открывайте Пульс города с главного экрана и сохраняйте доступ к оболочке при временной потере сети.</p></div><div className="mobile-pulse-install-actions">{state.canInstall&&<button onClick={()=>void state.install()}>Установить</button>}<button type="button" onClick={state.openInstructions}>Как установить</button><button type="button" onClick={state.dismiss}>Не сейчас</button></div>{state.showInstructions&&<div className="mobile-pulse-install-sheet" role="note" aria-label="Инструкция по установке">{state.mode==='ios'?<ol><li>Нажмите «Поделиться».</li><li>Выберите «На экран «Домой»».</li><li>Подтвердите добавление «УЗОР».</li></ol>:<p>Откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран».</p>}</div>}</section>}
+import { PwaInstallCard } from '../pwa/PwaInstallCard';
 
 export type PulseState = PersonalTraceState;
 export function getInitialPulseState({ demoMode, productionConfigured, demoReportEmpty }: { demoMode:boolean; productionConfigured:boolean; demoReportEmpty:boolean }): PulseState { return demoMode ? (demoReportEmpty?'empty':'ready') : productionConfigured?'loading':'error'; }
