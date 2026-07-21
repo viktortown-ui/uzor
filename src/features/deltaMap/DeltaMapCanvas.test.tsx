@@ -4,6 +4,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DeltaMapItem } from '../deltas/deltaTypes';
 
 const maps: MockMap[] = [];
+const originalMatchMedia = window.matchMedia;
+const originalResizeObserver = window.ResizeObserver;
+const originalVisualViewport = window.visualViewport;
+const originalRequestAnimationFrame = window.requestAnimationFrame;
+const originalCancelAnimationFrame = window.cancelAnimationFrame;
+type MockMql = { matches: boolean; addEventListener: ReturnType<typeof vi.fn>; removeEventListener: ReturnType<typeof vi.fn>; emit: () => void };
+let currentMql: MockMql | null = null;
+function mockBreakpoint(matches: boolean) { const listeners: Array<() => void> = []; currentMql = { matches, addEventListener: vi.fn((_event: string, cb: () => void) => listeners.push(cb)), removeEventListener: vi.fn(), emit: () => listeners.forEach((cb) => cb()) }; Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => currentMql) }); return currentMql; }
 const markerRemove = vi.fn();
 const source = { setData: vi.fn(), getClusterExpansionZoom: vi.fn().mockResolvedValue(14) };
 class MockMap {
@@ -11,7 +19,9 @@ class MockMap {
   sources = new Map<string, unknown>();
   layers = new Map<string, unknown>();
   zoom = 12;
-  remove = vi.fn(); flyTo = vi.fn(); easeTo = vi.fn(); addControl = vi.fn();
+  images = new Set<string>();
+  remove = vi.fn(); flyTo = vi.fn(); easeTo = vi.fn(); addControl = vi.fn(); resize = vi.fn(); setLayoutProperty = vi.fn();
+  addImage = vi.fn((id: string) => { this.images.add(id); }); hasImage = vi.fn((id: string) => this.images.has(id));
   getBounds = vi.fn(() => ({ getSouth: () => 57, getWest: () => 55, getNorth: () => 59, getEast: () => 57 }));
   getZoom = vi.fn(() => this.zoom);
   getSource = vi.fn((id: string) => this.sources.get(id));
@@ -37,9 +47,11 @@ vi.mock('maplibre-gl', () => ({ default: { Map: MapCtor, Marker: MarkerCtor, Nav
 
 const delta = (id: string): DeltaMapItem => ({ id, category: { slug: 'transport', title: 'Транспорт', iconKey: 'transport' }, direction: 'positive', statement: `Дельта ${id}`, status: 'new', confirmCount: 1, disconfirmCount: 0, confirmationTarget: 3, priorityScore: .1, location: { lat: 58, lng: 56, label: 'Пермь' }, lastActivityAt: '2026-07-10T00:00:00.000Z' });
 async function loadCanvas() { return (await import('./DeltaMapCanvas')).DeltaMapCanvas; }
-afterEach(() => { cleanup(); maps.length = 0; MapCtor.mockClear(); MarkerCtor.mockClear(); markerRemove.mockClear(); source.setData.mockClear(); source.getClusterExpansionZoom.mockClear().mockResolvedValue(14); vi.resetModules(); });
+afterEach(() => { cleanup(); maps.length = 0; currentMql = null; Object.defineProperty(window, 'matchMedia', { configurable: true, value: originalMatchMedia }); if (originalResizeObserver === undefined) delete (window as unknown as { ResizeObserver?: unknown }).ResizeObserver; else Object.defineProperty(window, 'ResizeObserver', { configurable: true, value: originalResizeObserver }); if (originalVisualViewport === undefined) delete (window as unknown as { visualViewport?: unknown }).visualViewport; else Object.defineProperty(window, 'visualViewport', { configurable: true, value: originalVisualViewport }); if (originalRequestAnimationFrame === undefined) delete (window as unknown as { requestAnimationFrame?: unknown }).requestAnimationFrame; else Object.defineProperty(window, 'requestAnimationFrame', { configurable: true, value: originalRequestAnimationFrame }); if (originalCancelAnimationFrame === undefined) delete (window as unknown as { cancelAnimationFrame?: unknown }).cancelAnimationFrame; else Object.defineProperty(window, 'cancelAnimationFrame', { configurable: true, value: originalCancelAnimationFrame }); MapCtor.mockClear(); MarkerCtor.mockClear(); markerRemove.mockClear(); source.setData.mockClear(); source.getClusterExpansionZoom.mockClear().mockResolvedValue(14); vi.resetModules(); });
 
 async function renderLoaded(zoom = 12, deltas = [delta('1')]) {
+  if (typeof window.requestAnimationFrame !== 'function') Object.defineProperty(window, 'requestAnimationFrame', { configurable: true, value: (cb: FrameRequestCallback) => window.setTimeout(() => cb(0), 0) });
+  if (typeof window.cancelAnimationFrame !== 'function') Object.defineProperty(window, 'cancelAnimationFrame', { configurable: true, value: (id: number) => window.clearTimeout(id) });
   const Canvas = await loadCanvas();
   const onSelect = vi.fn();
   const view = render(<Canvas deltas={deltas} onViewport={vi.fn()} onSelect={onSelect} />);
@@ -54,7 +66,7 @@ describe('DeltaMapCanvas cluster lifecycle', () => {
     act(() => map.emit('style.load'));
     expect(map.addSource).toHaveBeenCalledTimes(1);
     expect(map.addSource).toHaveBeenCalledWith('delta-cluster-source', expect.objectContaining({ cluster: true, clusterRadius: 52, clusterMaxZoom: 12 }));
-    expect(map.addLayer).toHaveBeenCalledTimes(3);
+    expect(map.addLayer).toHaveBeenCalledTimes(5);
     expect([...map.layers.values()]).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'delta-clusters', maxzoom: 13 }), expect.objectContaining({ id: 'delta-cluster-count', maxzoom: 13 }), expect.objectContaining({ id: 'delta-unclustered-points', maxzoom: 13 })]));
   });
   it('recovers missing layers independently when the source already exists', async () => {
@@ -62,7 +74,7 @@ describe('DeltaMapCanvas cluster lifecycle', () => {
     map.layers.delete('delta-cluster-count');
     act(() => map.emit('style.load'));
     expect(map.addSource).toHaveBeenCalledTimes(1);
-    expect(map.addLayer).toHaveBeenCalledTimes(4);
+    expect(map.addLayer).toHaveBeenCalledTimes(6);
     expect(map.layers.has('delta-cluster-count')).toBe(true);
   });
   it('updates source data without reconstructing the map', async () => {
@@ -100,10 +112,49 @@ describe('DeltaMapCanvas cluster lifecycle', () => {
     act(() => map.emit('zoom'));
     expect(markerRemove).toHaveBeenCalled();
   });
+
+  it('mobile zoom 13 uses GL flag and hit layers instead of DOM markers', async () => {
+    mockBreakpoint(true);
+    const { map, onSelect } = await renderLoaded(13, [delta('1'), delta('2')]);
+    expect(MarkerCtor).not.toHaveBeenCalled();
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: 'delta-mobile-flags', type: 'symbol', minzoom: 13, layout: expect.objectContaining({ 'icon-anchor': 'bottom' }) }));
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: 'delta-mobile-flag-hit', type: 'circle', minzoom: 13, paint: expect.objectContaining({ 'circle-radius': 22 }) }));
+    act(() => map.emit('click', { features: [{ properties: { id: '2' } }] }, 'delta-mobile-flag-hit'));
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: '2' }));
+  });
+  it('repeated style.load does not duplicate mobile flag layers', async () => {
+    mockBreakpoint(true);
+    const { map } = await renderLoaded(13);
+    act(() => map.emit('style.load'));
+    expect([...map.layers.keys()].filter((id) => id === 'delta-mobile-flags')).toHaveLength(1);
+    expect([...map.layers.keys()].filter((id) => id === 'delta-mobile-flag-hit')).toHaveLength(1);
+  });
+
+  it('registers images before setData when deltas arrive after map initialization', async () => {
+    mockBreakpoint(true);
+    const { Canvas, view, map } = await renderLoaded(13, []);
+    map.addImage.mockClear(); source.setData.mockClear();
+    const late = { ...delta('late'), status: 'confirmed' as const };
+    view.rerender(<Canvas deltas={[late]} onViewport={vi.fn()} onSelect={vi.fn()} />);
+    expect(map.addImage).toHaveBeenCalledWith('delta-flag-positive-confirmed', expect.objectContaining({ width: 44, height: 52 }), { pixelRatio: 1 });
+    expect(source.setData).toHaveBeenCalledWith(expect.objectContaining({ features: [expect.objectContaining({ properties: expect.objectContaining({ visualKey: 'delta-flag-positive-confirmed' }) })] }));
+    expect(map.layers.has('delta-mobile-flags')).toBe(true);
+    expect(MapCtor).toHaveBeenCalledTimes(1);
+  });
+  it('mobile hit layer is translated upward to cover the bottom-anchored flag cloth and visible layer also selects', async () => {
+    mockBreakpoint(true);
+    const { map, onSelect } = await renderLoaded(13, [delta('hit')]);
+    expect(map.layers.get('delta-mobile-flag-hit')).toEqual(expect.objectContaining({ paint: expect.objectContaining({ 'circle-radius': 22, 'circle-translate': [10, -22] }) }));
+    act(() => map.emit('click', { features: [{ properties: { id: 'hit' } }] }, 'delta-mobile-flags'));
+    expect(onSelect).not.toHaveBeenCalled();
+    act(() => map.emit('click', { features: [{ properties: { id: 'hit' } }] }, 'delta-mobile-flag-hit'));
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
   it('removes both event overloads during cleanup', async () => {
     const { map, view } = await renderLoaded();
     view.unmount();
-    expect(map.off).toHaveBeenCalledTimes(9);
+    expect(map.off).toHaveBeenCalledTimes(10);
     expect(map.off).toHaveBeenCalledWith('click', 'delta-clusters', expect.any(Function));
     expect(map.off).toHaveBeenCalledWith('load', expect.any(Function));
   });
@@ -132,5 +183,51 @@ describe('DeltaMapCanvas map and marker behavior', () => {
     const map = maps[0]; act(() => map.emit('error', { error: { message: 'style parse failure' } }));
     await userEvent.click(await screen.findByRole('button', { name: 'Повторить' }));
     expect(map.remove).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('DeltaMapCanvas resize and breakpoint synchronization', () => {
+  function installResizeHarness() {
+    let nextFrame = 1; const frames = new Map<number, FrameRequestCallback>();
+    const request = vi.fn((cb: FrameRequestCallback) => { const id = nextFrame++; frames.set(id, cb); return id; });
+    const cancel = vi.fn((id: number) => { frames.delete(id); });
+    Object.defineProperty(window, 'requestAnimationFrame', { configurable: true, value: request });
+    Object.defineProperty(window, 'cancelAnimationFrame', { configurable: true, value: cancel });
+    const roInstances: Array<{ cb: ResizeObserverCallback; disconnect: ReturnType<typeof vi.fn>; observe: ReturnType<typeof vi.fn> }> = [];
+    class MockResizeObserver { cb: ResizeObserverCallback; disconnect = vi.fn(); observe = vi.fn(); constructor(cb: ResizeObserverCallback) { this.cb = cb; roInstances.push(this); } }
+    Object.defineProperty(window, 'ResizeObserver', { configurable: true, value: MockResizeObserver });
+    const vvListeners = new Map<string, Array<() => void>>();
+    const visualViewport = { addEventListener: vi.fn((event: string, cb: () => void) => vvListeners.set(event, [...(vvListeners.get(event) ?? []), cb])), removeEventListener: vi.fn((event: string, cb: () => void) => vvListeners.set(event, (vvListeners.get(event) ?? []).filter((item) => item !== cb))) };
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: visualViewport });
+    return { request, cancel, frames, flush: () => { const pending = [...frames.entries()]; frames.clear(); pending.forEach(([id, cb]) => cb(id)); }, roInstances, visualViewport, emitVv: (event: string) => (vvListeners.get(event) ?? []).forEach((cb) => cb()) };
+  }
+  it('schedules initial RAF resize, coalesces observer and visualViewport events, and cleans up', async () => {
+    const harness = installResizeHarness(); mockBreakpoint(true);
+    const { map, view } = await renderLoaded(13);
+    expect(harness.request).toHaveBeenCalledTimes(1);
+    harness.flush(); expect(map.resize).toHaveBeenCalledTimes(1);
+    act(() => { harness.roInstances[0].cb([], harness.roInstances[0] as unknown as ResizeObserver); harness.roInstances[0].cb([], harness.roInstances[0] as unknown as ResizeObserver); harness.emitVv('resize'); harness.emitVv('scroll'); });
+    expect(harness.request).toHaveBeenCalledTimes(2);
+    harness.flush(); expect(map.resize).toHaveBeenCalledTimes(2);
+    act(() => { harness.emitVv('resize'); });
+    view.unmount();
+    expect(harness.cancel).toHaveBeenCalled();
+    expect(harness.roInstances[0].disconnect).toHaveBeenCalled();
+    expect(harness.visualViewport.removeEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
+    expect(harness.visualViewport.removeEventListener).toHaveBeenCalledWith('scroll', expect.any(Function));
+    expect(currentMql?.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+  });
+  it('breakpoint changes toggle layers and DOM markers without reconstructing the map', async () => {
+    const breakpoint = mockBreakpoint(false);
+    const { map } = await renderLoaded(13);
+    expect(MarkerCtor).toHaveBeenCalledTimes(1);
+    act(() => { breakpoint.matches = true; breakpoint.emit(); map.emit('zoom'); });
+    expect(MapCtor).toHaveBeenCalledTimes(1);
+    expect(markerRemove).toHaveBeenCalled();
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('delta-mobile-flags', 'visibility', 'visible');
+    act(() => { breakpoint.matches = false; breakpoint.emit(); map.emit('zoom'); });
+    expect(MapCtor).toHaveBeenCalledTimes(1);
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('delta-mobile-flags', 'visibility', 'none');
+    expect(MarkerCtor).toHaveBeenCalledWith(expect.objectContaining({ anchor: 'bottom' }));
   });
 });

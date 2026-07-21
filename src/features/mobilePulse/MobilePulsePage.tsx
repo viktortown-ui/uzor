@@ -12,6 +12,8 @@ import { formatPulseActivity } from './mobilePulseLogic';
 import type { CityPulseState, MobilePulseData, MobilePulseItem, PersonalTraceState } from './mobilePulseTypes';
 import './mobilePulse.css';
 
+import { PwaInstallCard } from '../pwa/PwaInstallCard';
+
 export type PulseState = PersonalTraceState;
 export function getInitialPulseState({ demoMode, productionConfigured, demoReportEmpty }: { demoMode:boolean; productionConfigured:boolean; demoReportEmpty:boolean }): PulseState { return demoMode ? (demoReportEmpty?'empty':'ready') : productionConfigured?'loading':'error'; }
 export type NearbyState = 'city' | 'locating' | 'nearby';
@@ -40,6 +42,7 @@ export function MobilePulsePage() {
  const requestNearby=()=>{if(nearbyState==='locating')return; const seq=++geoSeq.current;setLocationError('');setNearbyState('locating');if(!navigator.geolocation){setNearbyState('city');setLocationError('Геопозиция недоступна. Показываем последние изменения в Перми.');return;}navigator.geolocation.getCurrentPosition(async({coords})=>{if(seq!==geoSeq.current)return;if(!isWithinPermMvpArea(coords.latitude,coords.longitude)){setNearbyState('city');setLocationError('Вы находитесь за пределами Перми. Показываем последние изменения в Перми.');return;}if(!data)return;try{const items=await buildNearbyPulseItems(data.allItems,coords.latitude,coords.longitude);if(seq!==geoSeq.current)return;setNearbyItems(items);setNearbyState('nearby');}catch{if(seq!==geoSeq.current)return;setNearbyState('city');setLocationError('Не удалось показать изменения рядом. Показываем последние изменения в Перми.');}},()=>{if(seq!==geoSeq.current)return;setNearbyState('city');setLocationError('Не удалось определить место. Показываем последние изменения в Перми.');},{timeout:10000,maximumAge:0});};
  const items=nearbyState==='nearby'?nearbyItems:data?.items??[]; const activityNow=data?.loadedAt??new Date();
  return <ProductShell className="mobile-pulse-shell"><section className="mobile-pulse-page"><header className="mobile-pulse-header"><span>ПУЛЬС ПЕРМИ</span><button onClick={()=>void loadCity()} disabled={refreshing}>{refreshing?'Обновляем…':'Обновить'}</button></header><h1>Что изменилось рядом</h1><div className="mobile-pulse-refresh" aria-live="polite">{data&&!refreshing?`Обновлено в ${data.loadedAt.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}`:refreshing?'Обновляем…':''}</div>
+ <PwaInstallCard/>
  {cityState==='loading'&&<div className="mobile-pulse-state" role="status">Загружаем изменения Перми…</div>}
  {cityState==='join'&&<div className="mobile-pulse-state"><h2>Войдите в круг, чтобы видеть Пульс Перми</h2><Link to="/join">Войти по приглашению</Link></div>}
  {cityState==='error'&&<div className="mobile-pulse-state" role="alert"><h2>Не удалось загрузить Пульс Перми</h2><p>Карта и добавление Дельты остаются доступны.</p><button onClick={()=>void loadCity()}>Повторить</button><Link to="/map">Открыть карту</Link><Link to="/contribute">Добавить Дельту</Link></div>}

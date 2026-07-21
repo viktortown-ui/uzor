@@ -55,3 +55,11 @@
 @media (max-height: 620px) { .mobile-pulse-page { padding-top: calc(5px + env(safe-area-inset-top)); } .mobile-pulse-page h1 { margin-top: 2px; font-size: 27px; } .mobile-pulse-summary { margin-block: 5px 8px; } .mobile-pulse-summary div { padding-block: 6px; } .mobile-pulse-feed li:nth-child(n+3) { display: none; } .mobile-pulse-actions { margin-top: 5px; } }
 @media (max-width: 340px) { .mobile-pulse-page { padding-inline: 12px; } .mobile-pulse-section-heading { align-items: flex-start; } .mobile-pulse-section-heading button { max-width: 43%; padding-inline: 4px; } }
 @media (prefers-reduced-motion: reduce) { .mobile-pulse-page * { scroll-behavior: auto; } }
+.mobile-pulse-install { margin: 8px 0 12px; padding: 12px; border: 1px solid var(--mobile-border); border-radius: 16px; background: rgba(255,255,255,.04); }
+.mobile-pulse-install p { margin: 6px 0 0; color: var(--mobile-muted); font-size: 12px; line-height: 1.35; }
+.mobile-pulse-install-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.mobile-pulse-install-actions button { min-height: 44px; padding: 0 11px; border: 1px solid var(--mobile-border); border-radius: 999px; color: var(--mobile-text); background: transparent; font-weight: 850; }
+.mobile-pulse-install-actions button:first-child { border-color: transparent; color: #06131d; background: var(--mobile-accent); }
+.mobile-pulse-install-sheet { margin-top: 10px; color: var(--mobile-muted); font-size: 12px; line-height: 1.4; }
+.mobile-pulse-install-sheet ol { margin: 0; padding-left: 18px; }
+@media (min-width: 901px) { .mobile-pulse-install { max-width: 420px; } }
