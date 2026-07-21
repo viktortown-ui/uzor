@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useMediaQuery } from './useMediaQuery';
+import { PwaInstallDebug, PwaInstallLauncher } from '../features/pwa/PwaInstallLauncher';
 import './productShell.css';
 
 type NavIcon = 'summary' | 'map' | 'add' | 'pulse';
@@ -55,7 +56,7 @@ function MobileAppDock() {
 
 export function MobileProductShell({ children, className = '', mobileDock = 'visible' }: { children: ReactNode; className?: string; mobileDock?: 'visible' | 'hidden' }) {
   const dockHidden = mobileDock === 'hidden';
-  return <div className={`mobile-app-shell ${dockHidden ? 'mobile-app-shell--dock-hidden' : ''} ${className}`} data-testid="mobile-product-shell"><main className="mobile-app-main">{children}</main>{!dockHidden && <MobileAppDock />}</div>;
+  return <div className={`mobile-app-shell ${dockHidden ? 'mobile-app-shell--dock-hidden' : ''} ${className}`} data-testid="mobile-product-shell"><main className="mobile-app-main">{children}</main><PwaInstallLauncher /><PwaInstallDebug />{!dockHidden && <MobileAppDock />}</div>;
 }
 
 export function ProductShell({ children, className = '', mobileDock = 'visible' }: { children: ReactNode; className?: string; mobileDock?: 'visible' | 'hidden' }) {
