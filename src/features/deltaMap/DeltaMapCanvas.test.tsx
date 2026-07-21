@@ -11,7 +11,7 @@ class MockMap {
   sources = new Map<string, unknown>();
   layers = new Map<string, unknown>();
   zoom = 12;
-  remove = vi.fn(); flyTo = vi.fn(); easeTo = vi.fn(); addControl = vi.fn();
+  remove = vi.fn(); flyTo = vi.fn(); easeTo = vi.fn(); addControl = vi.fn(); resize = vi.fn(); addImage = vi.fn(); hasImage = vi.fn(() => false); setLayoutProperty = vi.fn();
   getBounds = vi.fn(() => ({ getSouth: () => 57, getWest: () => 55, getNorth: () => 59, getEast: () => 57 }));
   getZoom = vi.fn(() => this.zoom);
   getSource = vi.fn((id: string) => this.sources.get(id));
@@ -54,7 +54,7 @@ describe('DeltaMapCanvas cluster lifecycle', () => {
     act(() => map.emit('style.load'));
     expect(map.addSource).toHaveBeenCalledTimes(1);
     expect(map.addSource).toHaveBeenCalledWith('delta-cluster-source', expect.objectContaining({ cluster: true, clusterRadius: 52, clusterMaxZoom: 12 }));
-    expect(map.addLayer).toHaveBeenCalledTimes(3);
+    expect(map.addLayer).toHaveBeenCalledTimes(5);
     expect([...map.layers.values()]).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'delta-clusters', maxzoom: 13 }), expect.objectContaining({ id: 'delta-cluster-count', maxzoom: 13 }), expect.objectContaining({ id: 'delta-unclustered-points', maxzoom: 13 })]));
   });
   it('recovers missing layers independently when the source already exists', async () => {
@@ -62,7 +62,7 @@ describe('DeltaMapCanvas cluster lifecycle', () => {
     map.layers.delete('delta-cluster-count');
     act(() => map.emit('style.load'));
     expect(map.addSource).toHaveBeenCalledTimes(1);
-    expect(map.addLayer).toHaveBeenCalledTimes(4);
+    expect(map.addLayer).toHaveBeenCalledTimes(6);
     expect(map.layers.has('delta-cluster-count')).toBe(true);
   });
   it('updates source data without reconstructing the map', async () => {
@@ -100,10 +100,28 @@ describe('DeltaMapCanvas cluster lifecycle', () => {
     act(() => map.emit('zoom'));
     expect(markerRemove).toHaveBeenCalled();
   });
+
+  it('mobile zoom 13 uses GL flag and hit layers instead of DOM markers', async () => {
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })) });
+    const { map, onSelect } = await renderLoaded(13, [delta('1'), delta('2')]);
+    expect(MarkerCtor).not.toHaveBeenCalled();
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: 'delta-mobile-flags', type: 'symbol', minzoom: 13, layout: expect.objectContaining({ 'icon-anchor': 'bottom' }) }));
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: 'delta-mobile-flag-hit', type: 'circle', minzoom: 13, paint: expect.objectContaining({ 'circle-radius': 22 }) }));
+    act(() => map.emit('click', { features: [{ properties: { id: '2' } }] }, 'delta-mobile-flag-hit'));
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: '2' }));
+  });
+  it('repeated style.load does not duplicate mobile flag layers', async () => {
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })) });
+    const { map } = await renderLoaded(13);
+    act(() => map.emit('style.load'));
+    expect([...map.layers.keys()].filter((id) => id === 'delta-mobile-flags')).toHaveLength(1);
+    expect([...map.layers.keys()].filter((id) => id === 'delta-mobile-flag-hit')).toHaveLength(1);
+  });
+
   it('removes both event overloads during cleanup', async () => {
     const { map, view } = await renderLoaded();
     view.unmount();
-    expect(map.off).toHaveBeenCalledTimes(9);
+    expect(map.off).toHaveBeenCalledTimes(10);
     expect(map.off).toHaveBeenCalledWith('click', 'delta-clusters', expect.any(Function));
     expect(map.off).toHaveBeenCalledWith('load', expect.any(Function));
   });

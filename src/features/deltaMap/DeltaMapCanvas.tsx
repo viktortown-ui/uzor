@@ -16,6 +16,7 @@ type DeltaProperties = {
   confirmationCount: number;
   positive: number;
   negative: number;
+  visualKey: string;
 };
 type DeltaGeoJson = GeoJSON.FeatureCollection<GeoJSON.Point, DeltaProperties>;
 type Props = {
@@ -35,8 +36,34 @@ export const DELTA_SOURCE_ID = 'delta-cluster-source';
 export const DELTA_CLUSTER_LAYER_ID = 'delta-clusters';
 export const DELTA_CLUSTER_COUNT_LAYER_ID = 'delta-cluster-count';
 export const DELTA_POINT_LAYER_ID = 'delta-unclustered-points';
+export const DELTA_MOBILE_FLAG_LAYER_ID = 'delta-mobile-flags';
+export const DELTA_MOBILE_FLAG_HIT_LAYER_ID = 'delta-mobile-flag-hit';
 export const DELTA_CLUSTER_MAX_ZOOM = 12;
 export const DELTA_DOM_MARKER_MIN_ZOOM = DELTA_CLUSTER_MAX_ZOOM + 1;
+
+function deltaVisualKey(delta: DeltaMapItem): string {
+  return `delta-flag-${delta.direction}-${delta.status === 'fork' ? 'fork' : delta.status}`;
+}
+
+function createFlagImage(key: string): { width: number; height: number; data: Uint8ClampedArray } {
+  const width = 44; const height = 52;
+  const data = new Uint8ClampedArray(width * height * 4);
+  const negative = key.includes('negative');
+  const fork = key.includes('fork');
+  const checking = key.includes('checking');
+  const confirmed = key.includes('confirmed');
+  const fill = negative ? [251, 125, 83] : [45, 212, 191];
+  const stroke = fork ? [124, 108, 242] : checking ? [250, 204, 21] : confirmed ? [236, 254, 255] : [7, 16, 31];
+  const set = (x: number, y: number, c: number[]) => { if (x < 0 || y < 0 || x >= width || y >= height) return; const i = (y * width + x) * 4; data[i] = c[0]; data[i + 1] = c[1]; data[i + 2] = c[2]; data[i + 3] = c[3] ?? 255; };
+  for (let y = 4; y < 38; y += 1) for (let x = 6; x < 38; x += 1) {
+    const dx = x - 22; const dy = y - 20; if (dx * dx / 256 + dy * dy / 196 <= 1) set(x, y, [...fill, 255]);
+  }
+  for (let y = 39; y < 52; y += 1) for (let x = 18; x < 26; x += 1) if (Math.abs(x - 22) <= (52 - y) / 2) set(x, y, [...fill, 255]);
+  for (let y = 8; y < 34; y += 1) { set(11, y, stroke); set(33, y, stroke); }
+  for (let x = 12; x < 33; x += 1) { set(x, 8, stroke); set(x, 33, stroke); }
+  if (fork) for (let i = 0; i < 18; i += 1) { set(13 + i, 15 + i, stroke); set(31 - i, 15 + i, stroke); }
+  return { width, height, data };
+}
 
 function geoJson(deltas: DeltaMapItem[]): DeltaGeoJson {
   return {
@@ -53,6 +80,7 @@ function geoJson(deltas: DeltaMapItem[]): DeltaGeoJson {
         confirmationCount: delta.confirmCount,
         positive: delta.direction === 'positive' ? 1 : 0,
         negative: delta.direction === 'negative' ? 1 : 0,
+        visualKey: deltaVisualKey(delta),
       },
     })),
   };
@@ -79,6 +107,7 @@ export function DeltaMapCanvas({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const timerRef = useRef<number | null>(null);
+  const resizeFrameRef = useRef<number | null>(null);
   const usableMapRef = useRef(false);
   const programmaticRef = useRef(false);
   const onViewportRef = useRef(onViewport);
@@ -88,6 +117,7 @@ export function DeltaMapCanvas({
   const initialCityRef = useRef(city);
   const [mapReady, setMapReady] = useState(false);
   const [showDomMarkers, setShowDomMarkers] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 900px)').matches) : false);
   const [mapError, setMapError] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 
@@ -119,8 +149,43 @@ export function DeltaMapCanvas({
 
       const updateZoom = () => {
         const zoom = typeof map?.getZoom === 'function' ? map.getZoom() : DELTA_DOM_MARKER_MIN_ZOOM;
-        setShowDomMarkers(zoom >= DELTA_DOM_MARKER_MIN_ZOOM);
+        const mobile = (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 900px)').matches);
+        setIsMobile(mobile);
+        setShowDomMarkers(!mobile && zoom >= DELTA_DOM_MARKER_MIN_ZOOM);
       };
+      const registerMobileFlagImages = () => {
+        if (!map) return;
+        const keys = new Set(deltasRef.current.map(deltaVisualKey));
+        for (const key of keys) {
+          const hasImage = typeof (map as unknown as { hasImage?: (id: string) => boolean }).hasImage === 'function' && (map as unknown as { hasImage: (id: string) => boolean }).hasImage(key);
+          if (!hasImage && typeof (map as unknown as { addImage?: (id: string, image: { width: number; height: number; data: Uint8ClampedArray }, options?: { pixelRatio: number }) => void }).addImage === 'function') (map as unknown as { addImage: (id: string, image: { width: number; height: number; data: Uint8ClampedArray }, options?: { pixelRatio: number }) => void }).addImage(key, createFlagImage(key), { pixelRatio: 1 });
+        }
+      };
+      const setLayoutVisibility = (id: string, visibility: 'visible' | 'none') => { if (typeof (map as unknown as { setLayoutProperty?: (layer: string, name: string, value: string) => void }).setLayoutProperty === 'function') (map as unknown as { setLayoutProperty: (layer: string, name: string, value: string) => void }).setLayoutProperty(id, 'visibility', visibility); };
+      const applyMobileLayerVisibility = () => {
+        if (!map) return; const visible = (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 900px)').matches) ? 'visible' : 'none';
+        for (const id of [DELTA_MOBILE_FLAG_LAYER_ID, DELTA_MOBILE_FLAG_HIT_LAYER_ID]) if (map.getLayer(id)) setLayoutVisibility(id, visible);
+      };
+      const scheduleResize = () => {
+        if (resizeFrameRef.current != null) return;
+        resizeFrameRef.current = window.requestAnimationFrame(() => {
+          resizeFrameRef.current = null;
+          try { map?.resize(); } catch { /* Mobile toolbar changes must not make the map fatal. */ }
+        });
+      };
+      resizeFrameRef.current = window.requestAnimationFrame(() => { resizeFrameRef.current = null; try { map?.resize(); } catch { /* noop */ } });
+      if ('ResizeObserver' in window && containerRef.current) {
+        const observer = new ResizeObserver(scheduleResize);
+        observer.observe(containerRef.current);
+        cleanups.push(() => observer.disconnect());
+      }
+      window.visualViewport?.addEventListener('resize', scheduleResize);
+      window.visualViewport?.addEventListener('scroll', scheduleResize);
+      cleanups.push(() => { window.visualViewport?.removeEventListener('resize', scheduleResize); window.visualViewport?.removeEventListener('scroll', scheduleResize); });
+      const breakpoint = typeof window.matchMedia === 'function' ? window.matchMedia('(max-width: 900px)') : null;
+      const breakpointChange = () => { updateZoom(); applyMobileLayerVisibility(); };
+      breakpoint?.addEventListener?.('change', breakpointChange);
+      cleanups.push(() => breakpoint?.removeEventListener?.('change', breakpointChange));
       const initialize = () => {
         try {
           if (!map) return;
@@ -160,6 +225,7 @@ export function DeltaMapCanvas({
               paint: { 'text-color': '#07101f' },
             });
           }
+          registerMobileFlagImages();
           if (!map.getLayer(DELTA_POINT_LAYER_ID)) {
             map.addLayer({
               id: DELTA_POINT_LAYER_ID,
@@ -175,6 +241,13 @@ export function DeltaMapCanvas({
               },
             });
           }
+          if (!map.getLayer(DELTA_MOBILE_FLAG_LAYER_ID)) {
+            map.addLayer({ id: DELTA_MOBILE_FLAG_LAYER_ID, type: 'symbol', source: DELTA_SOURCE_ID, filter: ['!', ['has', 'point_count']], minzoom: DELTA_DOM_MARKER_MIN_ZOOM, layout: { 'icon-image': ['get', 'visualKey'], 'icon-anchor': 'bottom', 'icon-size': 1, 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'visibility': (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 900px)').matches) ? 'visible' : 'none' } });
+          }
+          if (!map.getLayer(DELTA_MOBILE_FLAG_HIT_LAYER_ID)) {
+            map.addLayer({ id: DELTA_MOBILE_FLAG_HIT_LAYER_ID, type: 'circle', source: DELTA_SOURCE_ID, filter: ['!', ['has', 'point_count']], minzoom: DELTA_DOM_MARKER_MIN_ZOOM, paint: { 'circle-radius': 22, 'circle-color': 'rgba(0,0,0,0)' }, layout: { 'visibility': (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 900px)').matches) ? 'visible' : 'none' } });
+          }
+          applyMobileLayerVisibility();
           usableMapRef.current = true;
           setMapReady(true);
           setMapError(false);
@@ -210,7 +283,7 @@ export function DeltaMapCanvas({
       const listeners: unknown[][] = [
         ['load', initialize], ['style.load', initialize], ['error', error], ['moveend', moveend],
         ['zoom', updateZoom], ['dragstart', interaction], ['zoomstart', interaction],
-        ['click', DELTA_CLUSTER_LAYER_ID, clusterClick], ['click', DELTA_POINT_LAYER_ID, pointClick],
+        ['click', DELTA_CLUSTER_LAYER_ID, clusterClick], ['click', DELTA_POINT_LAYER_ID, pointClick], ['click', DELTA_MOBILE_FLAG_HIT_LAYER_ID, pointClick],
       ];
       for (const args of listeners) {
         (map.on as (...values: unknown[]) => unknown)(...args);
@@ -222,6 +295,7 @@ export function DeltaMapCanvas({
       if (removed) return;
       removed = true;
       if (timerRef.current) window.clearTimeout(timerRef.current);
+      if (resizeFrameRef.current != null) window.cancelAnimationFrame(resizeFrameRef.current);
       cleanups.forEach((cleanup) => cleanup());
       markersRef.current.forEach((marker) => { try { marker.remove(); } catch { /* noop */ } });
       markersRef.current = [];
@@ -240,13 +314,13 @@ export function DeltaMapCanvas({
   useEffect(() => {
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
-    if (!mapReady || !showDomMarkers || !mapRef.current) return undefined;
+    if (!mapReady || !showDomMarkers || isMobile || !mapRef.current) return undefined;
     markersRef.current = deltas.map((delta) => new maplibregl.Marker({
       element: createDeltaMarkerElement(delta, (item) => onSelectRef.current(item), highlightedId === delta.id),
       anchor: 'bottom',
     }).setLngLat([delta.location.lng, delta.location.lat]).addTo(mapRef.current!));
     return () => { markersRef.current.forEach((marker) => marker.remove()); markersRef.current = []; };
-  }, [deltas, mapReady, showDomMarkers, highlightedId]);
+  }, [deltas, mapReady, showDomMarkers, highlightedId, isMobile]);
 
   const fly = useCallback((center: [number, number], zoom: number) => {
     try {
