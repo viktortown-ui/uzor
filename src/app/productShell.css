@@ -313,4 +313,12 @@
 .pwa-install-launcher__sheet button { min-height: 44px; }
 .pwa-install-debug { position: fixed; top: 8px; right: 8px; z-index: 100; max-width: min(360px, calc(100vw - 16px)); padding: 8px; color: #dff; background: rgba(0,0,0,.82); font-size: 11px; }
 .mobile-app-shell--dock-hidden .pwa-install-launcher { bottom: calc(16px + env(safe-area-inset-bottom)); }
-@media (min-width: 901px) { .pwa-install-launcher { display: none; } }
+@media (min-width: 901px) {
+  .pwa-install-launcher {
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    width: min(360px, calc(100vw - 48px));
+    justify-items: end;
+  }
+}

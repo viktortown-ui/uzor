@@ -1,3 +1,5 @@
+import './features/pwa/pwaInstallBridge';
+import './features/pwa/pwaServiceWorkerRegistration';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';

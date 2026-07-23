@@ -1,14 +1,21 @@
 import { hasPwaDebugParam, usePwaInstall } from './PwaInstallProvider';
 
+function launcherLabel(canInstall: boolean, pending: boolean, prompting: boolean, embedded: boolean) {
+  if (pending) return 'Устанавливаем…';
+  if (prompting) return 'Открываем…';
+  if (canInstall) return 'Установить УЗОР';
+  return embedded ? 'Открыть в Chrome' : 'Как установить';
+}
+
 export function PwaInstallLauncher() {
   const install = usePwaInstall();
   if (!install.visible) return null;
-  const nativeReady = install.canInstall;
   const pending = install.isPendingInstall;
+  const label = launcherLabel(install.canInstall, pending, install.isPrompting, install.embedded);
   return <aside className="pwa-install-launcher" aria-label="Установка приложения">
-    <button type="button" className="pwa-install-launcher__button" onClick={() => nativeReady ? void install.install() : install.openInstructions()} disabled={install.isPrompting || pending}>{pending ? 'Устанавливаем…' : install.isPrompting ? 'Открываем…' : 'Установить УЗОР'}</button>
-    {install.instructionsOpen && !nativeReady && !pending && <section className="pwa-install-launcher__sheet" role="dialog" aria-label="Инструкция по установке">
-      {install.state === 'ios' ? <ol><li>Нажмите «Поделиться».</li><li>Выберите «На экран «Домой»».</li><li>Подтвердите добавление УЗОРА.</li></ol> : <p>Откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран».</p>}
+    <button type="button" className="pwa-install-launcher__button" onClick={() => install.canInstall ? void install.install() : install.openInstructions()} disabled={install.isPrompting || pending}>{label}</button>
+    {install.instructionsOpen && !install.canInstall && !pending && <section className="pwa-install-launcher__sheet" role="dialog" aria-label="Инструкция по установке">
+      {install.state === 'embedded' ? <><p>Откройте эту страницу в обычном Chrome, затем выберите «Установить приложение».</p><button type="button" onClick={() => void install.copyCurrentUrl()}>Скопировать ссылку</button></> : install.state === 'ios-open-safari' ? <p>Откройте эту страницу в Safari, затем нажмите «Поделиться» → «На экран Домой».</p> : install.state === 'ios' ? <ol><li>Нажмите «Поделиться».</li><li>Выберите «На экран «Домой»».</li><li>Подтвердите добавление УЗОРА.</li></ol> : <p>Откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран».</p>}
       <button type="button" onClick={install.closeInstructions}>Понятно</button>
     </section>}
   </aside>;
@@ -17,5 +24,5 @@ export function PwaInstallLauncher() {
 export function PwaInstallDebug() {
   const install = usePwaInstall();
   if (!hasPwaDebugParam()) return null;
-  return <pre className="pwa-install-debug" aria-label="PWA diagnostics">{JSON.stringify(install.diagnostics, null, 2)}</pre>;
+  return <section className="pwa-install-debug" aria-label="PWA diagnostics"><button type="button" onClick={() => void navigator.clipboard?.writeText(JSON.stringify(install.diagnostics, null, 2))}>Скопировать диагностику</button><pre>{JSON.stringify(install.diagnostics, null, 2)}</pre></section>;
 }
