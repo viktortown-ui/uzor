@@ -6,7 +6,7 @@ import type { BeforeInstallPromptChoice, BeforeInstallPromptEvent, BrowserFamily
 import { getPwaRuntimeSnapshot, subscribePwaRuntime } from './pwaServiceWorkerRegistration';
 
 export type { BeforeInstallPromptChoice, BeforeInstallPromptEvent };
-export type PwaInstallState = 'waiting' | 'eligible' | 'manual' | 'ios' | 'embedded' | 'prompting' | 'pending' | 'installed' | 'error';
+export type PwaInstallState = 'waiting' | 'eligible' | 'manual' | 'ios' | 'ios-open-safari' | 'embedded' | 'prompting' | 'pending' | 'installed' | 'error';
 export const PWA_PROMOTION_DISMISSED_KEY = 'uzor:pwa-promotion-dismissed';
 
 type ManifestIconDiagnostic = { src: string; sizes?: string; type?: string; purpose?: string; ok?: boolean; status?: number; error?: string };
@@ -24,7 +24,7 @@ const PwaInstallContext = createContext<PwaInstallContextValue | null>(null);
 function matches(query: string) { return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(query).matches; }
 function routeEligible(pathname: string) { return pathname.startsWith('/pulse') || pathname.startsWith('/map') || pathname.startsWith('/contribute'); }
 function promotionDismissed() { return sessionStorage.getItem(PWA_PROMOTION_DISMISSED_KEY) === '1'; }
-function passiveState(prompt: BeforeInstallPromptEvent | null) { if (isStandalonePwa()) return 'installed'; if (prompt) return 'eligible'; if (isEmbeddedBrowser()) return 'embedded'; if (supportsIosManualInstall()) return 'ios'; return 'waiting'; }
+function passiveState(snapshot = getPwaInstallBridgeSnapshot()): PwaInstallState { if (snapshot.installed) return 'installed'; if (snapshot.deferredPrompt) return 'eligible'; if (snapshot.embedded) return 'embedded'; if (snapshot.browserFamily === 'ios-chrome' || snapshot.browserFamily === 'ios-edge' || snapshot.browserFamily === 'ios-firefox') return 'ios-open-safari'; if (supportsIosManualInstall()) return 'ios'; return 'waiting'; }
 export function hasPwaDebugParam() { const search = new URLSearchParams(window.location.search); if (search.get('debug') === '1') return true; const hashQuery = window.location.hash.split('?')[1]?.split('#')[0] ?? ''; return new URLSearchParams(hashQuery).get('debug') === '1'; }
 function safeError(error: unknown) { return error instanceof Error ? error.message.slice(0, 240) : String(error).slice(0, 240); }
 function emptyDiagnostics(state: PwaInstallState): PwaDiagnostics { const bridge = getPwaInstallBridgeSnapshot(); const runtime = getPwaRuntimeSnapshot(); return { url: window.location.href, pathname: window.location.pathname, hashRoute: window.location.hash, userAgent: navigator.userAgent, browserFamily: bridge.browserFamily, embedded: bridge.embedded, secureContext: window.isSecureContext, standalone: bridge.standalone, manifestUrl: null, manifestFetch: 'idle', manifestError: null, manifestId: null, startUrl: null, scope: null, icons: [], serviceWorkerApi: 'serviceWorker' in navigator, registrationScope: runtime.registrationScope, activeState: runtime.activeState, waitingState: runtime.waitingState, installingState: runtime.installingState, controllingScriptURL: runtime.controllingScriptURL, registrationError: runtime.registrationError, offlineReady: runtime.offlineReady, capturedPrompt: Boolean(bridge.deferredPrompt), capturedAt: bridge.capturedAt, appInstalledAt: bridge.appInstalledAt, installState: state }; }
@@ -48,21 +48,21 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [bridge, setBridge] = useState(() => getPwaInstallBridgeSnapshot());
   const [runtimeTick, setRuntimeTick] = useState(0);
-  const [state, setState] = useState<PwaInstallState>(() => passiveState(getPwaInstallBridgeSnapshot().deferredPrompt));
+  const [state, setState] = useState<PwaInstallState>(() => passiveState(getPwaInstallBridgeSnapshot()));
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [promotionHidden, setPromotionHidden] = useState(() => promotionDismissed());
   const [mobile, setMobile] = useState(() => matches(MOBILE_QUERY));
   const [diagnostics, setDiagnostics] = useState(() => emptyDiagnostics(state));
 
-  useEffect(() => subscribePwaInstallBridge(() => { const next = getPwaInstallBridgeSnapshot(); setBridge(next); setState(passiveState(next.deferredPrompt)); }), []);
+  useEffect(() => subscribePwaInstallBridge(() => { const next = getPwaInstallBridgeSnapshot(); setBridge(next); setState((current) => next.installed ? 'installed' : current === 'prompting' || current === 'pending' ? current : passiveState(next)); if (next.installed) setInstructionsOpen(false); }), []);
   useEffect(() => subscribePwaRuntime(() => setRuntimeTick((tick) => tick + 1)), []);
   useEffect(() => { const mql = typeof window.matchMedia === 'function' ? window.matchMedia(MOBILE_QUERY) : null; const sync = () => setMobile(matches(MOBILE_QUERY)); mql?.addEventListener?.('change', sync); return () => mql?.removeEventListener?.('change', sync); }, []);
   const refreshDiagnostics = useCallback(async () => setDiagnostics(await loadManifestDiagnostics(state)), [state]);
   useEffect(() => { const timer = window.setTimeout(() => { void refreshDiagnostics(); }, 0); return () => window.clearTimeout(timer); }, [location.pathname, location.search, location.hash, bridge, runtimeTick, refreshDiagnostics]);
 
   const dismissPromotion = useCallback(() => { sessionStorage.setItem(PWA_PROMOTION_DISMISSED_KEY, '1'); setPromotionHidden(true); }, []);
-  const install = useCallback(async () => { const event = bridge.deferredPrompt; if (!event || state !== 'eligible') { if (state !== 'pending' && state !== 'prompting') { setInstructionsOpen(true); setState(isEmbeddedBrowser() ? 'embedded' : supportsIosManualInstall() ? 'ios' : 'manual'); } return; } setState('prompting'); try { const consumed = consumeDeferredPrompt(); if (!consumed) { setState(passiveState(null)); return; } await consumed.prompt(); const choice = await consumed.userChoice; if (choice.outcome === 'accepted') setState(isStandalonePwa() ? 'installed' : 'pending'); else { sessionStorage.setItem(PWA_PROMOTION_DISMISSED_KEY, '1'); setPromotionHidden(true); setState(passiveState(null)); } } catch { setState('error'); } }, [bridge.deferredPrompt, state]);
-  const openInstructions = useCallback(() => { if (state === 'pending' || state === 'prompting') return; setInstructionsOpen(true); if (!bridge.deferredPrompt) setState(isEmbeddedBrowser() ? 'embedded' : supportsIosManualInstall() ? 'ios' : 'manual'); }, [bridge.deferredPrompt, state]);
+  const install = useCallback(async () => { const event = bridge.deferredPrompt; if (!event || state !== 'eligible') { if (state !== 'pending' && state !== 'prompting') { setInstructionsOpen(true); setState((detectBrowserFamily() === 'ios-chrome' || detectBrowserFamily() === 'ios-edge' || detectBrowserFamily() === 'ios-firefox') ? 'ios-open-safari' : isEmbeddedBrowser() ? 'embedded' : supportsIosManualInstall() ? 'ios' : 'manual'); } return; } setState('prompting'); try { const consumed = consumeDeferredPrompt(); if (!consumed) { setState(passiveState(getPwaInstallBridgeSnapshot())); return; } await consumed.prompt(); const choice = await consumed.userChoice; if (choice.outcome === 'accepted') setState(isStandalonePwa() ? 'installed' : 'pending'); else { sessionStorage.setItem(PWA_PROMOTION_DISMISSED_KEY, '1'); setPromotionHidden(true); setState(passiveState(getPwaInstallBridgeSnapshot())); } } catch { setState('error'); } }, [bridge.deferredPrompt, state]);
+  const openInstructions = useCallback(() => { if (state === 'pending' || state === 'prompting') return; setInstructionsOpen(true); if (!bridge.deferredPrompt) setState((detectBrowserFamily() === 'ios-chrome' || detectBrowserFamily() === 'ios-edge' || detectBrowserFamily() === 'ios-firefox') ? 'ios-open-safari' : isEmbeddedBrowser() ? 'embedded' : supportsIosManualInstall() ? 'ios' : 'manual'); }, [bridge.deferredPrompt, state]);
   const copyCurrentUrl = useCallback(async () => { await navigator.clipboard?.writeText(window.location.href); }, []);
 
   const visible = state !== 'installed' && (mobile || state === 'eligible' || state === 'prompting' || state === 'pending') && routeEligible(location.pathname);

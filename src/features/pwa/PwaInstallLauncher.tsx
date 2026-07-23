@@ -15,7 +15,7 @@ export function PwaInstallLauncher() {
   return <aside className="pwa-install-launcher" aria-label="Установка приложения">
     <button type="button" className="pwa-install-launcher__button" onClick={() => install.canInstall ? void install.install() : install.openInstructions()} disabled={install.isPrompting || pending}>{label}</button>
     {install.instructionsOpen && !install.canInstall && !pending && <section className="pwa-install-launcher__sheet" role="dialog" aria-label="Инструкция по установке">
-      {install.state === 'embedded' ? <><p>Откройте эту страницу в обычном Chrome, затем выберите «Установить приложение».</p><button type="button" onClick={() => void install.copyCurrentUrl()}>Скопировать ссылку</button></> : install.state === 'ios' ? <ol><li>Нажмите «Поделиться».</li><li>Выберите «На экран «Домой»».</li><li>Подтвердите добавление УЗОРА.</li></ol> : <p>Откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран».</p>}
+      {install.state === 'embedded' ? <><p>Откройте эту страницу в обычном Chrome, затем выберите «Установить приложение».</p><button type="button" onClick={() => void install.copyCurrentUrl()}>Скопировать ссылку</button></> : install.state === 'ios-open-safari' ? <p>Откройте эту страницу в Safari, затем нажмите «Поделиться» → «На экран Домой».</p> : install.state === 'ios' ? <ol><li>Нажмите «Поделиться».</li><li>Выберите «На экран «Домой»».</li><li>Подтвердите добавление УЗОРА.</li></ol> : <p>Откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран».</p>}
       <button type="button" onClick={install.closeInstructions}>Понятно</button>
     </section>}
   </aside>;

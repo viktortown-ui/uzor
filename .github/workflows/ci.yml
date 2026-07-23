@@ -28,3 +28,9 @@ jobs:
         run: npm run build
         env:
           VITE_BASE_PATH: /uzor/
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify Chromium PWA installability
+        run: npm run test:pwa-installability
