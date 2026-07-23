@@ -271,3 +271,46 @@
   min-height: 100dvh;
   padding-bottom: 0;
 }
+
+.pwa-install-launcher {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  right: max(14px, env(safe-area-inset-right));
+  bottom: calc(var(--mobile-app-dock-space) + 10px);
+  z-index: 39;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.pwa-install-launcher__button,
+.pwa-install-launcher__sheet {
+  pointer-events: auto;
+}
+.pwa-install-launcher__button {
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1px solid rgba(32, 230, 206, 0.42);
+  border-radius: 999px;
+  color: #03131d;
+  background: linear-gradient(135deg, var(--mobile-accent-blue), var(--mobile-accent));
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.36), 0 0 18px rgba(32, 230, 206, 0.22);
+  font-weight: 900;
+}
+.pwa-install-launcher__sheet {
+  min-height: 44px;
+  width: min(100%, 360px);
+  padding: 14px 16px;
+  border: 1px solid var(--mobile-border);
+  border-radius: 18px;
+  color: var(--mobile-text);
+  background: rgba(7, 17, 30, 0.96);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(16px);
+}
+.pwa-install-launcher__sheet ol { margin: 0 0 10px 20px; padding: 0; }
+.pwa-install-launcher__sheet p { margin: 0 0 10px; }
+.pwa-install-launcher__sheet button { min-height: 44px; }
+.pwa-install-debug { position: fixed; top: 8px; right: 8px; z-index: 100; max-width: min(360px, calc(100vw - 16px)); padding: 8px; color: #dff; background: rgba(0,0,0,.82); font-size: 11px; }
+.mobile-app-shell--dock-hidden .pwa-install-launcher { bottom: calc(16px + env(safe-area-inset-bottom)); }
+@media (min-width: 901px) { .pwa-install-launcher { display: none; } }

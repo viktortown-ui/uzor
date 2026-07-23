@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import { HashRouter, MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../features/pwa/PwaInstallCard', () => ({ PwaInstallCard: () => null }));
 import { App } from './App';
 import { getInitialPulseState, TraceContent } from '../features/mobilePulse/MobilePulsePage';
 import { wrappedDemoReport } from '../features/wrapped/wrappedDemoData';

@@ -4,17 +4,17 @@ import { MemoryRouter } from 'react-router-dom';
 import { PwaStatus } from './PwaStatus';
 
 const pwa = vi.hoisted(() => ({
-  needRefresh: false,
-  setNeedRefresh: vi.fn(),
-  updateServiceWorker: vi.fn(),
+  runtime: { needRefresh: false, offlineReady: false, swUrl: null, registrationScope: null, activeState: null, waitingState: null, installingState: null, controllingScriptURL: null, registrationError: null },
+  listeners: new Set<() => void>(),
+  applyPwaUpdate: vi.fn(),
+  dismissPwaUpdate: vi.fn(() => { pwa.runtime.needRefresh = false; pwa.listeners.forEach((listener) => listener()); }),
 }));
 
-vi.mock('virtual:pwa-register/react', () => ({
-  useRegisterSW: () => ({
-    needRefresh: [pwa.needRefresh, pwa.setNeedRefresh],
-    offlineReady: [false, vi.fn()],
-    updateServiceWorker: pwa.updateServiceWorker,
-  }),
+vi.mock('../features/pwa/pwaServiceWorkerRegistration', () => ({
+  getPwaRuntimeSnapshot: () => pwa.runtime,
+  subscribePwaRuntime: (listener: () => void) => { pwa.listeners.add(listener); return () => pwa.listeners.delete(listener); },
+  applyPwaUpdate: pwa.applyPwaUpdate,
+  dismissPwaUpdate: pwa.dismissPwaUpdate,
 }));
 
 function setOnline(value: boolean) {
@@ -28,9 +28,10 @@ function renderAt(pathname = '/pulse') {
 describe('PwaStatus', () => {
   beforeEach(() => {
     setOnline(true);
-    pwa.needRefresh = false;
-    pwa.setNeedRefresh.mockReset();
-    pwa.updateServiceWorker.mockReset();
+    pwa.runtime.needRefresh = false;
+    pwa.listeners.clear();
+    pwa.applyPwaUpdate.mockReset();
+    pwa.dismissPwaUpdate.mockClear();
   });
 
   afterEach(cleanup);
@@ -50,17 +51,17 @@ describe('PwaStatus', () => {
   });
 
   it('shows and postpones a waiting update without reloading', () => {
-    pwa.needRefresh = true;
+    pwa.runtime.needRefresh = true;
     renderAt();
     expect(screen.getByText('Доступна новая версия')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Позже' }));
-    expect(pwa.setNeedRefresh).toHaveBeenCalledWith(false);
-    expect(pwa.updateServiceWorker).not.toHaveBeenCalled();
+    expect(pwa.dismissPwaUpdate).toHaveBeenCalledOnce();
+    expect(pwa.applyPwaUpdate).not.toHaveBeenCalled();
   });
 
   it('accepts an update without clearing browser storage', () => {
-    pwa.needRefresh = true;
+    pwa.runtime.needRefresh = true;
     const storageClear = vi.spyOn(Storage.prototype, 'clear');
     const storageRemove = vi.spyOn(Storage.prototype, 'removeItem');
     const indexedDelete = vi.fn();
@@ -69,7 +70,7 @@ describe('PwaStatus', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Обновить' }));
 
-    expect(pwa.updateServiceWorker).toHaveBeenCalledWith(true);
+    expect(pwa.applyPwaUpdate).toHaveBeenCalledWith(true);
     expect(storageClear).not.toHaveBeenCalled();
     expect(storageRemove).not.toHaveBeenCalled();
     expect(indexedDelete).not.toHaveBeenCalled();
