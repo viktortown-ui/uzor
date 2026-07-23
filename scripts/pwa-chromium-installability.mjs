@@ -34,6 +34,7 @@ try {
   page.on('console', (msg) => { if (msg.type() === 'error' && /manifest|icon|service worker|sw/i.test(msg.text())) consoleErrors.push(msg.text()); });
   await page.goto(`${base}/uzor/#/pulse`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => navigator.serviceWorker?.getRegistration?.('/uzor/').then(Boolean));
+  await page.waitForFunction(() => navigator.serviceWorker?.ready.then(() => true));
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller));
   const sw = await page.evaluate(async () => { const registration = await navigator.serviceWorker.getRegistration('/uzor/'); return { scope: registration?.scope, controlled: Boolean(navigator.serviceWorker.controller) }; });
