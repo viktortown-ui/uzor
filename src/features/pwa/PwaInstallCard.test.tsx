@@ -1,4 +1,5 @@
 import React from 'react';
+import { readFileSync } from 'node:fs';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -82,6 +83,36 @@ describe('PwaInstallCard', () => {
   });
   it('keeps unsupported mobile fallback collapsed until Как установить', () => { renderWithProvider(<PwaInstallCard />); expect(screen.getByText('Как установить УЗОР')).toBeInTheDocument(); expect(screen.queryByText(/Откройте меню браузера/)).not.toBeInTheDocument(); fireEvent.click(screen.getByRole('button', { name: 'Как установить' })); expect(screen.getByText(/Откройте меню браузера/)).toBeInTheDocument(); });
   it('does not show generic fallback on desktop without a prompt but shows a genuine prompt', async () => { setEnv({ mobile: false }); renderWithProvider(<PwaInstallCard />); expect(screen.queryByText('Установить УЗОР')).not.toBeInTheDocument(); const event = emitPrompt(); expect(await screen.findByRole('button', { name: 'Установить' })).toBeInTheDocument(); expect(event.preventDefault).toHaveBeenCalled(); });
+
+  it('keeps the desktop launcher hidden on /map until Chromium provides a real prompt', () => {
+    setEnv({ mobile: false });
+    renderApp('/map');
+    expect(screen.queryByLabelText('Установка приложения')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Установить УЗОР' })).not.toBeInTheDocument();
+  });
+  it('shows the desktop /map launcher for a retained Chromium prompt and calls prompt once', async () => {
+    setEnv({ mobile: false });
+    renderApp('/map');
+    const event = emitPrompt();
+    fireEvent.click(await screen.findByRole('button', { name: 'Установить УЗОР' }));
+    await waitFor(() => expect(event.prompt).toHaveBeenCalledOnce());
+  });
+  it('preserves a desktop /contribute prompt when navigating to /map', async () => {
+    setEnv({ mobile: false });
+    render(<MemoryRouter initialEntries={['/contribute']}><PwaInstallProvider><Routes><Route path="/contribute" element={<Link to="/map">go map</Link>} /><Route path="/map" element={<div>map</div>} /></Routes><PwaInstallLauncher /></PwaInstallProvider></MemoryRouter>);
+    const event = emitPrompt();
+    expect(await screen.findByRole('button', { name: 'Установить УЗОР' })).toBeInTheDocument();
+    fireEvent.click(screen.getByText('go map'));
+    expect(await screen.findByText('map')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Установить УЗОР' }));
+    await waitFor(() => expect(event.prompt).toHaveBeenCalledOnce());
+  });
+  it('keeps desktop launcher visibility in Provider state instead of a CSS display-none rule', () => {
+    const css = readFileSync('src/app/productShell.css', 'utf8');
+    expect(css).toContain('@media (min-width: 901px)');
+    expect(css).toContain('width: min(360px, calc(100vw - 48px));');
+    expect(css).not.toMatch(/@media\s*\(min-width:\s*901px\)[^{]*\{[^}]*\.pwa-install-launcher[^}]*display:\s*none/i);
+  });
 
   it.each(['/map', '/contribute'])('captures beforeinstallprompt on direct %s entry', async (route) => { renderApp(route); const event = emitPrompt(); expect(event.preventDefault).toHaveBeenCalled(); expect(await screen.findByRole('button', { name: 'Установить УЗОР' })).toBeInTheDocument(); fireEvent.click(screen.getByRole('button', { name: 'Установить УЗОР' })); await waitFor(() => expect(event.prompt).toHaveBeenCalledOnce()); });
   it('preserves the deferred prompt while navigating between map and pulse', async () => { render(<MemoryRouter initialEntries={['/map']}><PwaInstallProvider><ProductShell><Routes><Route path="/map" element={<Link to="/pulse">go pulse</Link>} /><Route path="/pulse" element={<PwaInstallCard />} /></Routes></ProductShell><PwaInstallLauncher /></PwaInstallProvider></MemoryRouter>); const event = emitPrompt(); fireEvent.click(screen.getByText('go pulse')); expect(await screen.findByRole('button', { name: 'Установить' })).toBeInTheDocument(); fireEvent.click(screen.getByRole('button', { name: 'Установить' })); await waitFor(() => expect(event.prompt).toHaveBeenCalledOnce()); });
