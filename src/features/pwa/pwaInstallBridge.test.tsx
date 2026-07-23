@@ -1,5 +1,5 @@
 import React from 'react';
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -12,6 +12,15 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe('pwaInstallBridge', () => {
   it('captures an event before React subscribes and consumes it once without a passive emit', async () => { const bridge = await import('./pwaInstallBridge'); const event = emitPrompt(); expect(event.preventDefault).toHaveBeenCalledOnce(); expect(bridge.getPwaInstallBridgeSnapshot().deferredPrompt).toBe(event); const consumed = bridge.consumeDeferredPrompt(); expect(consumed).toBe(event); expect(bridge.consumeDeferredPrompt()).toBeNull(); });
+  it('makes a pre-React prompt immediately available to the Provider and launcher', async () => {
+    await import('./pwaInstallBridge');
+    const event = emitPrompt();
+    const { PwaInstallProvider } = await import('./PwaInstallProvider');
+    const { PwaInstallLauncher } = await import('./PwaInstallLauncher');
+    render(<MemoryRouter initialEntries={['/pulse']}><PwaInstallProvider><PwaInstallLauncher /></PwaInstallProvider></MemoryRouter>);
+    fireEvent.click(await screen.findByRole('button', { name: 'Установить УЗОР' }));
+    await waitFor(() => expect(event.prompt).toHaveBeenCalledOnce());
+  });
   it('keeps exactly one global listener through Provider mounts and repeated starts', async () => {
     const add = vi.spyOn(window, 'addEventListener');
     const bridge = await import('./pwaInstallBridge');

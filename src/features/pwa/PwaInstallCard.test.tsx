@@ -38,7 +38,27 @@ afterEach(() => { cleanup(); sessionStorage.removeItem(PWA_PROMOTION_DISMISSED_K
 describe('PwaInstallCard', () => {
   it('captures Chromium event and prompts only after a direct click', async () => { renderWithProvider(<PwaInstallCard />); const event = emitPrompt(); expect(event.preventDefault).toHaveBeenCalled(); expect(await screen.findByRole('button', { name: 'Установить' })).toBeInTheDocument(); expect(event.prompt).not.toHaveBeenCalled(); fireEvent.click(screen.getByRole('button', { name: 'Установить' })); await waitFor(() => expect(event.prompt).toHaveBeenCalledOnce()); });
   it('keeps an accepted choice pending until appinstalled confirms installation', async () => { renderApp('/pulse'); emitPrompt({ outcome: 'accepted' }); fireEvent.click(await screen.findByRole('button', { name: 'Установить' })); expect(await screen.findByText(/Браузер готовит установку/)).toBeInTheDocument(); expect(screen.queryByText(/Откройте меню браузера/)).not.toBeInTheDocument(); fireEvent(window, new Event('appinstalled')); await waitFor(() => expect(screen.queryByLabelText('Установка приложения')).not.toBeInTheDocument()); expect(screen.queryByRole('heading', { name: /Установить|Как установить/ })).not.toBeInTheDocument(); expect(getPwaInstallBridgeSnapshot().installed).toBe(true); });
-  it('hides only the promotion after dismissed userChoice', async () => { renderApp('/pulse'); const event = emitPrompt({ outcome: 'dismissed' }); fireEvent.click(await screen.findByRole('button', { name: 'Установить' })); await waitFor(() => expect(screen.queryByRole('heading', { name: 'Установить УЗОР' })).not.toBeInTheDocument()); expect(sessionStorage.getItem(PWA_PROMOTION_DISMISSED_KEY)).toBe('1'); expect(screen.getAllByRole('button', { name: 'Как установить' }).length).toBeGreaterThanOrEqual(1); fireEvent.click(screen.getAllByRole('button', { name: 'Как установить' }).at(-1)!); expect(screen.getByText(/Откройте меню браузера/)).toBeInTheDocument(); expect(event.prompt).toHaveBeenCalledOnce(); });
+  it('keeps prompting active while userChoice is unresolved, then pending until appinstalled', async () => {
+    let resolveChoice!: (choice: Choice) => void;
+    const userChoice = new Promise<Choice>((resolve) => { resolveChoice = resolve; });
+    renderApp('/pulse');
+    const event = emitPrompt({ userChoice });
+    fireEvent.click(await screen.findByRole('button', { name: 'Установить' }));
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Открываем…' })).toHaveLength(2));
+    screen.getAllByRole('button', { name: 'Открываем…' }).forEach((button) => expect(button).toBeDisabled());
+    expect(screen.getByRole('heading', { name: 'Открываем установку…' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Как установить' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Инструкция по установке')).not.toBeInTheDocument();
+    expect(event.prompt).toHaveBeenCalledOnce();
+    await act(async () => { resolveChoice({ outcome: 'accepted', platform: 'web' }); await userChoice; });
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Устанавливаем…' })).toHaveLength(1));
+    expect(screen.getByRole('button', { name: 'Устанавливаем…' })).toBeDisabled();
+    expect(screen.getByRole('heading', { name: 'Устанавливаем УЗОР…' })).toBeInTheDocument();
+    fireEvent(window, new Event('appinstalled'));
+    await waitFor(() => expect(screen.queryByLabelText('Установка приложения')).not.toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: /Установить|Как установить|Открываем|Устанавливаем/ })).not.toBeInTheDocument();
+  });
+  it('hides only the promotion after dismissed userChoice', async () => { renderApp('/pulse'); const event = emitPrompt({ outcome: 'dismissed' }); fireEvent.click(await screen.findByRole('button', { name: 'Установить' })); await waitFor(() => expect(sessionStorage.getItem(PWA_PROMOTION_DISMISSED_KEY)).toBe('1')); expect(screen.queryByRole('heading', { name: 'Установить УЗОР' })).not.toBeInTheDocument(); expect(screen.getAllByRole('button', { name: 'Как установить' }).length).toBeGreaterThanOrEqual(1); fireEvent.click(screen.getAllByRole('button', { name: 'Как установить' }).at(-1)!); expect(screen.getByText(/Откройте меню браузера/)).toBeInTheDocument(); expect(event.prompt).toHaveBeenCalledOnce(); });
   it('handles rejected prompt and rejected userChoice without clearing drafts', async () => { renderWithProvider(<PwaInstallCard />); emitPrompt({ promptReject: true }); fireEvent.click(await screen.findByRole('button', { name: 'Установить' })); expect(await screen.findByText(/Не удалось открыть установку/)).toBeInTheDocument(); cleanup(); renderWithProvider(<PwaInstallCard />); const rejectedChoice = emitPrompt({ choiceReject: true }); fireEvent.click(await screen.findByRole('button', { name: 'Установить' })); rejectedChoice.rejectChoice?.(); expect(await screen.findByText(/Не удалось открыть установку/)).toBeInTheDocument(); expect(localStorage.getItem('delta-draft')).toBe('keep'); });
   it('hides for initial standalone, media-query standalone changes, and navigator.standalone', async () => { setEnv({ standalone: true }); renderWithProvider(<PwaInstallCard />); expect(screen.queryByText('Установить УЗОР')).not.toBeInTheDocument(); cleanup(); setEnv({ navStandalone: true }); renderWithProvider(<PwaInstallCard />); expect(screen.queryByText('Установить УЗОР')).not.toBeInTheDocument(); cleanup(); setEnv(); resetPwaInstallBridgeForTests(); renderWithProvider(<PwaInstallCard />); expect(screen.getByText('Как установить УЗОР')).toBeInTheDocument(); act(() => { standaloneMql.matches = true; standaloneMql.emit(); }); await waitFor(() => expect(screen.queryByText('Установить УЗОР')).not.toBeInTheDocument()); });
   it.each([
@@ -46,6 +66,20 @@ describe('PwaInstallCard', () => {
     ['classic iPad Safari', 'Mozilla/5.0 (iPad) Version/17.0 Mobile/15E148 Safari/604.1', 'iPad', 5],
     ['modern iPadOS Safari', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Version/17.0 Safari/605.1.15', 'MacIntel', 5],
   ])('shows manual instructions for %s after an explicit click', (_label, ua, platform, touch) => { setEnv({ ua, platform, touch }); renderWithProvider(<PwaInstallCard />); expect(screen.queryByText('Нажмите «Поделиться».')).not.toBeInTheDocument(); fireEvent.click(screen.getByRole('button', { name: 'Как установить' })); expect(screen.getByText('Нажмите «Поделиться».')).toBeInTheDocument(); expect(screen.queryByText(/Откройте меню браузера/)).not.toBeInTheDocument(); });
+  it.each([
+    ['CriOS', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) CriOS/120.0 Mobile/15E148 Safari/604.1'],
+    ['EdgiOS', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) EdgiOS/120.0 Mobile/15E148 Safari/604.1'],
+    ['FxiOS', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) FxiOS/120.0 Mobile/15E148 Safari/604.1'],
+  ])('tells %s users to open Safari instead of claiming native or generic Chrome install', (_family, ua) => {
+    setEnv({ ua, platform: 'iPhone', touch: 1 });
+    renderWithProvider(<PwaInstallCard />);
+    expect(screen.queryByRole('button', { name: 'Установить' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Как установить УЗОР' })).toBeInTheDocument();
+    expect(screen.queryByText(/Откройте меню браузера/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Как установить' }));
+    expect(screen.getByText(/Откройте эту страницу в Safari/)).toBeInTheDocument();
+    expect(screen.queryByText(/Откройте меню браузера/)).not.toBeInTheDocument();
+  });
   it('keeps unsupported mobile fallback collapsed until Как установить', () => { renderWithProvider(<PwaInstallCard />); expect(screen.getByText('Как установить УЗОР')).toBeInTheDocument(); expect(screen.queryByText(/Откройте меню браузера/)).not.toBeInTheDocument(); fireEvent.click(screen.getByRole('button', { name: 'Как установить' })); expect(screen.getByText(/Откройте меню браузера/)).toBeInTheDocument(); });
   it('does not show generic fallback on desktop without a prompt but shows a genuine prompt', async () => { setEnv({ mobile: false }); renderWithProvider(<PwaInstallCard />); expect(screen.queryByText('Установить УЗОР')).not.toBeInTheDocument(); const event = emitPrompt(); expect(await screen.findByRole('button', { name: 'Установить' })).toBeInTheDocument(); expect(event.preventDefault).toHaveBeenCalled(); });
 
