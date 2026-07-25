@@ -52,7 +52,7 @@ insert into public.forecast_options(event_id,id,label,sort_order) values
 on conflict(event_id,id) do nothing;
 
 create function public.get_forecast_workspace(input_event_id text default 'sandbox-demo-milk-price-2026-12-15') returns jsonb
-language plpgsql stable security definer set search_path = public, pg_temp as $$
+language plpgsql volatile security definer set search_path = public, pg_temp as $$
 declare e public.forecast_events%rowtype; uid uuid := auth.uid(); f public.user_forecasts%rowtype; server_time timestamptz := clock_timestamp(); reason text;
 begin
   select * into e from public.forecast_events where id=input_event_id;
@@ -68,11 +68,13 @@ end $$;
 
 create function public.submit_forecast(input_event_id text,input_option_id text,input_probability numeric,input_reasoning text,input_domain_version text) returns jsonb
 language plpgsql security definer set search_path = public, pg_temp as $$
-declare uid uuid:=auth.uid(); e public.forecast_events%rowtype; f public.user_forecasts%rowtype; server_time timestamptz:=clock_timestamp(); clean_reason text:=nullif(trim(input_reasoning),''); existed boolean;
+declare uid uuid:=auth.uid(); e public.forecast_events%rowtype; f public.user_forecasts%rowtype; server_time timestamptz; clean_reason text:=nullif(trim(input_reasoning),''); created_result boolean;
 begin
   if uid is null then raise exception using message='not_authenticated'; end if;
   select * into e from public.forecast_events where id=input_event_id for share;
   if not found then raise exception using message='forecast_event_not_found'; end if;
+  -- Capture time after the potentially blocking event-row lock, so deadline authorization cannot use a stale timestamp.
+  server_time := clock_timestamp();
   if input_domain_version <> 'forecast-domain-v1' then raise exception using message='unsupported_forecast_version'; end if;
   if e.status <> 'open' then raise exception using message='forecast_event_not_open'; end if;
   if server_time < e.opens_at then raise exception using message='forecast_not_started'; end if;
@@ -80,12 +82,12 @@ begin
   if not exists(select 1 from public.forecast_options where event_id=e.id and id=input_option_id) then raise exception using message='forecast_option_not_found'; end if;
   if input_probability is null or input_probability = 'NaN'::numeric or input_probability < 0 or input_probability > 1 then raise exception using message='invalid_probability'; end if;
   if clean_reason is not null and length(clean_reason)>280 then raise exception using message='invalid_reasoning'; end if;
-  select exists(select 1 from public.user_forecasts where event_id=e.id and user_id=uid) into existed;
   insert into public.user_forecasts(event_id,user_id,selected_option_id,probability,reasoning,domain_version,created_at,updated_at)
   values(e.id,uid,input_option_id,input_probability,clean_reason,input_domain_version,server_time,server_time)
   on conflict(event_id,user_id) do update set selected_option_id=excluded.selected_option_id,probability=excluded.probability,reasoning=excluded.reasoning,domain_version=excluded.domain_version,updated_at=excluded.updated_at
-  returning * into f;
-  return jsonb_build_object('forecast',jsonb_build_object('id',f.id,'event_id',f.event_id,'selected_option_id',f.selected_option_id,'probability',f.probability,'reasoning',f.reasoning,'domain_version',f.domain_version,'created_at',f.created_at,'updated_at',f.updated_at),'server_timestamp',server_time,'event_deadline',e.closes_at,'created',not existed,'locked',false);
+  -- xmax is zero only for the row actually inserted by this atomic upsert; a concurrent conflict reports updated.
+  returning *, (xmax = 0) into f, created_result;
+  return jsonb_build_object('forecast',jsonb_build_object('id',f.id,'event_id',f.event_id,'selected_option_id',f.selected_option_id,'probability',f.probability,'reasoning',f.reasoning,'domain_version',f.domain_version,'created_at',f.created_at,'updated_at',f.updated_at),'server_timestamp',server_time,'event_deadline',e.closes_at,'created',created_result,'locked',false);
 end $$;
 
 revoke all on function public.get_forecast_workspace(text) from public;

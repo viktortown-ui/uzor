@@ -1,0 +1,28 @@
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ForecastApiError } from '../api/forecastApi';
+import type { ForecastWorkspace } from '../api/forecastApiTypes';
+import type { UserForecast } from '../types';
+import { createInteractiveDemoEvent } from './forecastUiLogic';
+
+const mocks=vi.hoisted(()=>({getForecastWorkspace:vi.fn(),submitForecast:vi.fn()}));
+vi.mock('../../../app/appMode',()=>({isProductionConfigured:true}));
+vi.mock('../api/forecastApi',async(importOriginal)=>{const original=await importOriginal<typeof import('../api/forecastApi')>();return{...original,getForecastWorkspace:mocks.getForecastWorkspace,submitForecast:mocks.submitForecast};});
+import { ForecastPage } from './ForecastPage';
+
+const event={...createInteractiveDemoEvent(),id:'sandbox-demo-milk-price-2026-12-15',status:'open' as const};
+const saved:UserForecast={id:'server-id',eventId:event.id,selectedOptionId:'above',probability:.5,reasoning:'Сохранено сервером',createdAt:'2026-07-30T10:00:00Z',updatedAt:'2026-07-30T11:00:00Z',version:'forecast-domain-v1'};
+const workspace=(change:Partial<ForecastWorkspace>={}):ForecastWorkspace=>({event,forecast:null,serverTimestamp:'2026-07-30T12:00:00Z',authenticationRequired:false,submissionPermitted:true,locked:false,lockReason:null,...change});
+const renderPage=()=>render(<MemoryRouter><ForecastPage/></MemoryRouter>);
+afterEach(()=>{cleanup();mocks.getForecastWorkspace.mockReset();mocks.submitForecast.mockReset();localStorage.clear();sessionStorage.clear();});
+
+describe('production ForecastPage',()=>{
+ it('shows loading then a successfully loaded workspace',async()=>{let resolve!:(v:ForecastWorkspace)=>void;mocks.getForecastWorkspace.mockReturnValue(new Promise(r=>{resolve=r;}));renderPage();expect(screen.getByText('Загружаем событие и ваш прогноз…')).toBeInTheDocument();resolve(workspace());expect(await screen.findByText(event.title)).toBeInTheDocument();});
+ it('shows load failure and retries',async()=>{mocks.getForecastWorkspace.mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce(workspace());renderPage();expect(await screen.findByText('Не удалось сохранить прогноз. Попробуйте ещё раз.')).toBeInTheDocument();await userEvent.click(screen.getByRole('button',{name:'Повторить'}));expect(await screen.findByText(event.title)).toBeInTheDocument();expect(mocks.getForecastWorkspace).toHaveBeenCalledTimes(2);});
+ it('sends 50% as 0.5 and replaces assumptions with the server response and timestamp',async()=>{mocks.getForecastWorkspace.mockResolvedValue(workspace());mocks.submitForecast.mockResolvedValue({forecast:saved,serverTimestamp:'2026-07-30T13:00:00Z',eventDeadline:event.closesAt,created:true,locked:false});renderPage();await userEvent.click(await screen.findByRole('radio',{name:'Строго выше 120,00 ₽'}));await userEvent.click(screen.getByRole('button',{name:'Сохранить прогноз'}));await waitFor(()=>expect(mocks.submitForecast).toHaveBeenCalledWith(expect.objectContaining({probability:.5})));expect(await screen.findByText(/Сохранено сервером:/)).toHaveTextContent('13:00');expect(screen.getByText(/ID: server-id/)).toBeInTheDocument();});
+ it('prevents duplicate submit calls',async()=>{mocks.getForecastWorkspace.mockResolvedValue(workspace());let resolve!:(value:unknown)=>void;mocks.submitForecast.mockReturnValue(new Promise(r=>{resolve=r;}));renderPage();await userEvent.click(await screen.findByRole('radio',{name:'Строго выше 120,00 ₽'}));const button=screen.getByRole('button',{name:'Сохранить прогноз'});fireEvent.click(button);fireEvent.click(button);expect(mocks.submitForecast).toHaveBeenCalledTimes(1);resolve({forecast:saved,serverTimestamp:'2026-07-30T13:00:00Z',eventDeadline:event.closesAt,created:true,locked:false});});
+ it('preserves deadline rejection, reloads authoritative saved forecast read-only, and shows no success',async()=>{const original={...saved,probability:.6,reasoning:'Исходное значение'};mocks.getForecastWorkspace.mockResolvedValueOnce(workspace({forecast:original})).mockResolvedValueOnce(workspace({forecast:original,submissionPermitted:false,locked:true,lockReason:'deadline_passed'}));mocks.submitForecast.mockRejectedValue(new ForecastApiError('forecast_deadline_passed'));renderPage();const number=await screen.findByRole('spinbutton');fireEvent.change(number,{target:{value:'80'}});await userEvent.click(screen.getByRole('button',{name:'Обновить прогноз'}));expect(await screen.findByText('Срок приёма закончился. Прогноз не был изменён.')).toBeInTheDocument();expect(mocks.getForecastWorkspace).toHaveBeenCalledTimes(2);expect(screen.getByRole('spinbutton')).toHaveValue(60);expect(screen.getByRole('spinbutton')).toBeDisabled();expect(screen.queryByRole('heading',{name:'Прогноз сохранён'})).not.toBeInTheDocument();});
+ it('does not write forecast storage and contains no forbidden metrics',async()=>{localStorage.setItem('keep','yes');sessionStorage.setItem('keep','yes');mocks.getForecastWorkspace.mockResolvedValue(workspace());renderPage();await screen.findByText(event.title);expect(localStorage.getItem('keep')).toBe('yes');expect(sessionStorage.getItem('keep')).toBe('yes');expect(document.body.textContent).not.toMatch(/Brier|репутац|\bXP\b|консенсус|участников/i);});
+});

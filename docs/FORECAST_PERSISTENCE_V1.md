@@ -16,7 +16,9 @@ The read response includes server timestamp, authentication requirement, permiss
 
 ## Server-clock rule
 
-Only `clock_timestamp()` in PostgreSQL authorizes a write. The RPC accepts neither user ID nor client timestamps. Submission requires `opens_at <= server_time < closes_at`; equality at `closes_at` is locked. Status is checked in addition to time. An old or modified browser therefore cannot override the deadline.
+Only `clock_timestamp()` in PostgreSQL authorizes a write. The RPC accepts neither user ID nor client timestamps. `submit_forecast` first authenticates and acquires the event-row lock, and only then captures the timestamp used for `opens_at <= server_time < closes_at`; a lock wait therefore cannot leave the deadline check using stale time. Equality at `closes_at` is locked. Status is checked in addition to time. An old or modified browser therefore cannot override the deadline.
+
+`get_forecast_workspace` is explicitly `VOLATILE`: it calls both `clock_timestamp()` and `auth.uid()`, so declaring it `STABLE` would misrepresent its time- and request-dependent result. The atomic upsert derives its created/update flag from the row version returned by the upsert itself rather than from a race-prone preliminary existence query.
 
 ## Demo and production
 
