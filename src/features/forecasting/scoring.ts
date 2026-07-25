@@ -1,5 +1,11 @@
 import type { ForecastEvent, ForecastOutcome, ForecastScore, UserForecast } from './types';
-import { validateOutcome, validateProbability, type ForecastValidationError } from './validation';
+import {
+  validateForecastEvent,
+  validateForecastRecord,
+  validateOutcome,
+  validateProbability,
+  type ForecastValidationError,
+} from './validation';
 
 /**
  * Binary Brier Score v1: (p - o)^2. Lower is better: 0.00 is perfect;
@@ -20,12 +26,13 @@ export function scoreSelectedOption(
   outcome: ForecastOutcome,
   scoredAt: string,
 ): ScoreResult {
-  const errors: ForecastValidationError[] = [...validateOutcome(event, outcome).errors];
-  if (event.status !== 'resolved' || outcome.resolverStatus !== 'verified') {
-    errors.push({ code: 'DOMAIN_KIND_MISMATCH', path: 'status', message: 'Only a resolved event with a verified outcome can be scored.' });
-  }
-  const probabilityValidation = validateProbability(forecast.probability);
-  errors.push(...probabilityValidation.errors);
+  const errors: ForecastValidationError[] = [
+    ...validateForecastEvent(event).errors,
+    ...validateForecastRecord(event, forecast).errors,
+    ...validateOutcome(event, outcome).errors,
+  ];
+  if (event.status !== 'resolved') errors.push({ code: 'EVENT_NOT_RESOLVED', path: 'status', message: 'Only a resolved event can be scored.' });
+  if (outcome.resolverStatus !== 'verified') errors.push({ code: 'OUTCOME_NOT_VERIFIED', path: 'resolverStatus', message: 'Final scoring requires a verified outcome.' });
   if (errors.length) return { ok: false, errors };
   const observedBinaryOutcome: 0 | 1 = forecast.selectedOptionId === outcome.resolvedOptionId ? 1 : 0;
   return {
@@ -33,6 +40,8 @@ export function scoreSelectedOption(
     score: {
       id: `${forecast.id}:${outcome.id}:brier-binary-v1`,
       eventId: event.id,
+      forecastId: forecast.id,
+      outcomeId: outcome.id,
       forecastProbability: forecast.probability,
       observedBinaryOutcome,
       brierScore: calculateBinaryBrierScore(forecast.probability, observedBinaryOutcome),

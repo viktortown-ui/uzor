@@ -1,4 +1,5 @@
 import type { ForecastEventStatus } from './types';
+import { isValidIsoTimestamp } from './validation';
 
 export interface TransitionValidationResult {
   valid: boolean;
@@ -30,5 +31,8 @@ export function validateStatusTransition(
 }
 
 export function statusAfterDeadline(status: ForecastEventStatus, now: string, closesAt: string): ForecastEventStatus {
+  if (!isValidIsoTimestamp(now) || !isValidIsoTimestamp(closesAt)) {
+    throw new RangeError('now and closesAt must be valid UTC ISO timestamps.');
+  }
   return status === 'open' && new Date(now).getTime() > new Date(closesAt).getTime() ? 'closed' : status;
 }

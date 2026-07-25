@@ -10,9 +10,9 @@ export const demoForecastEvents: ForecastEvent[] = [
     resolutionSource: 'municipal-service', createdAt: '2026-07-25T12:00:00Z', version: FORECAST_DOMAIN_VERSION,
   },
   {
-    id: 'demo-milk-price-2026-08-10', title: 'Будет ли цена молока выше 120 ₽?',
-    shortDescription: 'Условие: опубликованная цена упаковки 1 л указанной марки в выбранном магазине будет строго выше 120 ₽ в 12:00 10 августа 2026 года.',
-    category: 'цены', geographicScope: 'демо-магазин в демо-городе', options: [{ id: 'above', label: 'Выше 120 ₽' }, { id: 'not-above', label: '120 ₽ или ниже' }],
+    id: 'demo-milk-price-2026-08-10', title: 'Будет ли демо-цена продукта выше 120 ₽?',
+    shortDescription: 'Условие: цена вымышленного продукта DEMO-MILK-1L (молоко, ровно 1 л) в публичном демо-каталоге вымышленного магазина «ДемоМаркет-01» в 12:00 UTC 10 августа 2026 года будет строго больше 120,00 ₽; отсутствие цены означает вариант «не выше».',
+    category: 'цены', geographicScope: 'вымышленный магазин «ДемоМаркет-01» в демо-городе', options: [{ id: 'above', label: 'Строго выше 120,00 ₽' }, { id: 'not-above', label: '120,00 ₽ или ниже либо цена отсутствует' }],
     opensAt: '2026-07-26T09:00:00Z', closesAt: '2026-08-09T12:00:00Z', resolvesAt: '2026-08-10T12:00:00Z', status: 'draft',
     resolutionSource: 'retailer-publication', createdAt: '2026-07-25T12:00:00Z', version: FORECAST_DOMAIN_VERSION,
   },

@@ -44,7 +44,7 @@ export interface ForecastEvent {
 /** A directional opinion, deliberately without a numeric probability. */
 export interface UserExpectation {
   id: string;
-  eventId?: string;
+  eventId: string;
   direction: string;
   reasoning?: string;
   createdAt: string;
@@ -82,6 +82,8 @@ export interface ForecastOutcome {
 export interface ForecastScore {
   id: string;
   eventId: string;
+  forecastId: string;
+  outcomeId: string;
   forecastProbability: number;
   observedBinaryOutcome: 0 | 1;
   brierScore: number;
