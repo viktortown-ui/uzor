@@ -47,4 +47,17 @@ describe('authoritative score mapping',()=>{
  it.each([
   ['without forecast',{forecast:null}],['without outcome',{outcome:null}],['on unresolved event',{event}],['wrong event',{score:{...validScore,event_id:'x'}}],['wrong forecast',{score:{...validScore,forecast_id:'x'}}],['wrong outcome',{score:{...validScore,outcome_id:'22222222-2222-2222-2222-222222222222'}}],['wrong snapshot',{score:{...validScore,forecast_probability:.7}}],['wrong observed',{score:{...validScore,observed_binary_outcome:0,brier_score:.64}}],['wrong formula',{score:{...validScore,brier_score:.05}}],['NaN',{score:{...validScore,brier_score:'NaN'}}],['infinity',{score:{...validScore,brier_score:'Infinity'}}],['outside range',{score:{...validScore,brier_score:1.1}}],['wrong id',{score:{...validScore,id:'wrong'}}],['wrong scoring version',{score:{...validScore,scoring_version:'v2'}}],['wrong domain version',{score:{...validScore,domain_version:'v2'}}],['invalid time',{score:{...validScore,scored_at:'invalid'}}],['before outcome',{score:{...validScore,scored_at:'2026-07-31T00:00:00Z'}}],['missing score',{score:null}],
  ])('rejects %s',async(_label,change)=>{rpc.mockResolvedValue({data:response(change as Record<string,unknown>),error:null});await expect(getForecastWorkspace('e')).rejects.toMatchObject({code:'invalid_response'});});
+
+ it.each(['forecast_probability','observed_binary_outcome','brier_score'])('rejects non-numeric authoritative %s values',async(field)=>{for(const malformed of [null,false,true,'','   ','0.8']){rpc.mockResolvedValue({data:response({score:{...validScore,[field]:malformed}}),error:null});await expect(getForecastWorkspace('e')).rejects.toMatchObject({code:'invalid_response'});}});
+ it.each([
+  ['resolved without outcome',{forecast:null,outcome:null,score:null}],
+  ['resolved forecast without outcome',{outcome:null,score:null}],
+  ['resolved forecast and outcome without score',{score:null}],
+  ['unresolved with outcome',{event,forecast:null,score:null}],
+  ['unresolved with score',{event,outcome:null}],
+  ['score without forecast',{forecast:null}],
+  ['score without outcome',{outcome:null}],
+ ])('rejects inconsistent workspace state: %s',async(_label,change)=>{rpc.mockResolvedValue({data:response(change as Record<string,unknown>),error:null});await expect(getForecastWorkspace('e')).rejects.toMatchObject({code:'invalid_response'});});
+ it('accepts a non-resolved workspace with a forecast and no result',async()=>{rpc.mockResolvedValue({data:response({event,forecast:personal,outcome:null,score:null,submission_permitted:true,locked:false,lock_reason:null}),error:null});await expect(getForecastWorkspace('e')).resolves.toMatchObject({forecast:{id:'f'},outcome:null,score:null});});
+ it('accepts a resolved workspace without a personal forecast',async()=>{rpc.mockResolvedValue({data:response({forecast:null,score:null}),error:null});await expect(getForecastWorkspace('e')).resolves.toMatchObject({forecast:null,outcome:{id:verified.id},score:null});});
 });

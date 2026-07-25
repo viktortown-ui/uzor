@@ -13,4 +13,6 @@ describe('ForecastOutcomeView',()=>{
  it('does not calculate a missing score',()=>{render(<ForecastOutcomeView event={event} outcome={outcome} forecast={forecast} score={null}/>);expect(screen.getByText('Математическая оценка пока недоступна.')).toBeInTheDocument();expect(screen.queryByText('0,0900')).not.toBeInTheDocument();});
  it('explains when there was no personal forecast',()=>{render(<ForecastOutcomeView event={event} outcome={outcome} forecast={null} score={null}/>);expect(screen.getByText('Вы не зафиксировали прогноз до дедлайна, поэтому персональная математическая оценка отсутствует.')).toBeInTheDocument();});
  it('renders a non-URL reference as text',()=>{render(<ForecastOutcomeView event={event} outcome={{...outcome,sourceReference:'Бюллетень № 17'}} forecast={null}/>);expect(screen.getByText('Бюллетень № 17').tagName).not.toBe('A');});
+
+ it('preserves authoritative fractional probability in formula and percentage',()=>{render(<ForecastOutcomeView event={event} outcome={outcome} forecast={{...forecast,probability:.805}} score={{...score,forecastProbability:.805,brierScore:.038025}}/>);expect(screen.getByText('(0,805 − 1)² = 0,038025')).toBeInTheDocument();expect(screen.getAllByText('80,5%')).toHaveLength(2);expect(screen.queryByText(/\(0,81 − 1\)/)).not.toBeInTheDocument();});
 });

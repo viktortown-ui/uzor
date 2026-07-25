@@ -35,7 +35,7 @@ Deploy in this order:
 3. `009_forecast_brier_scoring_v1.sql`;
 4. application code.
 
-Migration 008 must be deployed before migration 009. A migration committed to Git is not proof of live deployment. The independent PostgreSQL 16 smoke job starts fresh, creates a pre-009 verified fixture, applies 007–009, verifies backfill, RLS and grants, exercises future RPC resolution, exact `0.04`/`0.64` calculations and boundary zero, deterministic identity, uniqueness, timestamps, JSON omission, and caller isolation.
+Migration 008 must be deployed before migration 009. A migration committed to Git is not proof of live deployment. The independent PostgreSQL 16 smoke job starts fresh, creates a pre-009 verified fixture, applies 007–009, verifies backfill, RLS and grants, exercises future RPC resolution, exact `0.04`/`0.64` calculations and boundary zero, deterministic identity, uniqueness, timestamps, atomic rollback and retry after a forced score-write failure, JSON omission, and a real anonymous role with a cleared authentication claim.
 
 Rollback is application-first: revert the UI/API reader, then replace RPCs with their migration-008 definitions if necessary. Preserve score data for investigation; dropping migration 009 objects is a separately reviewed destructive operation, not an automatic rollback. Never roll migration files back by editing 007 or 008.
 

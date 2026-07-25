@@ -2,8 +2,21 @@
 begin;
 do $$ begin
  if not (select relrowsecurity from pg_class where oid='public.forecast_scores'::regclass) then raise exception 'RLS disabled'; end if;
- if has_table_privilege('anon','public.forecast_scores','select') or has_table_privilege('authenticated','public.forecast_scores','select,insert,update,delete') then raise exception 'direct privilege leaked';end if;
+ if has_table_privilege('anon','public.forecast_scores','select') or has_table_privilege('anon','public.forecast_scores','insert') or has_table_privilege('anon','public.forecast_scores','update') or has_table_privilege('anon','public.forecast_scores','delete') or has_table_privilege('authenticated','public.forecast_scores','select') or has_table_privilege('authenticated','public.forecast_scores','insert') or has_table_privilege('authenticated','public.forecast_scores','update') or has_table_privilege('authenticated','public.forecast_scores','delete') then raise exception 'direct privilege leaked';end if;
 end $$;
+-- A forced score failure rolls the real resolver transaction back completely, then permits retry.
+insert into forecast_events(id,title,short_description,category,opens_at,closes_at,resolves_at,status,resolution_source,is_demo,domain_version) values('score-rollback','t','d','c','2025-01-01','2025-01-02','2025-01-03','open','official-publication',false,'forecast-domain-v1');
+insert into forecast_options(event_id,id,label,sort_order) values('score-rollback','yes','Y',1),('score-rollback','no','N',2);
+insert into user_forecasts(id,event_id,user_id,selected_option_id,probability,domain_version) values('33000000-0000-0000-0000-000000000001','score-rollback','20000000-0000-0000-0000-000000000001','yes',.8,'forecast-domain-v1');
+create function pg_temp.fail_score_write() returns trigger language plpgsql as $$begin if new.event_id='score-rollback' then raise exception 'forced score failure';end if;return new;end$$;
+create trigger scoring_failure before insert on forecast_scores for each row execute function pg_temp.fail_score_write();
+set local role authenticated;select set_config('request.jwt.claim.sub','20000000-0000-0000-0000-000000000002',true);
+do $$begin perform resolve_forecast_event('score-rollback','yes','official','verified','forecast-domain-v1');raise exception 'resolution unexpectedly succeeded';exception when others then if sqlerrm<>'forecast_score_write_failed' then raise exception 'wrong machine error: %',sqlerrm;end if;end$$;
+reset role;
+do $$begin if exists(select 1 from forecast_outcomes where event_id='score-rollback') or exists(select 1 from forecast_scores where event_id='score-rollback') or (select status from forecast_events where id='score-rollback')<>'open' then raise exception 'failed scoring was not atomic';end if;end$$;
+drop trigger scoring_failure on forecast_scores;
+set local role authenticated;select set_config('request.jwt.claim.sub','20000000-0000-0000-0000-000000000002',true);select resolve_forecast_event('score-rollback','yes','official','verified','forecast-domain-v1');reset role;
+do $$begin if not exists(select 1 from forecast_outcomes where event_id='score-rollback') or not exists(select 1 from forecast_scores where event_id='score-rollback') or (select status from forecast_events where id='score-rollback')<>'resolved' then raise exception 'retry did not succeed';end if;end$$;
 -- Backfill fixture was created before 009 by CI.
 do $$ declare s forecast_scores%rowtype;begin select * into strict s from forecast_scores where event_id='score-backfill';if s.brier_score<>.04 or s.scored_at<>'2026-01-03T00:00:00Z' then raise exception 'bad backfill';end if;end $$;
 -- A future event with two private forecasts.
@@ -32,5 +45,7 @@ set local role authenticated;select set_config('request.jwt.claim.sub','30000000
 do $$declare j jsonb:=get_forecast_workspace('score-future');begin if j->'score' is null or (j->'score')?'user_id' then raise exception 'owner JSON invalid';end if;end$$;
 select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000003',true);
 do $$begin if get_forecast_workspace('score-future')->'score'<>'null'::jsonb then raise exception 'other score leaked';end if;end$$;
-reset role;do $$begin if get_forecast_workspace('score-future')->'score'<>'null'::jsonb then raise exception 'anon score leaked';end if;end$$;
+reset role;grant usage on schema auth to anon;select set_config('request.jwt.claim.sub','',true);set local role anon;
+do $$begin if auth.uid() is not null then raise exception 'anonymous auth context not cleared';end if;if get_forecast_workspace('score-future')->'score'<>'null'::jsonb then raise exception 'anon score leaked';end if;end$$;
+reset role;
 rollback;
