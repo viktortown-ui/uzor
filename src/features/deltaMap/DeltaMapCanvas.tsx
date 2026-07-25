@@ -5,6 +5,7 @@ import type { DeltaMapItem } from '../deltas/deltaTypes';
 import { isFatalMapLibreError } from '../maps/mapLibreErrorPolicy';
 import { createDeltaMarkerElement } from './DeltaMarker';
 import { PERM_FALLBACK } from './deltaMapLogic';
+import { createMobileDeltaFlagImage, MOBILE_DELTA_FLAG_PIXEL_RATIO, type RuntimeMapImage } from './mobileDeltaFlagImage';
 
 type Bounds = { minLat: number; minLng: number; maxLat: number; maxLng: number };
 type CityCenter = { lat: number; lng: number; zoom: number };
@@ -45,38 +46,7 @@ function deltaVisualKey(delta: DeltaMapItem): string {
   return `delta-flag-${delta.direction}-${delta.status === 'fork' ? 'fork' : delta.status}`;
 }
 
-type RuntimeImage = { width: number; height: number; data: Uint8ClampedArray };
-type ImageCapableMap = maplibregl.Map & { hasImage?: (id: string) => boolean; addImage?: (id: string, image: RuntimeImage, options?: { pixelRatio: number }) => void };
-
-function createFlagImage(key: string): RuntimeImage {
-  const width = 44; const height = 52;
-  const data = new Uint8ClampedArray(width * height * 4);
-  const negative = key.includes('negative');
-  const fork = key.includes('fork');
-  const checking = key.includes('checking');
-  const confirmed = key.includes('confirmed');
-  const cloth = negative ? [251, 125, 83, 255] : [45, 212, 191, 255];
-  const mast = [236, 254, 255, 255];
-  const dark = [7, 16, 31, 255];
-  const accent = fork ? [124, 108, 242, 255] : checking ? [250, 204, 21, 255] : confirmed ? [236, 254, 255, 255] : dark;
-  const set = (x: number, y: number, color: number[]) => { if (x < 0 || y < 0 || x >= width || y >= height) return; const index = (y * width + x) * 4; data[index] = color[0]; data[index + 1] = color[1]; data[index + 2] = color[2]; data[index + 3] = color[3]; };
-  // mast with bottom coordinate anchor at (22, 51)
-  for (let y = 7; y <= 51; y += 1) for (let x = 20; x <= 23; x += 1) set(x, y, mast);
-  for (let y = 44; y <= 51; y += 1) for (let x = 17; x <= 26; x += 1) if (Math.abs(x - 22) <= 26 - y / 2) set(x, y, mast);
-  // flag cloth extending from mast
-  for (let y = 8; y <= 29; y += 1) {
-    const wave = y < 14 ? 3 : y > 23 ? -2 : 0;
-    for (let x = 22; x <= 39 + wave; x += 1) set(x, y, cloth);
-  }
-  for (let y = 30; y <= 35; y += 1) for (let x = 22; x <= 35 - (y - 30); x += 1) set(x, y, cloth);
-  // border and state marks
-  for (let x = 22; x <= 40; x += 1) { set(x, 8, dark); set(x, 29, dark); }
-  for (let y = 8; y <= 35; y += 1) set(22, y, dark);
-  if (checking) for (let x = 27; x <= 35; x += 1) for (let y = 17; y <= 20; y += 1) set(x, y, accent);
-  if (confirmed) { for (let i = 0; i < 8; i += 1) set(27 + i, 22 - i, accent); for (let i = 0; i < 4; i += 1) set(25 + i, 19 + i, accent); }
-  if (fork) { for (let i = 0; i < 12; i += 1) { set(27 + i, 14 + i, accent); set(38 - i, 14 + i, accent); } }
-  return { width, height, data };
-}
+type ImageCapableMap = maplibregl.Map & { hasImage?: (id: string) => boolean; addImage?: (id: string, image: RuntimeMapImage, options?: { pixelRatio: number }) => void };
 
 function visualKeysFromGeoJson(data: DeltaGeoJson): string[] { return [...new Set(data.features.map((feature) => feature.properties.visualKey))]; }
 function registerMobileFlagImages(map: maplibregl.Map, data: DeltaGeoJson): void {
@@ -84,7 +54,7 @@ function registerMobileFlagImages(map: maplibregl.Map, data: DeltaGeoJson): void
   if (typeof imageMap.addImage !== 'function') return;
   for (const key of visualKeysFromGeoJson(data)) {
     if (typeof imageMap.hasImage === 'function' && imageMap.hasImage(key)) continue;
-    imageMap.addImage(key, createFlagImage(key), { pixelRatio: 1 });
+    imageMap.addImage(key, createMobileDeltaFlagImage(key), { pixelRatio: MOBILE_DELTA_FLAG_PIXEL_RATIO });
   }
 }
 

@@ -136,7 +136,7 @@ describe('DeltaMapCanvas cluster lifecycle', () => {
     map.addImage.mockClear(); source.setData.mockClear();
     const late = { ...delta('late'), status: 'confirmed' as const };
     view.rerender(<Canvas deltas={[late]} onViewport={vi.fn()} onSelect={vi.fn()} />);
-    expect(map.addImage).toHaveBeenCalledWith('delta-flag-positive-confirmed', expect.objectContaining({ width: 44, height: 52 }), { pixelRatio: 1 });
+    expect(map.addImage).toHaveBeenCalledWith('delta-flag-positive-confirmed', expect.objectContaining({ width: 88, height: 88 }), { pixelRatio: 2 });
     expect(source.setData).toHaveBeenCalledWith(expect.objectContaining({ features: [expect.objectContaining({ properties: expect.objectContaining({ visualKey: 'delta-flag-positive-confirmed' }) })] }));
     expect(map.layers.has('delta-mobile-flags')).toBe(true);
     expect(MapCtor).toHaveBeenCalledTimes(1);

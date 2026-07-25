@@ -49,4 +49,12 @@ describe('MobileDeltaMapChrome', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Пермь · показать панель' }));
     expect(onCollapsedChange).toHaveBeenCalledWith(false);
   });
+  it('explains the same status marks that are used by desktop and mobile flags', async () => {
+    setup(); await userEvent.click(screen.getByRole('button', { name: 'Фильтры · 0' }));
+    await userEvent.click(screen.getByText('Легенда', { selector: 'summary' }));
+    expect(screen.getByText('жёлтая точка — новая')).toBeInTheDocument();
+    expect(screen.getByText('янтарное свечение — проверяется')).toBeInTheDocument();
+    expect(screen.getByText('светлая рамка — подтверждена')).toBeInTheDocument();
+    expect(screen.getByText('двойной фиолетовый — развилка')).toBeInTheDocument();
+  });
 });
