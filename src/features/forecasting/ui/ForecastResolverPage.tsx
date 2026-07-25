@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ProductShell } from '../../../app/ProductShell';
 import { isProductionConfigured } from '../../../app/appMode';
+import { getCurrentAuthenticatedUser } from '../../../lib/supabase/auth';
 import { getForecastResolutionWorkspace, resolutionErrorMessage, resolveForecastEvent } from '../api/forecastApi';
 import type { ForecastResolutionWorkspace, ResolveForecastResult } from '../api/forecastApiTypes';
 import { FORECAST_DOMAIN_VERSION } from '../types';
@@ -9,12 +11,15 @@ import { formatEventStatus, formatResolution, formatResolutionSource, formatRuss
 const EVENT_ID='sandbox-demo-milk-price-2026-12-15';
 const reasons={forecast_still_open:'Приём прогнозов ещё открыт.',resolution_time_not_reached:'Время проверки ещё не наступило.',event_cancelled:'Событие отменено.',outcome_already_resolved:'Исход уже зафиксирован.',event_not_found:'Событие не найдено.',not_authenticated:'Необходимо войти в аккаунт.',resolver_not_authorized:'Доступ к фиксации исходов не предоставлен.'} as const;
 export function ForecastResolverPage(){
- const [workspace,setWorkspace]=useState<ForecastResolutionWorkspace|null>(null),[error,setError]=useState(''),[option,setOption]=useState(''),[source,setSource]=useState(''),[note,setNote]=useState(''),[review,setReview]=useState(false),[saving,setSaving]=useState(false),[result,setResult]=useState<ResolveForecastResult|null>(null);const submitting=useRef(false);
- useEffect(()=>{if(!isProductionConfigured)return;getForecastResolutionWorkspace(EVENT_ID).then(setWorkspace).catch(e=>setError(resolutionErrorMessage(e)));},[]);
+ const [workspace,setWorkspace]=useState<ForecastResolutionWorkspace|null>(null),[authState,setAuthState]=useState<'loading'|'authenticated'|'unauthenticated'|'error'>('loading'),[error,setError]=useState(''),[option,setOption]=useState(''),[source,setSource]=useState(''),[note,setNote]=useState(''),[review,setReview]=useState(false),[saving,setSaving]=useState(false),[result,setResult]=useState<ResolveForecastResult|null>(null);const submitting=useRef(false),initialLoadStarted=useRef(false);
+ const load=useCallback(async()=>{setAuthState('loading');setWorkspace(null);setError('');let user;try{user=await getCurrentAuthenticatedUser();}catch{setAuthState('error');return;}if(!user){setAuthState('unauthenticated');return;}setAuthState('authenticated');try{setWorkspace(await getForecastResolutionWorkspace(EVENT_ID));}catch(e){setError(resolutionErrorMessage(e));}},[]);
+ useEffect(()=>{if(isProductionConfigured&&!initialLoadStarted.current){initialLoadStarted.current=true;void Promise.resolve().then(load);}},[load]);
  if(!isProductionConfigured)return <ProductShell className="forecast-shell"><main className="forecast-page"><p>Фиксация проверенного исхода доступна только в рабочем контуре.</p></main></ProductShell>;
  if(result){const label=result.event.options.find(x=>x.id===result.outcome.resolvedOptionId)?.label;return <ProductShell className="forecast-shell"><main className="forecast-page"><h1>Проверенный исход зафиксирован</h1><dl><div><dt>Проверенный исход</dt><dd>{label}</dd></div><div><dt>Время</dt><dd>{formatRussianUtcDateTime(result.outcome.resolvedAt)}</dd></div><div><dt>Источник</dt><dd>{result.outcome.sourceReference}</dd></div><div><dt>Примечание</dt><dd>{result.outcome.resolutionNote}</dd></div><div><dt>Статус события</dt><dd>{formatEventStatus(result.event.status)}</dd></div></dl></main></ProductShell>}
+ if(authState==='unauthenticated')return <ProductShell className="forecast-shell"><main className="forecast-page"><p>Необходимо войти в аккаунт.</p><Link to="/join">Перейти ко входу</Link></main></ProductShell>;
+ if(authState==='error')return <ProductShell className="forecast-shell"><main className="forecast-page"><p role="alert">Не удалось проверить вход. Попробуйте ещё раз.</p><button type="button" onClick={()=>void load()}>Повторить</button></main></ProductShell>;
  if(error&&!workspace)return <ProductShell className="forecast-shell"><main className="forecast-page"><p role="alert">{error}</p></main></ProductShell>;
- if(!workspace)return <ProductShell className="forecast-shell"><main className="forecast-page"><p>Проверяем полномочия и состояние события…</p></main></ProductShell>;
+ if(authState==='loading'||!workspace)return <ProductShell className="forecast-shell"><main className="forecast-page"><p>Проверяем полномочия и состояние события…</p></main></ProductShell>;
  if(workspace.blockReason==='not_authenticated')return <ProductShell className="forecast-shell"><main className="forecast-page"><p>Необходимо войти в аккаунт.</p></main></ProductShell>;
  if(workspace.blockReason==='resolver_not_authorized'||!workspace.authorized)return <ProductShell className="forecast-shell"><main className="forecast-page"><p>Доступ к фиксации исходов не предоставлен.</p></main></ProductShell>;
  if(!workspace.canResolve||!workspace.event)return <ProductShell className="forecast-shell"><main className="forecast-page"><p>{workspace.blockReason?reasons[workspace.blockReason]:'Фиксация сейчас недоступна.'}</p></main></ProductShell>;

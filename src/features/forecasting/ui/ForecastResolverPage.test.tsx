@@ -1,15 +1,17 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ForecastResolutionBlockReason, ForecastResolutionWorkspace } from '../api/forecastApiTypes';
 import { ForecastApiError } from '../api/forecastApi';
 import { createInteractiveDemoEvent } from './forecastUiLogic';
 
 const state=vi.hoisted(()=>({configured:true}));
 const api=vi.hoisted(()=>({get:vi.fn(),resolve:vi.fn()}));
+const auth=vi.hoisted(()=>({getUser:vi.fn()}));
 vi.mock('../../../app/appMode',()=>({get isProductionConfigured(){return state.configured;}}));
 vi.mock('../api/forecastApi',async original=>({...await original<typeof import('../api/forecastApi')>(),getForecastResolutionWorkspace:api.get,resolveForecastEvent:api.resolve}));
+vi.mock('../../../lib/supabase/auth',()=>({getCurrentAuthenticatedUser:auth.getUser}));
 import { ForecastResolverPage } from './ForecastResolverPage';
 
 const event={...createInteractiveDemoEvent(),id:'sandbox-demo-milk-price-2026-12-15',status:'awaiting-outcome' as const};
@@ -17,13 +19,17 @@ const ready:ForecastResolutionWorkspace={event,outcome:null,serverTimestamp:'202
 const blocked=(reason:Exclude<ForecastResolutionBlockReason,null>):ForecastResolutionWorkspace=>({event,outcome:null,serverTimestamp:'2026-12-15T12:00:00Z',authorized:reason!=='not_authenticated'&&reason!=='resolver_not_authorized',canResolve:false,blockReason:reason});
 const renderPage=()=>render(<MemoryRouter><ForecastResolverPage/></MemoryRouter>);
 const fill=async()=>{await userEvent.click(await screen.findByRole('radio',{name:event.options[0].label}));await userEvent.type(screen.getByRole('textbox',{name:/Источник/}),' https://example.test/result ');await userEvent.type(screen.getByRole('textbox',{name:/Примечание/}),' проверено человеком ');};
-afterEach(()=>{cleanup();state.configured=true;api.get.mockReset();api.resolve.mockReset();});
+beforeEach(()=>auth.getUser.mockResolvedValue({id:'authenticated-user'}));
+afterEach(()=>{cleanup();state.configured=true;api.get.mockReset();api.resolve.mockReset();auth.getUser.mockReset();});
 
 describe('ForecastResolverPage',()=>{
- it('does not call the API in demo mode',()=>{state.configured=false;renderPage();expect(screen.getByText('Фиксация проверенного исхода доступна только в рабочем контуре.')).toBeInTheDocument();expect(api.get).not.toHaveBeenCalled();});
- it('shows the production loading state',()=>{api.get.mockReturnValue(new Promise(()=>{}));renderPage();expect(screen.getByText('Проверяем полномочия и состояние события…')).toBeInTheDocument();});
+ it('does not call auth or workspace APIs in demo mode',()=>{state.configured=false;renderPage();expect(screen.getByText('Фиксация проверенного исхода доступна только в рабочем контуре.')).toBeInTheDocument();expect(auth.getUser).not.toHaveBeenCalled();expect(api.get).not.toHaveBeenCalled();});
+ it('shows the production loading state during auth preflight',()=>{auth.getUser.mockReturnValue(new Promise(()=>{}));renderPage();expect(screen.getByText('Проверяем полномочия и состояние события…')).toBeInTheDocument();expect(api.get).not.toHaveBeenCalled();});
+ it('keeps unauthenticated visitors out of the workspace RPC and links to join under the base path',async()=>{auth.getUser.mockResolvedValue(null);render(<MemoryRouter basename="/uzor" initialEntries={['/uzor/forecast/resolve']}><ForecastResolverPage/></MemoryRouter>);expect(await screen.findByText('Необходимо войти в аккаунт.')).toBeInTheDocument();expect(api.get).not.toHaveBeenCalled();expect(screen.queryByRole('radio')).not.toBeInTheDocument();expect(screen.getByRole('link',{name:'Перейти ко входу'})).toHaveAttribute('href','/uzor/join');});
+ it('calls the workspace RPC only after authentication and shows non-resolver denial',async()=>{api.get.mockResolvedValue(blocked('resolver_not_authorized'));renderPage();expect(await screen.findByText('Доступ к фиксации исходов не предоставлен.')).toBeInTheDocument();expect(auth.getUser).toHaveBeenCalled();expect(api.get).toHaveBeenCalled();expect(auth.getUser.mock.invocationCallOrder[0]).toBeLessThan(api.get.mock.invocationCallOrder[0]);});
+ it('retries a failed auth preflight without exposing raw errors',async()=>{auth.getUser.mockRejectedValue(new Error('raw supabase auth failure'));renderPage();expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось проверить вход. Попробуйте ещё раз.');expect(document.body).not.toHaveTextContent('raw supabase auth failure');expect(api.get).not.toHaveBeenCalled();const checksBeforeRetry=auth.getUser.mock.calls.length;auth.getUser.mockResolvedValue(null);await userEvent.click(screen.getByRole('button',{name:'Повторить'}));expect(await screen.findByText('Необходимо войти в аккаунт.')).toBeInTheDocument();expect(auth.getUser).toHaveBeenCalledTimes(checksBeforeRetry+1);expect(api.get).not.toHaveBeenCalled();});
  it.each([
-  ['not_authenticated','Необходимо войти в аккаунт.'],['resolver_not_authorized','Доступ к фиксации исходов не предоставлен.'],['forecast_still_open','Приём прогнозов ещё открыт.'],['resolution_time_not_reached','Время проверки ещё не наступило.'],['event_cancelled','Событие отменено.'],['outcome_already_resolved','Исход уже зафиксирован.'],
+  ['resolver_not_authorized','Доступ к фиксации исходов не предоставлен.'],['forecast_still_open','Приём прогнозов ещё открыт.'],['resolution_time_not_reached','Время проверки ещё не наступило.'],['event_cancelled','Событие отменено.'],['outcome_already_resolved','Исход уже зафиксирован.'],
  ] as const)('shows distinct blocked state %s without a form',async(reason,message)=>{api.get.mockResolvedValue(blocked(reason));renderPage();expect(await screen.findByText(message)).toBeInTheDocument();expect(screen.queryByRole('form')).not.toBeInTheDocument();expect(screen.queryByRole('radio')).not.toBeInTheDocument();});
  it('starts with no option and rejects trimmed empty fields',async()=>{api.get.mockResolvedValue(ready);renderPage();const radios=await screen.findAllByRole('radio');expect(radios.every(x=>!(x as HTMLInputElement).checked)).toBe(true);const review=screen.getByRole('button',{name:'Перейти к проверке'});expect(review).toBeDisabled();fireEvent.change(screen.getByRole('textbox',{name:/Источник/}),{target:{value:'   '}});fireEvent.change(screen.getByRole('textbox',{name:/Примечание/}),{target:{value:'   '}});expect(review).toBeDisabled();expect(screen.getByRole('textbox',{name:/Источник/})).toHaveAttribute('maxlength','2000');expect(screen.getByRole('textbox',{name:/Примечание/})).toHaveAttribute('maxlength','2000');});
  it('reviews trimmed values and returns to edit',async()=>{api.get.mockResolvedValue(ready);renderPage();await fill();await userEvent.click(screen.getByRole('button',{name:'Перейти к проверке'}));expect(screen.getByRole('heading',{name:'Проверьте исход'})).toBeInTheDocument();expect(screen.getByText(event.options[0].label)).toBeInTheDocument();expect(screen.getByText('https://example.test/result')).toBeInTheDocument();expect(screen.getByText('проверено человеком')).toBeInTheDocument();await userEvent.click(screen.getByRole('button',{name:'Изменить'}));expect(screen.getByRole('textbox',{name:/Источник/})).toBeInTheDocument();});

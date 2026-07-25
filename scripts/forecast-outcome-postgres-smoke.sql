@@ -10,6 +10,12 @@ do $$ begin
    or has_table_privilege('authenticated','public.forecast_outcomes','delete') then raise exception 'direct authenticated access exists'; end if;
 end $$;
 
+do $$ begin
+ if has_function_privilege('anon','public.get_forecast_resolution_workspace(text)','execute') then raise exception 'anon can execute resolver workspace'; end if;
+ if has_function_privilege('anon','public.resolve_forecast_event(text,text,text,text,text)','execute') then raise exception 'anon can execute resolution'; end if;
+ if not has_function_privilege('authenticated','public.get_forecast_resolution_workspace(text)','execute') then raise exception 'authenticated cannot execute resolver workspace'; end if;
+end $$;
+
 insert into auth.users(id) values ('22222222-2222-2222-2222-222222222222'),('33333333-3333-3333-3333-333333333333');
 set role authenticated;
 do $$ begin perform count(*) from public.forecast_resolvers; raise exception 'resolver list readable'; exception when insufficient_privilege then null; end $$;
@@ -31,6 +37,7 @@ insert into public.forecast_options(event_id,id,label,sort_order)
 select id,'no','No',2 from public.forecast_events where id like 'outcome-%' or id like 'window-%';
 
 set request.jwt.claim.sub='22222222-2222-2222-2222-222222222222';
+select 1/((public.get_forecast_resolution_workspace('outcome-valid')->>'block_reason'='resolver_not_authorized')::integer);
 do $$ begin perform public.resolve_forecast_event('outcome-valid','yes','source','note','forecast-domain-v1'); raise exception 'unauthorized user resolved'; exception when others then if sqlerrm<>'forecast_resolver_not_authorized' then raise; end if; end $$;
 insert into public.forecast_resolvers(user_id,note) values ('33333333-3333-3333-3333-333333333333','smoke resolver');
 set request.jwt.claim.sub='33333333-3333-3333-3333-333333333333';
