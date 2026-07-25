@@ -74,3 +74,7 @@ GitHub Pages публикует только фронтенд. Данные кр
 - `/lab/delta-create-core` — core lab: локальный черновик без MapLibre и Supabase write.
 - `/lab/delta-create-geo` — geo lab: MapLibre и поиск похожих без create/react write.
 - `/map` — карта Дельт на MapLibre/OpenFreeMap; поддерживает `/map?delta=<id>`.
+
+## Forecasting domain
+
+Контракт разделения наблюдений, ожиданий, прогнозов, исходов и оценок описан в [Forecast Domain Contract v1](docs/FORECAST_DOMAIN_CONTRACT_V1.md).
