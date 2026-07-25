@@ -14,7 +14,7 @@ import { ForecastPage } from './ForecastPage';
 
 const event={...createInteractiveDemoEvent(),id:'sandbox-demo-milk-price-2026-12-15',status:'open' as const};
 const saved:UserForecast={id:'server-id',eventId:event.id,selectedOptionId:'above',probability:.5,reasoning:'Сохранено сервером',createdAt:'2026-07-30T10:00:00Z',updatedAt:'2026-07-30T11:00:00Z',version:'forecast-domain-v1'};
-const workspace=(change:Partial<ForecastWorkspace>={}):ForecastWorkspace=>({event,forecast:null,serverTimestamp:'2026-07-30T12:00:00Z',authenticationRequired:false,submissionPermitted:true,locked:false,lockReason:null,...change});
+const workspace=(change:Partial<ForecastWorkspace>={}):ForecastWorkspace=>({event,forecast:null,serverTimestamp:'2026-07-30T12:00:00Z',authenticationRequired:false,submissionPermitted:true,locked:false,lockReason:null,...change,outcome:change.outcome??null});
 const renderPage=()=>render(<MemoryRouter><ForecastPage/></MemoryRouter>);
 afterEach(()=>{cleanup();mocks.getForecastWorkspace.mockReset();mocks.submitForecast.mockReset();localStorage.clear();sessionStorage.clear();});
 

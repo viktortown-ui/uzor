@@ -36,8 +36,12 @@ jobs:
         run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-postgres-prerequisites.sql
       - name: Apply forecast migration in isolated PostgreSQL
         run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/007_forecast_persistence_deadline_v1.sql
+      - name: Apply outcome resolution migration in isolated PostgreSQL
+        run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/008_forecast_outcome_resolution_v1.sql
       - name: Run forecast database smoke tests
         run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-postgres-smoke.sql
+      - name: Run outcome resolution database smoke tests
+        run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-outcome-postgres-smoke.sql
 
   check:
     runs-on: ubuntu-latest
