@@ -36,10 +36,38 @@ jobs:
         run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-postgres-prerequisites.sql
       - name: Apply forecast migration in isolated PostgreSQL
         run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/007_forecast_persistence_deadline_v1.sql
-      - name: Apply outcome resolution migration in isolated PostgreSQL
-        run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/008_forecast_outcome_resolution_v1.sql
       - name: Run forecast database smoke tests
         run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-postgres-smoke.sql
+
+  forecast-outcome-migration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v5
+      - name: Create minimal Supabase prerequisites
+        run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-postgres-prerequisites.sql
+      - name: Apply forecast migration in isolated PostgreSQL
+        run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/007_forecast_persistence_deadline_v1.sql
+      - name: Apply outcome resolution migration in isolated PostgreSQL
+        run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/008_forecast_outcome_resolution_v1.sql
       - name: Run outcome resolution database smoke tests
         run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-outcome-postgres-smoke.sql
 

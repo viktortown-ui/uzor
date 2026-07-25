@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const rpc=vi.fn();
 vi.mock('../../../lib/supabase/client',()=>({getSupabaseClient:()=>({rpc})}));
-import { ForecastApiError, getForecastWorkspace, submitForecast } from './forecastApi';
+import { ForecastApiError, getForecastResolutionWorkspace, getForecastWorkspace, resolveForecastEvent, submitForecast } from './forecastApi';
 
 const event={id:'e',title:'Event',short_description:'Condition',category:'prices',city_id:null,geographic_scope:null,opens_at:'2026-07-25T00:00:00+00:00',closes_at:'2026-12-14T12:00:00+00:00',resolves_at:'2026-12-15T12:00:00+00:00',resolution_window_starts_at:null,resolution_window_ends_at:null,status:'open',resolution_source:'retailer-publication',domain_version:'forecast-domain-v1',created_at:'2026-07-25T00:00:00+00:00'};
 const forecast={id:'f',event_id:'e',selected_option_id:'above',probability:0.5,reasoning:null,domain_version:'forecast-domain-v1',created_at:'2026-07-25T01:00:00Z',updated_at:'2026-07-25T01:00:00Z'};
@@ -18,4 +18,19 @@ describe('forecast API',()=>{
  it.each([
   ['foreign event',{event_id:'other'}],['unsupported version',{domain_version:'v2'}],['invalid probability',{probability:2}],['malformed created timestamp',{created_at:'yesterday'}],['malformed updated timestamp',{updated_at:'tomorrow'}],
  ])('rejects malformed submit response: %s',async(_label,change)=>{rpc.mockResolvedValue({data:{forecast:{...forecast,...change},server_timestamp:'2026-07-25T01:00:00Z',event_deadline:'2026-12-14T12:00:00Z',created:false,locked:false},error:null});await expect(submitForecast({eventId:'e',optionId:'above',probability:.5,version:'forecast-domain-v1'})).rejects.toMatchObject({code:'invalid_response'});});
+ const options=[{id:'above',label:'Above'},{id:'no',label:'No'}];
+ const resolvedEvent={...event,status:'resolved',updated_at:'2026-12-15T12:00:00Z'};
+ const outcome={id:'o',event_id:'e',resolved_option_id:'above',resolved_at:'2026-12-15T12:00:00Z',source_reference:'https://example.test/result',source_type:'retailer-publication',resolution_note:'Checked by a human',resolver_status:'verified',domain_version:'forecast-domain-v1'};
+ it.each([
+  ['outcome without event',{event:null,options:[],outcome}],
+  ['unknown reason',{event,options,outcome:null,authorized:true,can_resolve:false,block_reason:'surprise'}],
+  ['resolve while unauthorized',{event,options,outcome:null,authorized:false,can_resolve:true,block_reason:null}],
+  ['resolve with reason',{event,options,outcome:null,authorized:true,can_resolve:true,block_reason:'forecast_still_open'}],
+  ['resolve without event',{event:null,options:[],outcome:null,authorized:true,can_resolve:true,block_reason:null}],
+  ['resolve with outcome',{event:resolvedEvent,options,outcome,authorized:true,can_resolve:true,block_reason:null}],
+  ['blocked without reason',{event,options,outcome:null,authorized:true,can_resolve:false,block_reason:null}],
+ ])('rejects inconsistent resolution workspace: %s',async(_label,change)=>{rpc.mockResolvedValue({data:{server_timestamp:'2026-12-15T12:00:00Z',authorized:false,can_resolve:false,block_reason:'resolver_not_authorized',...change},error:null});await expect(getForecastResolutionWorkspace('e')).rejects.toMatchObject({code:'invalid_response'});});
+ it('maps a consistent resolver workspace',async()=>{rpc.mockResolvedValue({data:{event,options,outcome:null,server_timestamp:'2026-12-15T12:00:00Z',authorized:true,can_resolve:true,block_reason:null},error:null});await expect(getForecastResolutionWorkspace('e')).resolves.toMatchObject({authorized:true,canResolve:true,blockReason:null,event:{id:'e'}});});
+ it('maps resolve response from its full authoritative event and options',async()=>{rpc.mockResolvedValue({data:{event:resolvedEvent,options,outcome,server_timestamp:'2026-12-15T12:00:00Z'},error:null});const value=await resolveForecastEvent({eventId:'e',resolvedOptionId:'above',sourceReference:'client',resolutionNote:'client',version:'forecast-domain-v1'});expect(value.event).toMatchObject({id:'e',title:'Event',status:'resolved',options});expect(value.eventUpdatedAt).toBe('2026-12-15T12:00:00.000Z');expect(value.outcome.sourceReference).toBe('https://example.test/result');expect(JSON.stringify(rpc.mock.calls)).not.toMatch(/user_id|resolved_at|client_timestamp/);});
+ it.each([{event:{...resolvedEvent,id:'other'}},{outcome:{...outcome,resolved_option_id:'no'}},{outcome:{...outcome,source_reference:'x'.repeat(2001)}},{event:{...resolvedEvent,updated_at:'invalid'}}])('rejects malformed resolve response %#',async(change)=>{rpc.mockResolvedValue({data:{event:resolvedEvent,options,outcome,server_timestamp:'2026-12-15T12:00:00Z',...change},error:null});await expect(resolveForecastEvent({eventId:'e',resolvedOptionId:'above',sourceReference:'client',resolutionNote:'client',version:'forecast-domain-v1'})).rejects.toMatchObject({code:'invalid_response'});});
 });

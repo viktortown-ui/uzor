@@ -86,7 +86,11 @@ begin
     values(e.id,input_resolved_option_id,server_time,clean_source,e.resolution_source,clean_note,'verified',uid,input_domain_version,server_time) returning * into o;
     update public.forecast_events set status='resolved',updated_at=server_time where id=e.id returning * into e;
   exception when unique_violation or foreign_key_violation or check_violation then raise exception using message='forecast_outcome_write_failed'; end;
-  return jsonb_build_object('outcome',jsonb_build_object('id',o.id,'event_id',o.event_id,'resolved_option_id',o.resolved_option_id,'resolved_at',o.resolved_at,'source_reference',o.source_reference,'source_type',o.source_type,'resolution_note',o.resolution_note,'resolver_status',o.resolver_status,'domain_version',o.domain_version),'event',jsonb_build_object('id',e.id,'status',e.status,'updated_at',e.updated_at),'server_timestamp',server_time);
+  return jsonb_build_object(
+    'outcome',jsonb_build_object('id',o.id,'event_id',o.event_id,'resolved_option_id',o.resolved_option_id,'resolved_at',o.resolved_at,'source_reference',o.source_reference,'source_type',o.source_type,'resolution_note',o.resolution_note,'resolver_status',o.resolver_status,'domain_version',o.domain_version),
+    'event',jsonb_build_object('id',e.id,'title',e.title,'short_description',e.short_description,'category',e.category,'city_id',e.city_id,'geographic_scope',e.geographic_scope,'opens_at',e.opens_at,'closes_at',e.closes_at,'resolves_at',e.resolves_at,'resolution_window_starts_at',e.resolution_window_starts_at,'resolution_window_ends_at',e.resolution_window_ends_at,'status',e.status,'resolution_source',e.resolution_source,'is_demo',e.is_demo,'domain_version',e.domain_version,'created_at',e.created_at,'updated_at',e.updated_at),
+    'options',(select coalesce(jsonb_agg(jsonb_build_object('id',x.id,'label',x.label,'description',x.description) order by x.sort_order),'[]'::jsonb) from public.forecast_options x where x.event_id=e.id),
+    'server_timestamp',server_time);
 end $$;
 
 revoke all on function public.get_forecast_workspace(text) from public;
