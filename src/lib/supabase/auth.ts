@@ -1,4 +1,13 @@
 import { getSupabaseClient } from './client';
+import type { User } from '@supabase/supabase-js';
+
+/** Authentication preflight only; resolver authorization remains a PostgreSQL decision. */
+export async function getCurrentAuthenticatedUser(): Promise<User | null> {
+  const { data, error } = await getSupabaseClient().auth.getUser();
+  if (error) throw error;
+  if (!data.user || data.user.is_anonymous === true) return null;
+  return data.user;
+}
 
 export async function ensureAnonymousSession() {
   const supabase = getSupabaseClient();
