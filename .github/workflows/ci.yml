@@ -71,6 +71,34 @@ jobs:
       - name: Run outcome resolution database smoke tests
         run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-outcome-postgres-smoke.sql
 
+  forecast-scoring-migration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: postgres }
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env: { PGHOST: localhost, PGPORT: 5432, PGUSER: postgres, PGPASSWORD: postgres, PGDATABASE: postgres }
+    steps:
+      - uses: actions/checkout@v5
+      - run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-postgres-prerequisites.sql
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/007_forecast_persistence_deadline_v1.sql
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/008_forecast_outcome_resolution_v1.sql
+      - name: Create pre-009 verified fixture for backfill
+        run: |
+          psql --set ON_ERROR_STOP=1 <<'SQL'
+          insert into auth.users values('20000000-0000-0000-0000-000000000001'),('20000000-0000-0000-0000-000000000002');
+          insert into forecast_resolvers(user_id) values('20000000-0000-0000-0000-000000000002');
+          insert into forecast_events(id,title,short_description,category,opens_at,closes_at,resolves_at,status,resolution_source,is_demo,domain_version) values('score-backfill','t','d','c','2026-01-01','2026-01-02','2026-01-03','resolved','official-publication',false,'forecast-domain-v1');
+          insert into forecast_options(event_id,id,label,sort_order) values('score-backfill','yes','Y',1),('score-backfill','no','N',2);
+          insert into user_forecasts(id,event_id,user_id,selected_option_id,probability,domain_version) values('21000000-0000-0000-0000-000000000001','score-backfill','20000000-0000-0000-0000-000000000001','yes',.8,'forecast-domain-v1');
+          insert into forecast_outcomes(id,event_id,resolved_option_id,resolved_at,source_reference,source_type,resolution_note,resolver_status,resolver_user_id,domain_version) values('22000000-0000-0000-0000-000000000001','score-backfill','yes','2026-01-03','x','official-publication','x','verified','20000000-0000-0000-0000-000000000002','forecast-domain-v1');
+          SQL
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/009_forecast_brier_scoring_v1.sql
+      - run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-scoring-postgres-smoke.sql
+
   check:
     runs-on: ubuntu-latest
     steps:
