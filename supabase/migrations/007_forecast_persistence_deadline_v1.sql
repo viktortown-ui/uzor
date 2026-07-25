@@ -68,7 +68,7 @@ end $$;
 
 create function public.submit_forecast(input_event_id text,input_option_id text,input_probability numeric,input_reasoning text,input_domain_version text) returns jsonb
 language plpgsql security definer set search_path = public, pg_temp as $$
-declare uid uuid:=auth.uid(); e public.forecast_events%rowtype; f public.user_forecasts%rowtype; server_time timestamptz; clean_reason text:=nullif(trim(input_reasoning),''); created_result boolean;
+declare uid uuid:=auth.uid(); e public.forecast_events%rowtype; f public.user_forecasts%rowtype; server_time timestamptz; clean_reason text:=nullif(trim(input_reasoning),''); created_result boolean; inserted boolean;
 begin
   if uid is null then raise exception using message='not_authenticated'; end if;
   select * into e from public.forecast_events where id=input_event_id for share;
@@ -84,9 +84,18 @@ begin
   if clean_reason is not null and length(clean_reason)>280 then raise exception using message='invalid_reasoning'; end if;
   insert into public.user_forecasts(event_id,user_id,selected_option_id,probability,reasoning,domain_version,created_at,updated_at)
   values(e.id,uid,input_option_id,input_probability,clean_reason,input_domain_version,server_time,server_time)
-  on conflict(event_id,user_id) do update set selected_option_id=excluded.selected_option_id,probability=excluded.probability,reasoning=excluded.reasoning,domain_version=excluded.domain_version,updated_at=excluded.updated_at
-  -- xmax is zero only for the row actually inserted by this atomic upsert; a concurrent conflict reports updated.
-  returning *, (xmax = 0) into f, created_result;
+  on conflict(event_id,user_id) do nothing returning * into f;
+  inserted := found;
+  if inserted then
+    created_result := true;
+  else
+    -- A conflicting concurrent insert is visible to this next command after ON CONFLICT has waited for it.
+    -- Updating only mutable columns preserves the original id and created_at in the same function transaction.
+    update public.user_forecasts set selected_option_id=input_option_id,probability=input_probability,reasoning=clean_reason,domain_version=input_domain_version,updated_at=server_time
+    where event_id=e.id and user_id=uid returning * into f;
+    if not found then raise exception using message='forecast_internal_write_conflict'; end if;
+    created_result := false;
+  end if;
   return jsonb_build_object('forecast',jsonb_build_object('id',f.id,'event_id',f.event_id,'selected_option_id',f.selected_option_id,'probability',f.probability,'reasoning',f.reasoning,'domain_version',f.domain_version,'created_at',f.created_at,'updated_at',f.updated_at),'server_timestamp',server_time,'event_deadline',e.closes_at,'created',created_result,'locked',false);
 end $$;
 

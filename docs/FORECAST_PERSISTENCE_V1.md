@@ -18,7 +18,9 @@ The read response includes server timestamp, authentication requirement, permiss
 
 Only `clock_timestamp()` in PostgreSQL authorizes a write. The RPC accepts neither user ID nor client timestamps. `submit_forecast` first authenticates and acquires the event-row lock, and only then captures the timestamp used for `opens_at <= server_time < closes_at`; a lock wait therefore cannot leave the deadline check using stale time. Equality at `closes_at` is locked. Status is checked in addition to time. An old or modified browser therefore cannot override the deadline.
 
-`get_forecast_workspace` is explicitly `VOLATILE`: it calls both `clock_timestamp()` and `auth.uid()`, so declaring it `STABLE` would misrepresent its time- and request-dependent result. The atomic upsert derives its created/update flag from the row version returned by the upsert itself rather than from a race-prone preliminary existence query.
+`get_forecast_workspace` is explicitly `VOLATILE`: it calls both `clock_timestamp()` and `auth.uid()`, so declaring it `STABLE` would misrepresent its time- and request-dependent result. The write first attempts `INSERT … ON CONFLICT DO NOTHING RETURNING`; `FOUND` identifies a real insert. On conflict, a following `UPDATE … RETURNING` changes only mutable columns. PostgreSQL waits for a concurrent conflicting insert before continuing, and both commands execute in the same function transaction, so the result is race-safe without relying on internal system columns.
+
+CI executes this migration with `psql --set ON_ERROR_STOP=1` against an isolated PostgreSQL service after creating minimal Supabase-compatible roles and `auth` objects. It then runs database smoke assertions for anonymous/authenticated access, create/update identity stability, option/deadline rejection, non-mutation, and direct-table denial. This is migration validation only, **not deployment to live Supabase**.
 
 ## Demo and production
 
