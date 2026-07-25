@@ -4,6 +4,8 @@ import {
   validateForecastRecord,
   validateOutcome,
   validateProbability,
+  isValidIsoTimestamp,
+  uniqueValidationErrors,
   type ForecastValidationError,
 } from './validation';
 
@@ -26,13 +28,18 @@ export function scoreSelectedOption(
   outcome: ForecastOutcome,
   scoredAt: string,
 ): ScoreResult {
-  const errors: ForecastValidationError[] = [
-    ...validateForecastEvent(event).errors,
-    ...validateForecastRecord(event, forecast).errors,
-    ...validateOutcome(event, outcome).errors,
-  ];
+  const errors: ForecastValidationError[] = uniqueValidationErrors(
+    validateForecastEvent(event).errors,
+    validateForecastRecord(event, forecast).errors,
+    validateOutcome(event, outcome).errors,
+  );
   if (event.status !== 'resolved') errors.push({ code: 'EVENT_NOT_RESOLVED', path: 'status', message: 'Only a resolved event can be scored.' });
   if (outcome.resolverStatus !== 'verified') errors.push({ code: 'OUTCOME_NOT_VERIFIED', path: 'resolverStatus', message: 'Final scoring requires a verified outcome.' });
+  if (!isValidIsoTimestamp(scoredAt)) {
+    errors.push({ code: 'INVALID_TIMESTAMP', path: 'scoredAt', message: 'scoredAt must be a valid UTC ISO timestamp.' });
+  } else if (isValidIsoTimestamp(outcome.resolvedAt) && Date.parse(scoredAt) < Date.parse(outcome.resolvedAt)) {
+    errors.push({ code: 'SCORE_BEFORE_OUTCOME', path: 'scoredAt', message: 'scoredAt cannot be earlier than outcome.resolvedAt.' });
+  }
   if (errors.length) return { ok: false, errors };
   const observedBinaryOutcome: 0 | 1 = forecast.selectedOptionId === outcome.resolvedOptionId ? 1 : 0;
   return {

@@ -30,7 +30,8 @@ export type ForecastValidationCode =
   | 'FORECAST_LOCKED'
   | 'DOMAIN_KIND_MISMATCH'
   | 'EVENT_NOT_RESOLVED'
-  | 'OUTCOME_NOT_VERIFIED';
+  | 'OUTCOME_NOT_VERIFIED'
+  | 'SCORE_BEFORE_OUTCOME';
 
 export interface ForecastValidationError {
   code: ForecastValidationCode;
@@ -46,6 +47,17 @@ const result = (errors: ForecastValidationError[]): ValidationResult =>
   errors.length === 0 ? { valid: true, errors: [] } : { valid: false, errors };
 
 const error = (code: ForecastValidationCode, path: string, message: string): ForecastValidationError => ({ code, path, message });
+
+/** Combines composed validators without returning the same structured error twice. */
+export function uniqueValidationErrors(...groups: ForecastValidationError[][]): ForecastValidationError[] {
+  const seen = new Set<string>();
+  return groups.flat().filter((item) => {
+    const key = `${item.code}\u0000${item.path}\u0000${item.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 /** Accepts a real UTC ISO-8601 instant, rejecting rollovers such as February 30. */
 export function isValidIsoTimestamp(value: unknown): value is string {
@@ -137,6 +149,8 @@ export function validateForecastRecord(event: ForecastEvent, forecast: UserForec
     errors.push(error('UNKNOWN_FORECAST_OPTION', 'selectedOptionId', 'Forecast references an unknown option.'));
   }
   errors.push(...validateTimestamp(forecast.createdAt, 'createdAt'));
+  errors.push(...validateTimestamp(forecast.updatedAt, 'updatedAt'));
+  if (forecast.lockedAt !== undefined) errors.push(...validateTimestamp(forecast.lockedAt, 'lockedAt'));
   if (isValidIsoTimestamp(forecast.createdAt) && isValidIsoTimestamp(event.opensAt) && Date.parse(forecast.createdAt) < Date.parse(event.opensAt)) {
     errors.push(error('FORECAST_BEFORE_OPEN', 'createdAt', 'Forecast cannot be submitted before opensAt.'));
   }
@@ -148,13 +162,19 @@ export function validateForecastRecord(event: ForecastEvent, forecast: UserForec
 
 /** Uses forecast.createdAt as the submission time; no caller-provided time can bypass the deadline. */
 export function validateForecastSubmission(event: ForecastEvent, forecast: UserForecast): ValidationResult {
-  const errors = [...validateForecastRecord(event, forecast).errors];
+  const errors = uniqueValidationErrors(
+    validateForecastEvent(event).errors,
+    validateForecastRecord(event, forecast).errors,
+  );
   if (event.status !== 'open') errors.push(error('EVENT_NOT_OPEN', 'status', 'Forecast submissions require an open event.'));
   return result(errors);
 }
 
 export function validateOutcome(event: ForecastEvent, outcome: ForecastOutcome): ValidationResult {
-  const errors: ForecastValidationError[] = [...validateVersion(outcome).errors];
+  const errors: ForecastValidationError[] = uniqueValidationErrors(
+    validateForecastEvent(event).errors,
+    validateVersion(outcome).errors,
+  );
   if (outcome.eventId !== event.id) errors.push(error('EVENT_ID_MISMATCH', 'eventId', 'Outcome eventId must match event.id.'));
   if (!event.options.some((option) => option.id === outcome.resolvedOptionId)) {
     errors.push(error('UNKNOWN_OUTCOME_OPTION', 'resolvedOptionId', 'Outcome references an unknown option.'));
@@ -164,7 +184,10 @@ export function validateOutcome(event: ForecastEvent, outcome: ForecastOutcome):
 }
 
 export function validateExpectation(event: ForecastEvent, expectation: UserExpectation): ValidationResult {
-  const errors = [...validateVersion(expectation).errors];
+  const errors = uniqueValidationErrors(
+    validateForecastEvent(event).errors,
+    validateVersion(expectation).errors,
+  );
   if (expectation.eventId !== event.id) errors.push(error('EVENT_ID_MISMATCH', 'eventId', 'Expectation eventId must match event.id.'));
   return result(errors);
 }
@@ -173,14 +196,13 @@ export function validateForecastUpdate(event: ForecastEvent, previous: UserForec
   const errors = [...validateForecastRecord(event, next).errors];
   const changed = JSON.stringify(previous) !== JSON.stringify(next);
   const updatedAtValid = isValidIsoTimestamp(next.updatedAt);
-  if (!updatedAtValid) errors.push(error('INVALID_TIMESTAMP', 'updatedAt', 'updatedAt must be a valid UTC ISO timestamp.'));
   const deadlinePassed = updatedAtValid
     && isValidIsoTimestamp(event.closesAt)
     && Date.parse(next.updatedAt) > Date.parse(event.closesAt);
   if (changed && (previous.lockedAt !== undefined || event.status !== 'open' || deadlinePassed)) {
     errors.push(error('FORECAST_LOCKED', 'lockedAt', 'A forecast cannot change after locking, closing, or its deadline.'));
   }
-  return result(errors);
+  return result(uniqueValidationErrors(errors));
 }
 
 export function validateDistinctDomainKind(value: UserExpectation | UserForecast, expected: 'expectation' | 'forecast'): ValidationResult {

@@ -76,6 +76,18 @@ describe('forecast submission validation', () => {
     expect(codes(validateForecastSubmission(event, { ...forecast, eventId: 'another-event' }))).toContain('EVENT_ID_MISMATCH');
   });
 
+  it('rejects submission against an event with an unsupported version', () => {
+    const malformed = { ...event, version: 'forecast-domain-v2' as ForecastEvent['version'] };
+    expect(codes(validateForecastSubmission(malformed, forecast))).toContain('UNSUPPORTED_VERSION');
+  });
+
+  it('rejects submission against malformed event timestamps without duplicate errors', () => {
+    const result = validateForecastSubmission({ ...event, opensAt: 'invalid', closesAt: 'invalid' }, forecast);
+    expect(result.valid).toBe(false);
+    expect(result.errors.filter(({ code, path }) => code === 'INVALID_TIMESTAMP' && path === 'opensAt')).toHaveLength(1);
+    expect(result.errors.filter(({ code, path }) => code === 'INVALID_TIMESTAMP' && path === 'closesAt')).toHaveLength(1);
+  });
+
   it.each(['draft', 'closed'] as const)('rejects submission while event is %s', (status) => {
     expect(codes(validateForecastSubmission({ ...event, status }, forecast))).toContain('EVENT_NOT_OPEN');
   });
@@ -92,6 +104,12 @@ describe('forecast submission validation', () => {
 
   it('rejects an invalid stored submission timestamp', () => {
     expect(codes(validateForecastSubmission(event, { ...forecast, createdAt: 'yesterday' }))).toContain('INVALID_TIMESTAMP');
+  });
+
+  it('rejects invalid stored updatedAt and optional lockedAt timestamps', () => {
+    expect(codes(validateForecastSubmission(event, { ...forecast, updatedAt: 'invalid' }))).toContain('INVALID_TIMESTAMP');
+    const lockedResult = validateForecastSubmission(event, { ...forecast, lockedAt: 'invalid' });
+    expect(lockedResult.errors).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'INVALID_TIMESTAMP', path: 'lockedAt' })]));
   });
 
   it('rejects an unknown selected option with its own code', () => {
@@ -201,5 +219,17 @@ describe('Brier Score v1', () => {
       observedBinaryOutcome: 1, brierScore: 0.0625, scoringVersion: 'brier-binary-v1', version: FORECAST_DOMAIN_VERSION,
     });
     if (result.ok) expect(validateVersion(result.score).valid).toBe(true);
+  });
+
+  it('rejects an invalid scoredAt timestamp', () => {
+    const result = scoreSelectedOption({ ...event, status: 'resolved' }, forecast, outcome, 'invalid');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors).toContainEqual(expect.objectContaining({ code: 'INVALID_TIMESTAMP', path: 'scoredAt' }));
+  });
+
+  it('rejects scoring before the outcome resolved', () => {
+    const result = scoreSelectedOption({ ...event, status: 'resolved' }, forecast, outcome, '2026-08-02T17:59:59Z');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(codes(result)).toContain('SCORE_BEFORE_OUTCOME');
   });
 });
