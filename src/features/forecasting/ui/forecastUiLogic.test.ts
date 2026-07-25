@@ -13,6 +13,7 @@ describe('forecast UI logic', () => {
     expect(event).not.toBe(demoForecastEvents[1]);
   });
   it('converts percentages only by dividing by 100', () => expect(percentageToProbability(70)).toBe(0.7));
+  it('converts the initial 50% state to probability 0.5', () => expect(percentageToProbability(50)).toBe(0.5));
   it('normalizes whitespace-only optional reasoning', () => expect(normalizeReasoning('   \n')).toBeUndefined());
   it('uses fixed timestamps and passes domain submission validation', () => {
     const event = createInteractiveDemoEvent();

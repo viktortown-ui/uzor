@@ -10,6 +10,7 @@ type Stage = 'form' | 'review' | 'result';
 export function ForecastCard({ event }: { event: ForecastEvent }) {
   const [selected, setSelected] = useState('');
   const [percentage, setPercentage] = useState('');
+  const [probabilityInitialized, setProbabilityInitialized] = useState(false);
   const [reasoning, setReasoning] = useState('');
   const [stage, setStage] = useState<Stage>('form');
   const transitionHeading = useRef<HTMLHeadingElement>(null);
@@ -26,6 +27,13 @@ export function ForecastCard({ event }: { event: ForecastEvent }) {
 
   useEffect(() => { if (stage !== 'form') transitionHeading.current?.focus(); }, [stage]);
   const updateRange = (value: string) => setPercentage(value);
+  const selectOption = (optionId: string) => {
+    setSelected(optionId);
+    if (!probabilityInitialized) {
+      setPercentage('50');
+      setProbabilityInitialized(true);
+    }
+  };
   const review = () => { if (canReview) setStage('review'); };
 
   return <article className="forecast-card">
@@ -47,7 +55,7 @@ export function ForecastCard({ event }: { event: ForecastEvent }) {
       {!available && <div className="forecast-status" role="status"><strong>{formatEventStatus(event.status)}</strong><p>Собрать прогноз для события в этом состоянии нельзя.</p></div>}
       {stage === 'form' && <form onSubmit={(formEvent) => { formEvent.preventDefault(); review(); }}>
         <fieldset disabled={!available}><legend>Какой исход вы выбираете?</legend><div className="forecast-options">
-          {event.options.map((option) => <label key={option.id} className={selected === option.id ? 'selected' : ''}><input type="radio" name={`outcome-${event.id}`} value={option.id} checked={selected === option.id} onChange={() => setSelected(option.id)} /><span><strong>{option.label}</strong>{option.description && <small>{option.description}</small>}</span></label>)}
+          {event.options.map((option) => <label key={option.id} className={selected === option.id ? 'selected' : ''}><input type="radio" name={`outcome-${event.id}`} value={option.id} checked={selected === option.id} onChange={() => selectOption(option.id)} /><span><strong>{option.label}</strong>{option.description && <small>{option.description}</small>}</span></label>)}
         </div></fieldset>
         {selected && <fieldset className="forecast-probability" disabled={!available}><legend>Насколько вероятен выбранный исход?</legend>
           <p className="sr-only">Вероятность относится к выбранному варианту: {selectedOption?.label}.</p>
@@ -64,7 +72,7 @@ export function ForecastCard({ event }: { event: ForecastEvent }) {
         <button className="forecast-primary" type="submit" disabled={!canReview}>Проверить прогноз</button>
       </form>}
 
-      {stage === 'review' && forecast && <div className="forecast-review"><h2 ref={transitionHeading} tabIndex={-1}>Проверьте прогноз</h2><dl><div><dt>Выбранный исход</dt><dd>{selectedOption?.label}</dd></div><div><dt>Вероятность</dt><dd>{percentage}%</dd></div><div><dt>Обоснование</dt><dd>{forecast.reasoning ?? 'Не добавлено'}</dd></div><div><dt>Приём прогнозов до</dt><dd>{formatRussianUtcDateTime(event.closesAt)}</dd></div></dl><p>После реальной отправки прогноз будет зафиксирован и заблокирован по окончании срока.</p><div className="forecast-review__actions"><button type="button" onClick={() => setStage('form')}>Изменить</button><button className="forecast-primary" type="button" onClick={() => setStage('result')}>Собрать демо-прогноз</button></div></div>}
+      {stage === 'review' && forecast && <div className="forecast-review"><h2 ref={transitionHeading} tabIndex={-1}>Проверьте прогноз</h2><dl><div><dt>Выбранный исход</dt><dd>{selectedOption?.label}</dd></div><div><dt>Вероятность</dt><dd>{percentage}%</dd></div><div><dt>Обоснование</dt><dd>{forecast.reasoning ?? 'Не добавлено'}</dd></div><div><dt>Приём прогнозов до</dt><dd>{formatRussianUtcDateTime(event.closesAt)}</dd></div></dl><p>При реальной отправке прогноз будет зафиксирован. После окончания срока его нельзя будет изменить.</p><div className="forecast-review__actions"><button type="button" onClick={() => setStage('form')}>Изменить</button><button className="forecast-primary" type="button" onClick={() => setStage('result')}>Собрать демо-прогноз</button></div></div>}
       {stage === 'result' && <div className="forecast-result"><h2 ref={transitionHeading} tabIndex={-1}>Демо-прогноз собран</h2><p>Это только локальный результат текущего экрана:</p><ul><li>прогноз не отправлен на сервер;</li><li>прогноз не сохранён после перезагрузки;</li><li>он не влияет на репутацию;</li><li>Brier Score появится только после проверенного исхода в будущей версии.</li></ul><button type="button" onClick={() => setStage('form')}>Изменить</button></div>}
     </section>
   </article>;
