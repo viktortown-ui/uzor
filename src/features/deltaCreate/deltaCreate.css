@@ -3,3 +3,58 @@
 @media (prefers-reduced-motion:reduce){.delta-create-card *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 .delta-create-result-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:22px}.delta-create-result-actions>*{min-height:44px;display:inline-flex;align-items:center;justify-content:center}.delta-result-marker{margin:18px auto 20px;width:var(--marker-size);height:var(--marker-size)}
 @media(max-width:620px){.delta-create-result-actions{display:grid;grid-template-columns:1fr}.delta-create-result-actions>*{width:100%;min-height:44px}}
+
+/* Desktop Delta creation workspace. Mobile creation uses its own component and stylesheet. */
+@media (min-width:901px){
+  .delta-create-lab{width:100%;max-width:none;margin:0;padding:0}
+  .delta-create-lab .product-main{width:min(100%,1360px);margin-inline:auto;padding:28px clamp(24px,3vw,48px) 72px}
+  .delta-create-hero{margin:8px 0 20px}
+  .delta-create-hero h1{max-width:1000px;margin:12px 0 10px;font-size:clamp(42px,4vw,62px);line-height:1.02;letter-spacing:-.025em}
+  .delta-create-hero>p:not(.delta-create-badge){max-width:720px;margin-block:8px;line-height:1.55}
+  .delta-create-card{padding:clamp(24px,3vw,38px)}
+  .delta-create-card>section>p,.delta-create-card>section>h2,.delta-create-card>section>label,.delta-create-card>section>fieldset,.delta-create-card>section>article{max-width:940px}
+  .delta-create-card>section:has(.delta-location-picker)>p,.delta-create-card>section:has(.delta-location-picker)>h2,.delta-create-card>section:has(.delta-location-picker)>.delta-location-picker{max-width:none}
+  .delta-create-progress-row{display:flex;align-items:flex-start;gap:24px}
+  .delta-create-progress{min-width:0;flex:1}
+  .delta-create-progress-row>a{flex:0 0 auto;margin-top:13px}
+  .delta-create-progress ol{gap:12px;margin-bottom:18px}
+  .delta-create-progress button{min-height:48px;padding-inline:12px;white-space:nowrap}
+  .delta-create-card h2{font-size:clamp(30px,3vw,42px)}
+  .delta-create-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .delta-create-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .delta-create-option{min-width:0;min-height:76px;padding:14px 16px}
+  .delta-create-card label input,.delta-create-card label textarea,.delta-create-card label select{
+    display:block;width:100%;min-width:0;min-height:48px;margin-top:8px;padding:12px 14px;
+    border:1px solid rgba(255,255,255,.2);border-radius:16px;background:rgba(255,255,255,.08);
+    color:#fff;font:inherit;line-height:1.35;
+  }
+  .delta-create-card label select{appearance:auto;color-scheme:dark}
+  .delta-create-card label textarea{min-height:132px;resize:vertical}
+  .delta-create-card label input:focus-visible,.delta-create-card label textarea:focus-visible,.delta-create-card label select:focus-visible{border-color:#67e8f9;box-shadow:0 0 0 3px rgba(103,232,249,.16)}
+  .delta-location-picker{gap:18px}
+  .delta-location-workspace{display:grid;gap:20px;min-width:0}
+  .delta-location-map-area{position:relative;min-width:0}
+  .delta-location-map{height:clamp(440px,56vh,560px)}
+  .delta-location-map-area>.delta-map-local-error{position:absolute;inset:0;width:auto;transform:none;display:grid;align-content:center;justify-items:center;padding:24px;text-align:center;border-radius:22px;background:rgba(5,11,22,.94);z-index:2}
+  .delta-location-details{min-width:0;padding:20px;border:1px solid rgba(125,249,255,.16);border-radius:22px;background:rgba(5,13,27,.58)}
+  .delta-location-details label:first-of-type{margin-top:20px}
+  .delta-geolocate-button{width:100%;min-height:48px}
+  .delta-location-status{padding:12px 14px;border-left:3px solid var(--cyan);border-radius:0 12px 12px 0;background:rgba(125,220,255,.08);overflow-wrap:anywhere}
+  .delta-create-summary,.delta-create-preview{max-width:900px}
+  .delta-similar-card{max-width:940px}
+  .delta-create-actions{position:static;bottom:auto;display:flex;justify-content:flex-end;flex-wrap:wrap;margin:30px -10px -10px;padding:20px 10px 10px;border-top:1px solid rgba(255,255,255,.12);border-radius:0;background:transparent;backdrop-filter:none}
+  .delta-create-actions button{min-width:132px;min-height:48px}
+  .delta-create-actions button:first-child{margin-right:auto}
+}
+@media (min-width:1200px){
+  .delta-location-workspace{grid-template-columns:minmax(0,1fr) minmax(320px,360px);align-items:stretch}
+  .delta-location-details{display:flex;flex-direction:column}
+  .delta-location-details .delta-location-status{margin-top:auto}
+}
+@media (min-width:901px) and (max-width:1199px){
+  .delta-create-lab .product-main{padding-inline:24px}
+  .delta-location-workspace{grid-template-columns:minmax(0,1fr)}
+  .delta-location-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}
+  .delta-location-details>.delta-geolocate-button,.delta-location-details>.delta-create-error,.delta-location-details>.delta-create-note,.delta-location-details>.delta-location-status{grid-column:1/-1}
+  .delta-create-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

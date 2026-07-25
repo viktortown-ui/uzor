@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { ProductShell } from '../../app/ProductShell';
 import { isWithinPermMvpArea } from './deltaGeoLogic';
 import { shareDeltaPayload } from './deltaCreateProductionLogic';
+import { DeltaCreatePage } from './DeltaCreatePage';
 
 function ShellAt({ route }: { route: string }) {
   return <MemoryRouter initialEntries={[route]}><ProductShell><h1>Page</h1></ProductShell></MemoryRouter>;
@@ -50,5 +51,35 @@ describe('Delta production shell safeguards', () => {
     const nav = { share: vi.fn().mockRejectedValue(new Error('nope')), clipboard: { writeText } } as unknown as Navigator;
     await expect(shareDeltaPayload({ title: 't', text: 'x', url: 'https://u.test' }, nav)).resolves.toBe('Ссылка на Дельту скопирована');
     expect(writeText).toHaveBeenCalledOnce();
+  });
+});
+
+describe('responsive Delta creation route', () => {
+  it('renders the complete desktop workspace above the mobile breakpoint', () => {
+    installMatchMedia(false);
+    const view = render(<MemoryRouter><DeltaCreatePage /></MemoryRouter>);
+
+    expect(view.container.querySelector('.delta-create-lab')).toBeInTheDocument();
+    const progress = screen.getByRole('navigation', { name: 'Шаги конструктора' });
+    for (const label of ['Место', 'Изменение', 'Контекст', 'Проверка']) {
+      expect(within(progress).getByRole('button', { name: label })).toBeInTheDocument();
+    }
+    expect(screen.getByRole('application', { name: 'Карта выбора места' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Моё местоположение' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Уточните район' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Уточнение места' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Назад' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Далее' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Начать заново' })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Далее' })).toBeDisabled();
+  });
+
+  it('keeps rendering the dedicated mobile flow at the breakpoint', () => {
+    installMatchMedia(true);
+    const view = render(<MemoryRouter><DeltaCreatePage /></MemoryRouter>);
+
+    expect(view.container.querySelector('.mobile-delta-flow')).toBeInTheDocument();
+    expect(view.container.querySelector('.delta-create-lab')).not.toBeInTheDocument();
+    expect(screen.getByText('1/3')).toBeInTheDocument();
   });
 });
