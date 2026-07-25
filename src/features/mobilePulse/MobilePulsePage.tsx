@@ -43,6 +43,7 @@ export function MobilePulsePage() {
  const items=nearbyState==='nearby'?nearbyItems:data?.items??[]; const activityNow=data?.loadedAt??new Date();
  return <ProductShell className="mobile-pulse-shell"><section className="mobile-pulse-page"><header className="mobile-pulse-header"><span>ПУЛЬС ПЕРМИ</span><button onClick={()=>void loadCity()} disabled={refreshing}>{refreshing?'Обновляем…':'Обновить'}</button></header><h1>Что изменилось рядом</h1><div className="mobile-pulse-refresh" aria-live="polite">{data&&!refreshing?`Обновлено в ${data.loadedAt.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}`:refreshing?'Обновляем…':''}</div>
  <PwaInstallCard/>
+ <section className="mobile-pulse-forecast" aria-labelledby="pulse-forecast-title"><div><h2 id="pulse-forecast-title">Прогнозы</h2><p>Выберите проверяемый исход и укажите свою вероятность в интерактивном демо.</p></div><Link to="/forecast">Открыть</Link></section>
  {cityState==='loading'&&<div className="mobile-pulse-state" role="status">Загружаем изменения Перми…</div>}
  {cityState==='join'&&<div className="mobile-pulse-state"><h2>Войдите в круг, чтобы видеть Пульс Перми</h2><Link to="/join">Войти по приглашению</Link></div>}
  {cityState==='error'&&<div className="mobile-pulse-state" role="alert"><h2>Не удалось загрузить Пульс Перми</h2><p>Карта и добавление Дельты остаются доступны.</p><button onClick={()=>void loadCity()}>Повторить</button><Link to="/map">Открыть карту</Link><Link to="/contribute">Добавить Дельту</Link></div>}

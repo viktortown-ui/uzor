@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useMediaQuery } from './useMediaQuery';
 import './productShell.css';
 
-type NavIcon = 'summary' | 'map' | 'add' | 'pulse';
+type NavIcon = 'summary' | 'map' | 'add' | 'pulse' | 'forecast';
 
 type NavItem = { label: string; to: string; icon: NavIcon; primary?: boolean };
 
@@ -11,6 +11,7 @@ const desktopItems: NavItem[] = [
   { label: 'Итог недели', to: '/wrapped', icon: 'summary' },
   { label: 'Карта дельт', to: '/map', icon: 'map' },
   { label: 'Добавить Дельту', to: '/contribute', icon: 'add' },
+  { label: 'Прогнозы', to: '/forecast', icon: 'forecast' },
 ];
 
 const mobileItems: NavItem[] = [
@@ -22,6 +23,7 @@ const mobileItems: NavItem[] = [
 function NavigationIcon({ icon, className = '' }: { icon: NavIcon; className?: string }) {
   if (icon === 'add') return <svg className={className} aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M12 5v14M5 12h14" /></svg>;
   if (icon === 'map') return <svg className={className} aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M12 21s7-5.1 7-11a7 7 0 1 0-14 0c0 5.9 7 11 7 11Z" /><circle cx="12" cy="10" r="2.4" /></svg>;
+  if (icon === 'forecast') return <svg className={className} aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /><path d="M7 5l2 2M17 5l-2 2" /></svg>;
   if (icon === 'pulse') return <svg className={className} aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M4 12h3l2-5 4 10 2-5h5" /><circle cx="12" cy="12" r="8" /></svg>;
   return <svg className={className} aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M4 17h16" /><path d="M6 14l3-4 3 3 4-7 2 4" /><path d="M5 5v14h14" /></svg>;
 }
@@ -29,13 +31,15 @@ function NavigationIcon({ icon, className = '' }: { icon: NavIcon; className?: s
 function desktopActive(pathname: string) {
   if (pathname.startsWith('/map')) return '/map';
   if (pathname.startsWith('/contribute')) return '/contribute';
+  if (pathname.startsWith('/forecast')) return '/forecast';
   return '/wrapped';
 }
 
 function mobileActive(pathname: string) {
   if (pathname.startsWith('/map')) return '/map';
   if (pathname.startsWith('/contribute')) return '/contribute';
-  return '/pulse';
+  if (pathname.startsWith('/pulse') || pathname.startsWith('/wrapped')) return '/pulse';
+  return null;
 }
 
 export function DesktopProductShell({ children, className = '' }: { children: ReactNode; className?: string }) {

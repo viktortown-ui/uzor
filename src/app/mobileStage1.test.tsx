@@ -101,7 +101,7 @@ describe('mobile stage 1 shell and routing', () => {
     installMatchMedia(false);
     renderAt('/wrapped');
     const nav = screen.getByRole('complementary', { name: 'Основная навигация' });
-    expect(within(nav).getAllByRole('link').slice(1).map((link) => link.textContent)).toEqual(['Итог недели', 'Карта дельт', 'Добавить Дельту']);
+    expect(within(nav).getAllByRole('link').slice(1).map((link) => link.textContent)).toEqual(['Итог недели', 'Карта дельт', 'Добавить Дельту', 'Прогнозы']);
   });
 });
 

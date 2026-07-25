@@ -63,3 +63,6 @@
 .mobile-pulse-install-sheet { margin-top: 10px; color: var(--mobile-muted); font-size: 12px; line-height: 1.4; }
 .mobile-pulse-install-sheet ol { margin: 0; padding-left: 18px; }
 @media (min-width: 901px) { .mobile-pulse-install { max-width: 420px; } }
+.mobile-pulse-forecast { display:flex; align-items:center; justify-content:space-between; gap:14px; margin:8px 0 14px; padding:14px; border:1px solid var(--mobile-border); border-radius:16px; background:linear-gradient(120deg,rgba(40,255,194,.09),rgba(255,255,255,.025)); }
+.mobile-pulse-forecast p { margin:5px 0 0; color:var(--mobile-muted); font-size:12px; line-height:1.4; }
+.mobile-pulse-forecast a { min-width:76px; min-height:44px; display:grid; place-items:center; border:1px solid rgba(40,255,194,.35); border-radius:11px; color:var(--mobile-accent); font-size:12px; font-weight:850; text-decoration:none; }
