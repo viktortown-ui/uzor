@@ -178,6 +178,7 @@ describe('MobileDeltaReviewScreen', () => {
     renderReview(validDraft({ impactLevel: 'critical' }));
 
     expect(await screen.findByText(/Критично мешает/)).toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'Не удалось проверить похожие Дельты' });
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
 
     expect(await screen.findByText(/Подтверждена · Остановка Попова/)).toBeInTheDocument();
