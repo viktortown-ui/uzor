@@ -52,9 +52,11 @@ describe('MobileDeltaMapChrome', () => {
   it('explains the same status marks that are used by desktop and mobile flags', async () => {
     setup(); await userEvent.click(screen.getByRole('button', { name: 'Фильтры · 0' }));
     await userEvent.click(screen.getByText('Легенда', { selector: 'summary' }));
+    expect(screen.getByText('улыбка — стало лучше')).toBeInTheDocument();
+    expect(screen.getByText('грустный смайл — стало хуже')).toBeInTheDocument();
     expect(screen.getByText('жёлтая точка — новая')).toBeInTheDocument();
     expect(screen.getByText('янтарное свечение — проверяется')).toBeInTheDocument();
     expect(screen.getByText('светлая рамка — подтверждена')).toBeInTheDocument();
-    expect(screen.getByText('двойной фиолетовый — развилка')).toBeInTheDocument();
+    expect(screen.getByText('двойная фиолетовая метка — развилка')).toBeInTheDocument();
   });
 });

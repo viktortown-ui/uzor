@@ -10,12 +10,12 @@ type MobileChromeProps = ChromeProps & { collapsed: boolean; onCollapsedChange: 
 export function DeltaMapLegend() {
   return <div className="delta-map-legend">
     <strong>Легенда</strong>
-    <p><i className="positive" /> бирюзовый флаг — стало лучше</p>
-    <p><i className="negative" /> коралловый флаг — стало хуже</p>
+    <p><i className="positive" /> улыбка — стало лучше</p>
+    <p><i className="negative" /> грустный смайл — стало хуже</p>
     <p><i className="new" /> жёлтая точка — новая</p>
     <p><i className="checking" /> янтарное свечение — проверяется</p>
     <p><i className="confirmed" /> светлая рамка — подтверждена</p>
-    <p><i className="fork" /> двойной фиолетовый — развилка</p>
+    <p><i className="fork" /> двойная фиолетовая метка — развилка</p>
   </div>;
 }
 
