@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { DeltaCard, DeltaReaction } from '../deltas/deltaTypes';
+import { getDeltaChangeTypeLabel, getDeltaDisplayTitle, shouldShowManualStatement } from '../deltas/deltaPresentation';
 import { formatDateTime, getDirectionCopy, getImpactCopy, getObservedWindowCopy, getStatusCopy, progressPercent } from './deltaMapLogic';
 
 type Props = {
@@ -17,7 +18,6 @@ function CardDetails({ card, reacting, effect, error, onReact }: Pick<Props, 're
   const status = getStatusCopy(card.status);
   const progress = progressPercent(card.confirmCount, card.confirmationTarget);
   const statement = card.statement.trim();
-  const subject = card.subject.trim();
   return <div className="delta-card-details">
     <dl>
       <div><dt>Период</dt><dd>{getObservedWindowCopy(card.observedWindow)}</dd></div>
@@ -27,7 +27,7 @@ function CardDetails({ card, reacting, effect, error, onReact }: Pick<Props, 're
       <div><dt>Последняя активность</dt><dd>{formatDateTime(card.lastActivityAt)}</dd></div>
     </dl>
     <div className="delta-progress" aria-label={`Подтверждено ${progress}%`}><span style={{ width: `${progress}%` }} /></div>
-    {statement && statement.toLocaleLowerCase('ru') !== subject.toLocaleLowerCase('ru') && <section><h3>Формулировка</h3><p>{statement}</p></section>}
+    {shouldShowManualStatement(card) && <section><h3>Формулировка</h3><p>{statement}</p></section>}
     {card.details?.trim() && <section><h3>Комментарий автора</h3><p>{card.details}</p></section>}
     {effect && <p className="delta-effect" role="status">{effect}</p>}
     {error && <p className="delta-card-error" role="alert">{error}</p>}
@@ -41,8 +41,8 @@ function CardDetails({ card, reacting, effect, error, onReact }: Pick<Props, 're
 function Summary({ card }: { card: DeltaCard }) {
   return <>
     <p className={`delta-card-direction ${card.direction}`}>{getDirectionCopy(card.direction)}</p>
-    <h2>{card.subject.trim() || card.statement}</h2>
-    <p className="delta-card-category">{card.category.title}</p>
+    <h2>{getDeltaDisplayTitle(card)}</h2>
+    <p className="delta-card-category">{getDeltaChangeTypeLabel(card.changeType)} · {card.category.title}</p>
     <p className="delta-card-location">{card.location.label}</p>
     <p className="delta-card-status">{getStatusCopy(card.status)[0]}</p>
   </>;

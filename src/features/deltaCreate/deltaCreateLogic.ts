@@ -1,4 +1,5 @@
 import type { DeltaChangeType, DeltaDirection, DeltaImpactLevel, DeltaObservedWindow } from '../deltas/deltaTypes';
+import { getDeltaChangeTypeLabel } from '../deltas/deltaPresentation';
 import { isWithinPermMvpArea } from './deltaGeoLogic';
 import { DELTA_CREATE_CATEGORIES, DELTA_CREATE_DISTRICTS, type DeltaCreateCategorySlug, type DeltaCreateDraft, type DeltaCreateOption, type DeltaCreateStep } from './deltaCreateTypes';
 
@@ -24,7 +25,7 @@ const capitalize = (value: string) => value ? value.charAt(0).toUpperCase() + va
 export function buildDeltaStatement(input: { direction?: DeltaDirection | ''; categorySlug?: string; changeType: DeltaChangeType | ''; subject: string }) {
   const subject = input.subject.trim().replace(/\s+/g, ' ');
   if (!input.changeType) return '';
-  if (subject) return `${capitalize(subject)} ${endings[input.changeType]}`;
+  if (subject) return `${capitalize(subject)} — ${getDeltaChangeTypeLabel(input.changeType)}.`;
   if (input.changeType === 'other') return '';
   const category = input.categorySlug ? categoryTitles[input.categorySlug] : '';
   return category ? `${category}: ${endings[input.changeType]}` : '';

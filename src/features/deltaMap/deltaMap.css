@@ -97,3 +97,12 @@
 
 @media (max-width:900px) { .delta-map-reset { left: 10px; bottom: calc(72px + env(safe-area-inset-bottom)); max-width: 130px; } .maplibregl-ctrl-bottom-right { bottom: calc(70px + env(safe-area-inset-bottom)); } }
 @media (max-width:340px) { .delta-mobile-toolbar { font-size: .82rem; } .delta-mobile-toolbar button { padding-inline: 6px; } .delta-map-card--mobile { left: 4px; right: 4px; } }
+
+/* A selected desktop Delta is an attached inspector, not a floating second screen. */
+@media(min-width:901px){
+ .delta-map-card--desktop{top:0;right:0;bottom:0;width:clamp(360px,26vw,430px);padding:22px 24px calc(24px + env(safe-area-inset-bottom));border-width:0 0 0 1px;border-radius:0;box-shadow:-18px 0 40px rgba(0,0,0,.28)}
+ .delta-map-legend{right:18px;bottom:20px;padding:8px 10px;border-radius:12px}
+}
+.delta-card-category{font-weight:700;color:#d7e7f0}.delta-card-location,.delta-card-status{padding-block:5px;border-bottom:1px solid rgba(148,211,231,.12)}
+.delta-card-close,.delta-card-toggle{min-width:44px;min-height:44px}
+@media(max-width:900px){.delta-map-card--mobile{left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));padding-bottom:calc(14px + env(safe-area-inset-bottom))}.delta-map-card--mobile.is-compact{max-height:210px}}

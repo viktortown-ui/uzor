@@ -379,3 +379,10 @@
 .mobile-delta-error-boundary { align-items: center; justify-content: center; text-align: center; padding: 24px; gap: 14px; }
 .mobile-delta-error-boundary a { color: #d9fff4; min-height: 44px; display: inline-flex; align-items: center; }
 @media (max-width: 340px) { .mobile-delta-screen { padding-inline: 12px; gap: 14px; } .mobile-delta-tiles { grid-template-columns: 1fr; } .mobile-delta-screen h1 { font-size: 24px; } }
+
+/* Native controls remain legible in Chromium regardless of inherited color-scheme. */
+.mobile-delta-flow select,.mobile-delta-flow select:hover,.mobile-delta-flow select:focus{color:#f4f8ff!important;background-color:#111e31!important;-webkit-text-fill-color:#f4f8ff!important;opacity:1}
+.mobile-delta-flow select option{color:#111827!important;background-color:#f8fafc!important;-webkit-text-fill-color:#111827!important}
+.mobile-delta-flow input,.mobile-delta-flow textarea,.mobile-delta-flow select{font-size:16px;min-height:44px}
+.mobile-delta-result-card{border:0!important;box-shadow:none!important;background:transparent!important;padding:20px var(--delta-mobile-gutter) calc(24px + env(safe-area-inset-bottom))!important}
+.mobile-delta-marker{width:44px!important;height:44px!important;margin-bottom:8px!important}.mobile-delta-metadata{color:#b9cbd8}
