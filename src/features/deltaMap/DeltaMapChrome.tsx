@@ -36,6 +36,7 @@ export function MobileDeltaMapChrome({ filters, categories, onChange, collapsed,
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const activeCount = [filters.direction, filters.status, filters.categorySlug].filter((value) => value !== 'all').length;
+  useEffect(() => { document.documentElement.toggleAttribute('data-delta-filter-sheet', open); return () => document.documentElement.removeAttribute('data-delta-filter-sheet'); }, [open]);
 
   const close = useCallback(() => {
     setOpen(false);
