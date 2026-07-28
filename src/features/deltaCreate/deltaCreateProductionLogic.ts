@@ -3,6 +3,7 @@ import { isWithinPermMvpArea } from './deltaGeoLogic';
 import type { DeltaCreateDraft } from './deltaCreateTypes';
 import type { CreateDeltaInput, DeltaCard, DeltaCategory, DeltaEffect, ReactToDeltaResult } from '../deltas/deltaTypes';
 import { getDeltaEffectCopy } from '../deltas/deltaLogic';
+import { getDeltaChangeTypeLabel, getDeltaDisplayTitle, shouldShowChangeTypeLabel } from '../deltas/deltaPresentation';
 
 export type DeltaCreateResultMode = 'created_new' | 'confirmed_existing';
 export const DELTA_CREATE_PRODUCTION_STORAGE_KEY = 'uzor_delta_create_v1';
@@ -42,11 +43,12 @@ export async function shareDeltaPayload(payload: { title: string; text: string; 
   } catch { return 'Не удалось поделиться ссылкой'; }
 }
 
-export function buildDeltaSharePayload(delta: Pick<DeltaCard, 'id' | 'statement'>, mode: DeltaCreateResultMode, baseHref = typeof window !== 'undefined' ? window.location.href : 'https://example.test/#/') {
+export function buildDeltaSharePayload(delta: Pick<DeltaCard, 'id' | 'statement'> & Partial<Pick<DeltaCard, 'subject' | 'changeType'>>, mode: DeltaCreateResultMode, baseHref = typeof window !== 'undefined' ? window.location.href : 'https://example.test/#/') {
   const base = new URL(baseHref);
   const basePath = base.pathname.endsWith('/') ? base.pathname : `${base.pathname.replace(/\/[^/]*$/, '')}/`;
   const url = `${base.origin}${basePath}#/map?delta=${encodeURIComponent(delta.id)}`;
-  const text = mode === 'created_new' ? `Я заметил Дельту в Перми: ${delta.statement}. Помогите проверить изменение.` : `Я помог подтвердить Дельту в Перми: ${delta.statement}. Посмотрите, что меняется рядом.`;
+  const identity = `${getDeltaDisplayTitle(delta)}${shouldShowChangeTypeLabel(delta) ? ` — ${getDeltaChangeTypeLabel(delta.changeType || '')}` : ''}`;
+  const text = mode === 'created_new' ? `Я заметил Дельту в Перми: ${identity}. Помогите проверить изменение.` : `Я помог подтвердить Дельту в Перми: ${identity}. Посмотрите, что меняется рядом.`;
   return { title: 'Дельта в УЗОР', text, url };
 }
 

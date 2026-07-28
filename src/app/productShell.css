@@ -321,4 +321,10 @@
     width: min(360px, calc(100vw - 48px));
     justify-items: end;
   }
+  .pwa-install-launcher--map { right: 24px; }
+  .pwa-install-launcher--map.pwa-install-launcher--inspector-open { right: calc(clamp(360px, 26vw, 430px) + 24px); }
+}
+@media (max-width: 900px) {
+  .pwa-install-launcher--map { top: calc(max(8px, env(safe-area-inset-top)) + 58px); bottom: auto; justify-items: end; }
+  .pwa-install-launcher--map .pwa-install-launcher__sheet { margin-top: 4px; }
 }

@@ -443,7 +443,7 @@ describe('delta create lab route', () => {
     await u.click(screen.getByRole('button', { name: /Транспорт и дорога/ }));
     await u.click(screen.getByRole('button', { name: 'Стало медленнее' }));
     await u.type(screen.getByLabelText('Что именно изменилось?'), 'ожидание автобуса вечером');
-    expect(screen.getByText('Ожидание автобуса вечером стало медленнее')).toBeInTheDocument();
+    expect(screen.getByText('Ожидание автобуса вечером — Стало медленнее.')).toBeInTheDocument();
     await u.click(screen.getByRole('button', { name: 'Уточнить формулировку' }));
     await u.clear(screen.getByLabelText('Формулировка Дельты'));
     await u.type(screen.getByLabelText('Формулировка Дельты'), 'Ожидание автобуса стало заметно дольше');

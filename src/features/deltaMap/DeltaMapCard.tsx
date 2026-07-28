@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { DeltaCard, DeltaReaction } from '../deltas/deltaTypes';
+import { getDeltaDisplayTitle, getDeltaMetadata, shouldShowManualStatement } from '../deltas/deltaPresentation';
 import { formatDateTime, getDirectionCopy, getImpactCopy, getObservedWindowCopy, getStatusCopy, progressPercent } from './deltaMapLogic';
 
 type Props = {
@@ -17,7 +18,6 @@ function CardDetails({ card, reacting, effect, error, onReact }: Pick<Props, 're
   const status = getStatusCopy(card.status);
   const progress = progressPercent(card.confirmCount, card.confirmationTarget);
   const statement = card.statement.trim();
-  const subject = card.subject.trim();
   return <div className="delta-card-details">
     <dl>
       <div><dt>Период</dt><dd>{getObservedWindowCopy(card.observedWindow)}</dd></div>
@@ -27,7 +27,7 @@ function CardDetails({ card, reacting, effect, error, onReact }: Pick<Props, 're
       <div><dt>Последняя активность</dt><dd>{formatDateTime(card.lastActivityAt)}</dd></div>
     </dl>
     <div className="delta-progress" aria-label={`Подтверждено ${progress}%`}><span style={{ width: `${progress}%` }} /></div>
-    {statement && statement.toLocaleLowerCase('ru') !== subject.toLocaleLowerCase('ru') && <section><h3>Формулировка</h3><p>{statement}</p></section>}
+    {shouldShowManualStatement(card) && <section><h3>Формулировка</h3><p>{statement}</p></section>}
     {card.details?.trim() && <section><h3>Комментарий автора</h3><p>{card.details}</p></section>}
     {effect && <p className="delta-effect" role="status">{effect}</p>}
     {error && <p className="delta-card-error" role="alert">{error}</p>}
@@ -41,8 +41,8 @@ function CardDetails({ card, reacting, effect, error, onReact }: Pick<Props, 're
 function Summary({ card }: { card: DeltaCard }) {
   return <>
     <p className={`delta-card-direction ${card.direction}`}>{getDirectionCopy(card.direction)}</p>
-    <h2>{card.subject.trim() || card.statement}</h2>
-    <p className="delta-card-category">{card.category.title}</p>
+    <h2>{getDeltaDisplayTitle(card)}</h2>
+    {getDeltaMetadata(card)&&<p className="delta-card-category">{getDeltaMetadata(card)}</p>}
     <p className="delta-card-location">{card.location.label}</p>
     <p className="delta-card-status">{getStatusCopy(card.status)[0]}</p>
   </>;
@@ -66,13 +66,15 @@ export function DesktopDeltaMapCard(props: Props) {
 
 export function MobileDeltaMapCard(props: Props) {
   const [expanded, setExpanded] = useState(false);
+  const { onClose } = props;
+  useEffect(() => { const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') { if (expanded) setExpanded(false); else onClose(); } }; document.addEventListener('keydown', onKeyDown); return () => document.removeEventListener('keydown', onKeyDown); }, [expanded, onClose]);
   return <aside className={`delta-map-card delta-map-card--mobile ${expanded ? 'is-expanded' : 'is-compact'}`} aria-label="Карточка дельты">
     <span className="delta-card-handle" aria-hidden="true" />
     <button className="delta-card-close" onClick={props.onClose} aria-label="Закрыть">×</button>
     {!props.card ? <CardState {...props} /> : <>
       <Summary card={props.card} />
       {expanded && <CardDetails card={props.card} reacting={props.reacting} effect={props.effect} error={props.error} onReact={props.onReact} />}
-      <button className="delta-card-toggle" onClick={() => setExpanded((value) => !value)}>{expanded ? 'Свернуть' : 'Подробнее'}</button>
+      <button className="delta-card-toggle" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>{expanded ? 'Свернуть' : 'Подробнее'}</button>
     </>}
   </aside>;
 }

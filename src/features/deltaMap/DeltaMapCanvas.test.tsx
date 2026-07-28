@@ -88,6 +88,13 @@ describe('DeltaMapCanvas cluster lifecycle', () => {
     expect(source.setData).toHaveBeenCalledTimes(1);
     expect(MapCtor).toHaveBeenCalledTimes(1);
   });
+  it('preserves the MapLibre instance while an inspector selection opens and closes', async () => {
+    const { Canvas, view } = await renderLoaded();
+    view.rerender(<Canvas deltas={[delta('1')]} selectedId="1" onViewport={vi.fn()} onSelect={vi.fn()} />);
+    view.rerender(<Canvas deltas={[delta('1')]} selectedId={null} onViewport={vi.fn()} onSelect={vi.fn()} />);
+    expect(MapCtor).toHaveBeenCalledTimes(1);
+    expect(maps[0].remove).not.toHaveBeenCalled();
+  });
   it('expands a cluster and does not select a Delta', async () => {
     const { map, onSelect } = await renderLoaded();
     act(() => map.emit('click', { features: [{ properties: { cluster_id: 7 }, geometry: { type: 'Point', coordinates: [56, 58] } }] }, 'delta-clusters'));

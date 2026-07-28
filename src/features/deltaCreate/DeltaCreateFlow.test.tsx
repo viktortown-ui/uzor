@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ProductShell } from '../../app/ProductShell';
 import { isWithinPermMvpArea } from './deltaGeoLogic';
@@ -17,7 +18,7 @@ function installMatchMedia(matches: boolean) {
   })) });
 }
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); localStorage.removeItem('uzor_delta_create_v1'); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('Delta production shell safeguards', () => {
   it('shows shared navigation on /contribute with brand and active item', () => {
@@ -71,7 +72,15 @@ describe('responsive Delta creation route', () => {
     expect(screen.getAllByRole('button', { name: 'Назад' })).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Далее' })).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Начать заново' })).toHaveLength(1);
+    const actions = view.container.querySelector('.delta-create-actions');
+    expect(Array.from(actions?.querySelectorAll('button') ?? []).map((button) => button.textContent)).toEqual(['Назад', 'Начать заново', 'Далее']);
     expect(screen.getByRole('button', { name: 'Далее' })).toBeDisabled();
+  });
+
+  it('scopes native select color corrections to Delta creation', async () => {
+    const css = await import('./deltaCreate.css?raw').then((module) => module.default as string);
+    expect(css).toContain('.delta-create-lab select,.delta-create-lab select:hover,.delta-create-lab select:focus');
+    expect(css).not.toMatch(/(?:^|\})\s*select,select:hover,select:focus/);
   });
 
   it('keeps rendering the dedicated mobile flow at the breakpoint', () => {
@@ -81,5 +90,16 @@ describe('responsive Delta creation route', () => {
     expect(view.container.querySelector('.mobile-delta-flow')).toBeInTheDocument();
     expect(view.container.querySelector('.delta-create-lab')).not.toBeInTheDocument();
     expect(screen.getByText('1/3')).toBeInTheDocument();
+  });
+
+  it('keeps the final publication action in the stable step-4 action row', async () => {
+    installMatchMedia(false);
+    localStorage.setItem('uzor_delta_create_v1', JSON.stringify({ currentStep:4,districtCode:'leninsky',districtLabel:'Ленинский район',locationHint:'',lat:58.01,lng:56.25,locationLabel:'Пермь',locationPrecision:'point',locationSource:'map',selectedSimilarDeltaId:null,similarDecision:'separate',direction:'negative',categorySlug:'transport',changeType:'slower',subject:'Ожидание автобуса',statement:'Ожидание автобуса — Стало медленнее.',statementMode:'auto',observedWindow:'today',impactLevel:'noticeable',details:'' }));
+    const view=render(<MemoryRouter><DeltaCreatePage /></MemoryRouter>);
+    await userEvent.click(await screen.findByRole('button',{name:'Продолжить'}));
+    const actions=view.container.querySelector('.delta-create-actions');
+    expect(actions).toBeInTheDocument();
+    expect(Array.from(actions?.querySelectorAll('button')??[]).map((button)=>button.textContent)).toEqual(['Назад','Начать заново','Опубликовать Дельту']);
+    expect(within(actions as HTMLElement).getByRole('button',{name:'Опубликовать Дельту'})).toHaveClass('primary');
   });
 });
