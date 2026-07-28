@@ -71,7 +71,15 @@ describe('responsive Delta creation route', () => {
     expect(screen.getAllByRole('button', { name: 'Назад' })).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Далее' })).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Начать заново' })).toHaveLength(1);
+    const actions = view.container.querySelector('.delta-create-actions');
+    expect(Array.from(actions?.querySelectorAll('button') ?? []).map((button) => button.textContent)).toEqual(['Назад', 'Начать заново', 'Далее']);
     expect(screen.getByRole('button', { name: 'Далее' })).toBeDisabled();
+  });
+
+  it('scopes native select color corrections to Delta creation', async () => {
+    const css = await import('./deltaCreate.css?raw').then((module) => module.default as string);
+    expect(css).toContain('.delta-create-lab select,.delta-create-lab select:hover,.delta-create-lab select:focus');
+    expect(css).not.toMatch(/(?:^|\})\s*select,select:hover,select:focus/);
   });
 
   it('keeps rendering the dedicated mobile flow at the breakpoint', () => {

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { isDemoMode } from '../../../app/appMode';
 import { findSimilarDeltas } from '../../deltas/deltaApi';
-import { getDeltaChangeTypeLabel } from '../../deltas/deltaPresentation';
+import { getDeltaMetadata } from '../../deltas/deltaPresentation';
 import type { DeltaCategory, DeltaDirection, DeltaStatus } from '../../deltas/deltaTypes';
 import { demoDeltaMapData } from '../../deltaMap/demoDeltaMapData';
 import { getImpactOptions } from '../deltaCreateLogic';
@@ -160,7 +160,7 @@ export function MobileDeltaReviewScreen({
       <article className="mobile-delta-summary">
         <strong>{summaryTitle}</strong>
         <span className={`mobile-direction-tag ${draft.direction}`}>{directionLabels[draft.direction]}</span>
-        <p>{getDeltaChangeTypeLabel(draft.changeType)} · {categoryTitle}</p>
+        {getDeltaMetadata({ ...draft, category: { title: categoryTitle } })&&<p>{getDeltaMetadata({ ...draft, category: { title: categoryTitle } })}</p>}
         <p>{draft.locationLabel}</p>
         <button type="button" onClick={() => update({ currentStep: 1 })}>Изменить место</button>
       </article>

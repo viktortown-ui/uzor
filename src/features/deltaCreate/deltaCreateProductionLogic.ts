@@ -3,7 +3,7 @@ import { isWithinPermMvpArea } from './deltaGeoLogic';
 import type { DeltaCreateDraft } from './deltaCreateTypes';
 import type { CreateDeltaInput, DeltaCard, DeltaCategory, DeltaEffect, ReactToDeltaResult } from '../deltas/deltaTypes';
 import { getDeltaEffectCopy } from '../deltas/deltaLogic';
-import { getDeltaChangeTypeLabel, getDeltaDisplayTitle } from '../deltas/deltaPresentation';
+import { getDeltaChangeTypeLabel, getDeltaDisplayTitle, shouldShowChangeTypeLabel } from '../deltas/deltaPresentation';
 
 export type DeltaCreateResultMode = 'created_new' | 'confirmed_existing';
 export const DELTA_CREATE_PRODUCTION_STORAGE_KEY = 'uzor_delta_create_v1';
@@ -47,7 +47,7 @@ export function buildDeltaSharePayload(delta: Pick<DeltaCard, 'id' | 'statement'
   const base = new URL(baseHref);
   const basePath = base.pathname.endsWith('/') ? base.pathname : `${base.pathname.replace(/\/[^/]*$/, '')}/`;
   const url = `${base.origin}${basePath}#/map?delta=${encodeURIComponent(delta.id)}`;
-  const identity = `${getDeltaDisplayTitle(delta)}${delta.changeType ? ` — ${getDeltaChangeTypeLabel(delta.changeType)}` : ''}`;
+  const identity = `${getDeltaDisplayTitle(delta)}${shouldShowChangeTypeLabel(delta) ? ` — ${getDeltaChangeTypeLabel(delta.changeType || '')}` : ''}`;
   const text = mode === 'created_new' ? `Я заметил Дельту в Перми: ${identity}. Помогите проверить изменение.` : `Я помог подтвердить Дельту в Перми: ${identity}. Посмотрите, что меняется рядом.`;
   return { title: 'Дельта в УЗОР', text, url };
 }

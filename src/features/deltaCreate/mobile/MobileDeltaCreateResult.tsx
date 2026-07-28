@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import type { DeltaCard, DeltaEffect, ReactToDeltaResult } from '../../deltas/deltaTypes';
-import { getDeltaChangeTypeLabel, getDeltaDisplayTitle } from '../../deltas/deltaPresentation';
+import { getDeltaDisplayTitle, getDeltaMetadata } from '../../deltas/deltaPresentation';
 import { buildDeltaSharePayload } from '../deltaCreateProductionLogic';
 
 type Props = {
@@ -32,7 +32,7 @@ export function MobileDeltaCreateResult({ mode, delta, reaction, effect, onReset
         <div className="mobile-delta-marker" aria-hidden="true">Δ</div>
         <h1 ref={headingRef} tabIndex={-1}>{title}</h1>
         <strong>{getDeltaDisplayTitle(delta)}</strong>
-        <p className="mobile-delta-metadata">{getDeltaChangeTypeLabel(delta.changeType)} · {delta.category.title}</p>
+        {getDeltaMetadata(delta)&&<p className="mobile-delta-metadata">{getDeltaMetadata(delta)}</p>}
         <p>{delta.location.label}</p>
         <p>{copy}</p>
         <Link className="mobile-delta-primary" to={`/map?delta=${delta.id}`}>Показать на карте</Link>

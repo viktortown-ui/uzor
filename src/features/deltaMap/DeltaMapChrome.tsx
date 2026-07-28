@@ -20,10 +20,12 @@ export function DeltaMapLegend() {
 }
 
 export function DesktopDeltaMapChrome({ loading, filters, categories, onChange }: ChromeProps & { loading: boolean }) {
+  const [legendOpen, setLegendOpen] = useState(false);
   return <>
     <DeltaMapHeader loading={loading} />
     <DeltaMapFiltersView filters={filters} categories={categories} onChange={onChange} />
-    <DeltaMapLegend />
+    <button type="button" className="delta-legend-toggle" aria-expanded={legendOpen} onClick={() => setLegendOpen((value) => !value)}>{legendOpen ? 'Скрыть легенду' : 'Легенда'}</button>
+    {legendOpen && <DeltaMapLegend />}
   </>;
 }
 

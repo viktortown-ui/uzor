@@ -20,6 +20,7 @@ describe('Delta map cards', () => {
     render(<MobileDeltaMapCard card={card} {...common} />);
     expect(screen.queryByText('Формулировка')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Подробнее' }));
+    expect(screen.getByRole('button', { name: 'Свернуть' })).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('Формулировка')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Свернуть' }));
     expect(screen.queryByText('Формулировка')).not.toBeInTheDocument();

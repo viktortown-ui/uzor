@@ -386,3 +386,11 @@
 .mobile-delta-flow input,.mobile-delta-flow textarea,.mobile-delta-flow select{font-size:16px;min-height:44px}
 .mobile-delta-result-card{border:0!important;box-shadow:none!important;background:transparent!important;padding:20px var(--delta-mobile-gutter) calc(24px + env(safe-area-inset-bottom))!important}
 .mobile-delta-marker{width:44px!important;height:44px!important;margin-bottom:8px!important}.mobile-delta-metadata{color:#b9cbd8}
+
+/* Review is one readable flow; only controls, status and modal content receive surfaces. */
+.mobile-observation-categories{flex-wrap:wrap;overflow:visible}
+.mobile-delta-summary{border:0;border-radius:0;background:transparent;padding:4px 0 14px;border-bottom:1px solid rgba(188,244,229,.16)}
+.mobile-delta-similar article{border:0;border-radius:0;background:transparent;padding:14px 0;border-bottom:1px solid rgba(188,244,229,.16)}
+.mobile-delta-similar article.strong{border-color:rgba(188,244,229,.25)}
+.mobile-review-details{border-bottom:1px solid rgba(188,244,229,.16)}
+@media(max-width:340px){.mobile-observation-categories button{flex:1 1 calc(50% - 7px);padding-inline:9px}.mobile-delta-screen{padding-inline:12px}.mobile-delta-actionbar{padding-inline:12px}}

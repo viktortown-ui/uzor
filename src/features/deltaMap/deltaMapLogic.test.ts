@@ -15,6 +15,7 @@ describe('delta map logic',()=>{
  it('archived marker не должен отображаться',()=>expect(shouldShowDeltaOnMap({...base,status:'archived'})).toBe(false));
  it('status copy корректен',()=>expect(getStatusCopy('fork')[0]).toBe('Возникла развилка'));
  it('observed window copy корректен',()=>expect(getObservedWindowCopy('last_2_4_weeks')).toBe('Последние 2–4 недели'));
+ it('review enums always have human-readable labels',()=>{ expect(getObservedWindowCopy('today')).toBe('Сегодня'); expect(getObservedWindowCopy('last_3_days')).toBe('Последние 3 дня'); expect(getImpactCopy('noticeable','negative')).toBe('Заметно'); expect(getImpactCopy('critical','negative')).toBe('Критично мешает'); expect(getImpactCopy('critical','positive')).toBe('Существенно улучшило'); });
  it('impact copy зависит от direction',()=>{ expect(getImpactCopy('strong','positive')).toBe('Сильно улучшило'); expect(getImpactCopy('strong','negative')).toBe('Сильно мешает'); });
  it('active filters корректно формируют DeltaViewportInput',()=>expect(buildViewportInput({circleId:'c',citySlug:'perm'},{minLat:1,minLng:2,maxLat:3,maxLng:4},{direction:'positive',status:'confirmed',categorySlug:'transport'})).toMatchObject({circleId:'c',citySlug:'perm',direction:'positive',status:'confirmed',categorySlug:'transport'}));
 });

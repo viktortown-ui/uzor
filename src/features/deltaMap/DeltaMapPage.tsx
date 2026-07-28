@@ -75,7 +75,8 @@ export function DeltaMapPage() {
   onReact: handleReact,
  };
  return <ProductShell className="delta-map-page">
-  <div className="delta-map-main">
+  <div className={`delta-map-main${selectedId && !isMobile ? ' has-inspector' : ''}`}>
+   <div className="delta-map-stage">
    {isMobile
     ? <MobileDeltaMapChrome filters={filters} categories={categories} onChange={setFilters} collapsed={mobileChromeCollapsed} onCollapsedChange={setMobileChromeCollapsed} />
     : <DesktopDeltaMapChrome loading={status === 'loading' && deltas.length > 0} filters={filters} categories={categories} onChange={setFilters} />}
@@ -94,9 +95,9 @@ export function DeltaMapPage() {
       </div>}
       {status === 'error' && <DeltaMapState kind="error" onRetry={retryCurrentViewport} />}
      </>}
-   {selectedId && (isMobile
-    ? <MobileDeltaMapCard key={selectedId} {...cardProps} />
-    : <DesktopDeltaMapCard {...cardProps} />)}
+   {selectedId && isMobile && <MobileDeltaMapCard key={selectedId} {...cardProps} />}
+   </div>
+   {selectedId && !isMobile && <DesktopDeltaMapCard {...cardProps} />}
   </div>
  </ProductShell>;
 }
