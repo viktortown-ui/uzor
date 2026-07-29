@@ -10,3 +10,6 @@ declare module 'virtual:pwa-register' {
     onNeedRefresh?: () => void;
   }): (reloadPage?: boolean) => Promise<void>;
 }
+
+declare const __APP_VERSION__: string;
+declare const __BUILD_ID__: string;

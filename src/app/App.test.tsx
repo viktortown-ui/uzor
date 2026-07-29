@@ -522,9 +522,9 @@ describe('ProductShell shared navigation routes', () => {
     const mobileView = renderAt('/pulse');
     expect(screen.queryByRole('complementary', { name: 'Основная навигация' })).not.toBeInTheDocument();
     const mobileNav = screen.getByRole('navigation', { name: 'Мобильная навигация' });
-    expect(Array.from(mobileNav.querySelectorAll('a')).map((link) => link.textContent)).toEqual(['Пульс', 'Добавить', 'Карта']);
-    expect(mobileNav.querySelectorAll('a')[1]).toHaveAttribute('href', '/contribute');
-    expect(mobileNav.querySelectorAll('a')[1]).toHaveClass('mobile-app-dock__primary');
+    expect(Array.from(mobileNav.querySelectorAll('a')).map((link) => link.textContent)).toEqual(['Пульс', 'Карта', 'Добавить', 'Прогнозы', 'Настройки']);
+    expect(mobileNav.querySelectorAll('a')[2]).toHaveAttribute('href', '/contribute');
+    expect(mobileNav.querySelectorAll('a')[2]).toHaveClass('mobile-app-dock__primary');
     mobileView.unmount();
   });
 

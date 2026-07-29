@@ -1,80 +1,92 @@
-# УЗОР
+# УЗОР — карта городских изменений
 
-В репозитории заложен backend-фундамент нового объекта “Дельта”: геопривязанные положительные и отрицательные изменения с независимыми подтверждениями.
+**УЗОР — карта городских изменений. Жители отмечают Дельты, независимо подтверждают или не подтверждают их и видят, как из отдельных наблюдений складывается недельный пульс города.** Основное открытое пространство сейчас — Пермь.
 
-УЗОР — закрытая игра-картина, где 12–30 участников вместе показывают, как тема «Время города» забирает и возвращает людям время.
+## Как работает продукт
 
-## Быстрый просмотр
+**Дельта** — локальное наблюдение об изменении: что поменялось, в какую сторону и где. Новая Дельта проходит независимую проверку. Подтверждение означает «я тоже это наблюдаю», неподтверждение — «мой опыт здесь другой». Достигнув установленной цели, Дельта становится подтверждённой. Расхождение создаёт **развилку**: это важная неоднозначность, а не проигравшее мнение.
+
+**Недельный Пульс / Wrapped** собирает активные сигналы недели, но не ранжирует людей. УЗОР не является официальной статистикой, службой жалоб, доказательством или системой репутации.
+
+Не смешивайте слои:
+
+- **наблюдение** — уже замеченное событие;
+- **ожидание** — то, чего люди ждут, но не факт;
+- **прогноз** — вероятностная расчётная оценка, не уверенность;
+- **исход** — проверенный результат события;
+- **score** — оценка качества прогноза после исхода.
+
+Формулы прогнозирования, исходы и Brier score имеют отдельные стабильные доменные контракты в `docs/FORECAST_*`.
+
+## Доступ и приватность
+
+Стандартный вход — passwordless Email OTP: почта → одноразовый код в интерфейсе → постоянная неанонимная сессия. После входа RPC идемпотентно добавляет участника в открытое пространство Перми. Старые закрытые круги и `/join` сохранены как legacy-функция, но приватное приглашение принимает только уже аутентифицированный аккаунт.
+
+Точные координаты Дельт не публикуются; публичная точка округлена. Почта и user id автора не выводятся публично. Invite codes и service-role keys не должны попадать в клиент или документацию.
+
+Подробнее: [аутентификация и доступ](docs/AUTH_AND_ACCESS.md), [продуктовый гид](docs/PRODUCT_GUIDE.md).
+
+## Маршруты
+
+| Маршрут | Назначение |
+|---|---|
+| `/auth`, `/about` | публичный вход и гид |
+| `/wrapped`, `/pulse` | недельный итог на desktop/mobile |
+| `/map` | полноэкранная карта Дельт |
+| `/contribute` | добавление Дельты |
+| `/forecast`, `/forecast/resolve` | прогнозы и авторизованное разрешение исходов |
+| `/settings` | аккаунт, гид, приватность, PWA и локальные данные |
+| `/join` | legacy-вход в приватный круг |
+
+Desktop использует боковую навигацию, mobile — dock из пяти пунктов с центральным действием «Добавить».
+
+## Стек
+
+React 19, TypeScript, Vite 7, React Router (HashRouter для GitHub Pages), Supabase/PostgreSQL/RLS, MapLibre GL, Vitest/Testing Library, Playwright и vite-plugin-pwa. Тяжёлые маршруты изолируются на уровне функций и не должны создавать второй экземпляр карты при открытии инспектора.
+
+## Локальная разработка
+
 ```bash
 npm ci
-npm run dev
-```
-По умолчанию используйте `VITE_APP_MODE=demo`: появится бейдж «ДЕМО — данные вымышлены».
-
-## Что есть в MVP
-- Русский mobile-first интерфейс: поле темы, добавление нити, ветка, куратор, справка.
-- Математика без единого рейтинга: напряжение, поддержка и потенциал считаются отдельно.
-- Supabase migration с закрытым кругом, anonymous auth, RLS, RPC приглашения и агрегатов.
-- GitHub Actions для CI и GitHub Pages deploy.
-- `/wrapped` — личный недельный dashboard Wrapped реальности: компактная неоновая легенда недели с сигналами, независимыми подтверждениями, точностью, темами, прогрессом XP и красивым empty state.
-- `/map` — карта дельт Перми: viewport-загрузка дельт, MapLibre + OpenFreeMap, карточка и confirm/disconfirm реакции.
-- `/lab/delta-create-core` — лабораторное UI-ядро конструктора Дельты.
-
-## Ручные шаги владельца
-1. Создать Supabase project.
-2. Включить Anonymous Sign-In.
-3. Применить `supabase/migrations/001_uzor_init.sql` и `supabase/seed/seed_time_city.sql`.
-4. Добавить GitHub Variables `VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY`.
-5. Включить GitHub Pages → GitHub Actions.
-6. Войти по приглашению `REPLACE_WITH_A_LONG_PRIVATE_INVITE_CODE` и назначить себя curator по `docs/SUPABASE_SETUP.md`.
-
-Подробно: `docs/SUPABASE_SETUP.md`, `docs/DEPLOYMENT.md`, `docs/QA_CHECKLIST.md`.
-
-## MVP 1.1: demo и production
-
-### Demo
-
-```bash
-VITE_APP_MODE=demo npm run dev
-```
-
-Демо использует только локальные вымышленные данные и всегда показывает бейдж `ДЕМО — данные вымышлены`.
-
-### Production
-
-```bash
-VITE_APP_MODE=production \
-VITE_SUPABASE_URL=https://<project>.supabase.co \
-VITE_SUPABASE_PUBLISHABLE_KEY=<publishable-key> \
+cp .env.example .env.local
 npm run dev
 ```
 
-Production не использует demo fixtures. Пользователь входит через hash invite URL:
+Переменные (публичные client-side значения, не секреты):
 
-```text
-https://<owner>.github.io/uzor/#/join?code=REPLACE_WITH_A_LONG_PRIVATE_INVITE_CODE
+```env
+VITE_APP_MODE=production
+VITE_SUPABASE_URL=https://PROJECT.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
+VITE_BASE_PATH=/
 ```
 
-Ручная настройка Supabase:
-1. Применить migrations `001_uzor_init.sql`, затем `002_uzor_integrity_and_curator.sql`, `003_uzor_read_rpc.sql` и `004_weekly_wrapped_rpc.sql`, затем `005_fix_wrapped_report_sql_and_confirmation.sql`.
-2. Включить Anonymous Sign-In в Supabase Auth.
-3. Создать первый закрытый круг и тему; код приглашения должен быть длинным, случайным и не коммититься. В seed и документации оставлен только placeholder `REPLACE_WITH_A_LONG_PRIVATE_INVITE_CODE`.
-4. Добавить GitHub repository variables `VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY`; service role key не нужен на клиенте.
-5. Для GitHub Pages выбрать `Repository Settings → Pages → Source: GitHub Actions`.
+Для автономной UI-разработки используйте `VITE_APP_MODE=demo`. Никогда не задавайте `service_role` в `VITE_*`.
 
-GitHub Pages публикует только фронтенд. Данные круга защищаются Supabase RLS; чужие сырые contributions и raw candidate text не выдаются на публичное полотно.
+## База данных
 
-- `/lab/delta-create-geo` — лабораторный конструктор с географией и поиском похожих Дельт.
+Миграции применяются по порядку `001`–`010`: начальный круг, integrity/curator, read RPC, Wrapped RPC и fixes, Delta foundation, forecast persistence/outcomes/scoring, затем open-city mapping. **Не редактируйте уже применённые миграции**; добавляйте следующую. `010_open_city_access.sql` не создаёт второй круг: она автоматически связывает `perm` лишь если найден ровно один существующий круг, иначе требует явного owner binding из [инструкции](docs/AUTH_AND_ACCESS.md).
 
+## Проверка
 
-## Delta routes
+```bash
+npm run lint
+npm run typecheck
+npm run test
+VITE_BASE_PATH=/ npm run build
+VITE_BASE_PATH=/uzor/ npm run build
+npm run test:pwa-installability
+psql --set ON_ERROR_STOP=1 --file scripts/open-city-postgres-smoke.sql
+```
 
-- `/contribute` — production-конструктор Дельты с публикацией и подтверждением похожих изменений.
-- `/lab/old-contribute` — архивный старый contribute prototype.
-- `/lab/delta-create-core` — core lab: локальный черновик без MapLibre и Supabase write.
-- `/lab/delta-create-geo` — geo lab: MapLibre и поиск похожих без create/react write.
-- `/map` — карта Дельт на MapLibre/OpenFreeMap; поддерживает `/map?delta=<id>`.
+## Production и PWA
 
-## Forecasting domain
+GitHub Actions собирает HashRouter-приложение для GitHub Pages с repository base path. Supabase redirect URLs всё равно должны быть настроены, хотя основной OTP flow не зависит от magic link. PWA устанавливается из launcher или Settings; manifest, service worker и installability проверяются CI. Полный процесс: [DEPLOYMENT](docs/DEPLOYMENT.md), [SUPABASE_SETUP](docs/SUPABASE_SETUP.md), [QA checklist](docs/QA_CHECKLIST.md).
 
-Контракт разделения наблюдений, ожиданий, прогнозов, исходов и оценок описан в [Forecast Domain Contract v1](docs/FORECAST_DOMAIN_CONTRACT_V1.md).
+## Roadmap
+
+Ближайшие направления: реальные device/safe-area проверки, улучшение доступности карты, дальнейшая оптимизация chunks и наблюдаемая (без tracking) надёжность загрузки. Изменение прогнозной математики не входит в этот foundation этап.
+
+## Legacy
+
+Ранний УЗОР был закрытым экспериментом для 12–30 человек вокруг темы «Время города» с анонимными приглашениями. Эти экраны сохранены под `/lab`, `/demo` и приватными маршрутами для совместимости, но больше не определяют основное позиционирование продукта.

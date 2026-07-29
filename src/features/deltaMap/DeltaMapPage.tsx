@@ -75,7 +75,7 @@ export function DeltaMapPage() {
   onClose: closeCard,
   onReact: handleReact,
  };
- return <ProductShell className="delta-map-page">
+ return <ProductShell className="delta-map-page" layoutMode="fullscreen">
   <div className={`delta-map-main${selectedId && !isMobile ? ' has-inspector' : ''}`}>
    <div className="delta-map-stage">
    {isMobile

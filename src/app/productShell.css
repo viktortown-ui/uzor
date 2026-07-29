@@ -48,6 +48,8 @@
   min-height: 100vh;
   min-height: 100dvh;
 }
+.product-shell--fullscreen { height: 100dvh; min-height: 100dvh; overflow: hidden; }
+.product-shell--fullscreen .product-main { height: 100dvh; min-height: 0; overflow: hidden; }
 
 /* Desktop sidebar/navigation */
 .product-sidebar {
@@ -160,11 +162,11 @@
   bottom: 0;
   z-index: 40;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(70px, 0.78fr) minmax(0, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: end;
-  gap: 6px;
+  gap: 2px;
   min-height: calc(var(--mobile-app-dock-height) + env(safe-area-inset-bottom));
-  padding: 6px max(10px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  padding: 6px max(4px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
   background: rgba(5, 10, 20, 0.94);
   border-top: 1px solid var(--mobile-border);
   box-shadow: 0 -10px 26px rgba(0, 0, 0, 0.28);
@@ -270,6 +272,13 @@
   min-height: 100svh;
   min-height: 100dvh;
   padding-bottom: 0;
+}
+.mobile-app-shell--fullscreen { height: 100dvh; min-height: 100dvh; overflow: hidden; }
+.mobile-app-shell--fullscreen .mobile-app-main { height: calc(100dvh - var(--mobile-app-dock-space)); min-height: 0; padding-inline: 0; overflow: hidden; }
+@media (max-width: 360px) {
+  .mobile-app-dock__label { font-size: 9.5px; }
+  .mobile-app-dock__icon { width: 21px; height: 21px; }
+  .mobile-app-dock__primary-icon { width: 46px; height: 46px; border-radius: 15px; }
 }
 
 .pwa-install-launcher {

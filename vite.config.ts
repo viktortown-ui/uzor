@@ -7,6 +7,7 @@ const base = process.env.VITE_BASE_PATH ?? (process.env.GITHUB_ACTIONS && repo ?
 
 export default defineConfig({
   base,
+  define: { __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0'), __BUILD_ID__: JSON.stringify(process.env.GITHUB_SHA?.slice(0, 7) ?? 'local') },
   plugins: [
     react(),
     VitePWA({
