@@ -1,0 +1,3 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+describe('public product metadata',()=>{it('uses the city-change positioning everywhere',()=>{const html=readFileSync('index.html','utf8');const vite=readFileSync('vite.config.ts','utf8');expect(html).toContain('<title>УЗОР · Карта городских изменений</title>');expect(html).toContain('УЗОР — карта городских изменений, где жители отмечают Дельты');expect(vite).toContain("name: 'УЗОР — карта городских изменений'");expect(vite).toContain("description: 'Карта наблюдаемых городских изменений и недельный пульс города.'");expect(html+vite).not.toMatch(/закрытая коллективная картина|УЗОР — время города/)});});

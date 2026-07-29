@@ -103,7 +103,7 @@
 /* A selected desktop Delta is an attached inspector, not a floating second screen. */
 @media(min-width:901px){
  .delta-map-card--desktop{position:relative;inset:auto;flex:0 0 clamp(360px,26vw,430px);width:clamp(360px,26vw,430px);height:100%;padding:22px 24px calc(24px + env(safe-area-inset-bottom));overflow:auto;border-width:0 0 0 1px;border-radius:0;box-shadow:-18px 0 40px rgba(0,0,0,.28)}
- .delta-legend-toggle,.delta-map-legend{right:64px;bottom:96px}
+ .delta-legend-toggle,.delta-map-legend{left:20px;right:auto;bottom:84px}
  .delta-map-legend{padding:8px 10px;border-radius:12px}
 }
 .delta-card-category{font-weight:700;color:#d7e7f0}.delta-card-location,.delta-card-status{padding-block:5px;border-bottom:1px solid rgba(148,211,231,.12)}

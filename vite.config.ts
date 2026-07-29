@@ -22,9 +22,9 @@ export default defineConfig({
       },
       manifest: {
         id: './',
-        name: 'УЗОР — время города',
+        name: 'УЗОР — карта городских изменений',
         short_name: 'УЗОР',
-        description: 'УЗОР показывает наблюдаемые изменения в городе.',
+        description: 'Карта наблюдаемых городских изменений и недельный пульс города.',
         lang: 'ru',
         display: 'standalone',
         background_color: '#050b16',
@@ -35,8 +35,13 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webmanifest}'],
+        globIgnores: ['**/{maplibre-gl,DeltaMapPage,DeltaCreatePage,DesktopDeltaCreateFlow,DeltaCreateLabPage,DeltaCreateGeoLabPage,ForecastPage,ForecastResolverPage,LabShell,LabV4Shell,WrappedReferencePage,WrappedReferenceV2Page}-*.{js,css}'],
         navigateFallback: 'index.html',
-        runtimeCaching: [],
+        runtimeCaching: [{
+          urlPattern: /\/assets\/(?:maplibre-gl|DeltaMapPage|DeltaCreatePage|DesktopDeltaCreateFlow|DeltaCreateLabPage|DeltaCreateGeoLabPage|ForecastPage|ForecastResolverPage|LabShell|LabV4Shell|WrappedReferencePage|WrappedReferenceV2Page)-.*\.(?:js|css)$/,
+          handler: 'CacheFirst',
+          options: { cacheName: 'uzor-route-chunks-v1', expiration: { maxEntries: 32, maxAgeSeconds: 60 * 60 * 24 * 30 } },
+        }],
       },
     }),
   ],

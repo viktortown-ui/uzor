@@ -327,12 +327,12 @@
   .pwa-install-launcher {
     left: auto;
     right: 24px;
-    top: 24px;
-    bottom: auto;
+    top: auto;
+    bottom: 24px;
     width: min(360px, calc(100vw - 48px));
     justify-items: end;
   }
-  .pwa-install-launcher--map { right: 24px; }
+  .pwa-install-launcher--map { right: 24px; top: 24px; bottom: auto; }
   .pwa-install-launcher--map.pwa-install-launcher--inspector-open { right: calc(clamp(360px, 26vw, 430px) + 24px); }
 }
 @media (max-width: 900px) {

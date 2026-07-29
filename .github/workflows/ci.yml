@@ -143,6 +143,7 @@ jobs:
       - name: Verify product geometry and capture screenshots
         run: npm run test:geometry
       - name: Upload product geometry screenshots
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: product-foundation-visuals
