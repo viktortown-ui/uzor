@@ -65,7 +65,7 @@ VITE_BASE_PATH=/
 
 ## База данных
 
-Миграции применяются по порядку `001`–`010`: начальный круг, integrity/curator, read RPC, Wrapped RPC и fixes, Delta foundation, forecast persistence/outcomes/scoring, затем open-city mapping. **Не редактируйте уже применённые миграции**; добавляйте следующую. `010_open_city_access.sql` не создаёт второй круг: она автоматически связывает `perm` лишь если найден ровно один существующий круг, иначе требует явного owner binding из [инструкции](docs/AUTH_AND_ACCESS.md).
+Миграции применяются по порядку `001`–`010`: начальный круг, integrity/curator, read RPC, Wrapped RPC и fixes, Delta foundation, forecast persistence/outcomes/scoring, затем open-city mapping. **Не редактируйте уже применённые миграции**; добавляйте следующую. `010_open_city_access.sql` не создаёт второй круг: она никогда не открывает частный круг автоматически и требует явного owner binding из [инструкции](docs/AUTH_AND_ACCESS.md).
 
 ## Проверка
 

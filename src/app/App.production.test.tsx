@@ -17,8 +17,10 @@ const catalogRows = [
 const emptySnapshot = { participantCount: 0, branchCount: 0, threadCount: 0, branches: [], convergence: [], clarity: 0 };
 
 function mockSupabase({ catalogError = false, hasSession = true, curator = false } = {}) {
-  let session = hasSession ? { user: { id: 'u1' } } : null;
+  const session = hasSession ? { user: { id: 'u1', email: 'user@example.com', is_anonymous: false } } : null;
+  const unsubscribe = vi.fn();
   const rpc = vi.fn(async (name: string) => {
+    if (name === 'ensure_open_city_membership') return { data: [{ city_slug: 'perm', circle_id: 'circle-1', role: curator ? 'curator' : 'participant' }], error: null };
     if (name === 'get_my_active_theme') return { data: [{ id: 'theme-1', circle_id: 'circle-1', title: 'Время города', subtitle: 'Тестовая тема' }], error: null };
     if (name === 'get_theme_catalog') return catalogError ? { data: null, error: { message: 'permission denied for table catalog_items' } } : { data: catalogRows, error: null };
     if (name === 'get_theme_snapshot') return { data: emptySnapshot, error: null };
@@ -28,7 +30,7 @@ function mockSupabase({ catalogError = false, hasSession = true, curator = false
   vi.doMock('@supabase/supabase-js', () => ({
     createClient: () => ({
       rpc,
-      auth: { getSession: vi.fn(async () => ({ data: { session }, error: null })), signInAnonymously: vi.fn(async () => { session = { user: { id: 'u1' } }; return { data: { session }, error: null }; }) },
+      auth: { getSession: vi.fn(async () => ({ data: { session }, error: null })), onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe } } })), signInWithOtp: vi.fn(async () => ({ data: {}, error: null })), verifyOtp: vi.fn(async () => ({ data: { session, user: session?.user }, error: null })), signOut: vi.fn(async () => ({ error: null })) },
       from: vi.fn((table: string) => {
         if (table === 'circle_memberships') return {
           select: vi.fn(() => ({
@@ -84,16 +86,14 @@ describe('production fallback', () => {
 
   it('production visitor без session на / попадает на безопасный Wrapped entry и не вызывает get_my_active_theme', async () => {
     const rpc = await renderProduction('/', { hasSession: false });
-    expect(await screen.findByRole('heading', { name: 'Войдите в закрытый круг' })).toBeInTheDocument();
-    expect(screen.getByText('Итог недели собирается только для участников круга.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Войти по приглашению' })).toHaveAttribute('href', '/join');
+    expect(await screen.findByRole('heading', { name: 'Войти по электронной почте' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Куда уходит твой час?' })).not.toBeInTheDocument();
     expect(rpc).not.toHaveBeenCalledWith('get_my_active_theme');
   }, 10000);
 
   it('production visitor без session на /contribute не видит форму вклада', async () => {
     await renderProduction('/contribute?layer=tension', { hasSession: false });
-    expect(await screen.findByRole('heading', { name: 'Нужно войти в круг' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Войти по электронной почте' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/Другое/)).not.toBeInTheDocument();
   });
@@ -120,7 +120,7 @@ describe('production fallback', () => {
   });
 
   it('успешный join сохраняет активный context и ведёт на Wrapped', async () => {
-    const rpc = await renderProduction('/join?code=INVITE_CODE_123456', { hasSession: false });
+    const rpc = await renderProduction('/join?code=INVITE_CODE_123456', { hasSession: true });
     expect(await screen.findByRole('heading', { name: /Итог недели|Пока итог недели не собран/ })).toBeInTheDocument();
     expect(rpc).toHaveBeenCalledWith('join_circle_by_code', { input_code: 'INVITE_CODE_123456' });
     expect(localStorage.getItem('activeCircleId')).toBe('circle-1');
@@ -151,8 +151,8 @@ describe('wrapped production states', () => {
     vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'anon-key');
     vi.doMock('@supabase/supabase-js', () => ({
       createClient: () => ({
-        rpc: vi.fn(async (name: string) => name === 'get_my_wrapped_report' ? { data: null, error: { message: 'get_my_wrapped_report not in schema cache' } } : { data: null, error: null }),
-        auth: { getSession: vi.fn(async () => ({ data: { session: { user: { id: 'u1' } } }, error: null })) },
+        rpc: vi.fn(async (name: string) => name === 'ensure_open_city_membership' ? { data: [{ city_slug: 'perm', circle_id: 'circle-1', role: 'participant' }], error: null } : name === 'get_my_wrapped_report' ? { data: null, error: { message: 'get_my_wrapped_report not in schema cache' } } : { data: null, error: null }),
+        auth: { getSession: vi.fn(async () => ({ data: { session: { user: { id: 'u1', is_anonymous: false } } }, error: null })), onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })) },
         from: vi.fn(),
       }),
     }));

@@ -13,7 +13,7 @@
 
 Миграция 010 создаёт `open_city_circles(city_slug,circle_id,is_open,created_at)` и `ensure_open_city_membership(text)`. RPC требует `auth.uid()`, отклоняет anonymous JWT, выдаёт только city/circle/participant context и идемпотентно создаёт membership без curator role.
 
-Если при миграции существует ровно один круг, он безопасно связывается с `perm`. Иначе владелец должен определить production circle и выполнить в SQL Editor (подставив существующий UUID, не invite code):
+Автоматическое связывание отключено: даже единственный частный круг не становится публичным. Владелец должен определить production circle и выполнить в SQL Editor (подставив существующий UUID, не invite code):
 
 ```sql
 insert into public.open_city_circles(city_slug,circle_id,is_open)

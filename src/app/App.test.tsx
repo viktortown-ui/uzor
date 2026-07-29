@@ -535,7 +535,7 @@ describe('ProductShell shared navigation routes', () => {
   ] as const)('marks %s active in the mobile navigation', async (route, activeLabel) => {
     installMatchMedia(true);
     const view = renderAt(route);
-    const mobileNav = screen.getByRole('navigation', { name: 'Мобильная навигация' });
+    const mobileNav = await screen.findByRole('navigation', { name: 'Мобильная навигация' });
     expect(within(mobileNav).getByRole('link', { name: activeLabel })).toHaveAttribute('aria-current', 'page');
     view.unmount();
   });

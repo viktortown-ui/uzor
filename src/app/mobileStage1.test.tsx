@@ -83,25 +83,25 @@ describe('mobile stage 1 shell and routing', () => {
     expect(screen.getByRole('link', { name: 'Пульс' })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('mobile dock labels and active states are exact', () => {
+  it('mobile dock labels and active states are exact', async () => {
     installMatchMedia(true);
     render(<MemoryRouter initialEntries={['/pulse']}><App /></MemoryRouter>);
     const dock = screen.getByRole('navigation', { name: 'Мобильная навигация' });
-    expect(within(dock).getAllByRole('link').map((link) => link.textContent)).toEqual(['Пульс', 'Добавить', 'Карта']);
+    expect(within(dock).getAllByRole('link').map((link) => link.textContent)).toEqual(['Пульс', 'Карта', 'Добавить', 'Прогнозы', 'Настройки']);
     expect(screen.getByRole('link', { name: 'Пульс' })).toHaveAttribute('aria-current', 'page');
     cleanup();
     render(<MemoryRouter initialEntries={['/contribute']}><App /></MemoryRouter>);
     expect(screen.queryByRole('navigation', { name: 'Мобильная навигация' })).not.toBeInTheDocument();
     cleanup();
     render(<MemoryRouter initialEntries={['/map']}><App /></MemoryRouter>);
-    expect(screen.getByRole('link', { name: 'Карта' })).toHaveAttribute('aria-current', 'page');
+    expect(await screen.findByRole('link', { name: 'Карта' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('desktop labels remain unchanged', () => {
     installMatchMedia(false);
     renderAt('/wrapped');
     const nav = screen.getByRole('complementary', { name: 'Основная навигация' });
-    expect(within(nav).getAllByRole('link').slice(1).map((link) => link.textContent)).toEqual(['Итог недели', 'Карта дельт', 'Добавить Дельту', 'Прогнозы']);
+    expect(within(nav).getAllByRole('link').slice(1).map((link) => link.textContent)).toEqual(['Итог недели', 'Карта дельт', 'Добавить Дельту', 'Прогнозы', 'Настройки']);
   });
 });
 

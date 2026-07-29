@@ -8,30 +8,31 @@ import { getThemeSnapshot, isCurrentUserCurator, joinCircleByCode, listPendingCa
 import type { ActiveTheme, BranchAggregate, CandidateProposal, CatalogItem, Evidence, Intensity, Layer, ThemeSnapshot } from '../types/domain';
 import { appMode, isDemoMode, isProductionConfigured } from './appMode';
 import { t } from './text';
+import { WrappedPage } from '../features/wrapped/WrappedPage';
+import { DeltaCreatePage } from '../features/deltaCreate/DeltaCreatePage';
+import { DeltaCreateLabPage } from '../features/deltaCreate/DeltaCreateLabPage';
+import { DeltaCreateGeoLabPage } from '../features/deltaCreate/DeltaCreateGeoLabPage';
 import { LabShell } from '../lab/LabShell';
 import { LabV4Shell } from '../lab/v4/LabV4Shell';
-import { WrappedPage } from '../features/wrapped/WrappedPage';
-
-
-
-
 import { WrappedReferencePage } from '../lab/wrappedReference/WrappedReferencePage';
 import { WrappedReferenceV2Page } from '../lab/wrappedReferenceV2/WrappedReferenceV2Page';
+
+
+
+
+
 import { MobilePulsePage } from '../features/mobilePulse/MobilePulsePage';
 
 
 import { useMediaQuery } from './useMediaQuery';
 import { AuthProvider } from '../features/auth/AuthProvider';
 import { AuthPage } from '../features/auth/AuthPage';
-import { ProtectedRoute } from '../features/auth/ProtectedRoute';
+import { AuthenticatedRoute, OpenCityRoute } from '../features/auth/ProtectedRoute';
 
 import { AboutPage } from '../features/guide/AboutPage';
-import { DeltaMapPage } from '../features/deltaMap/DeltaMapPage';
-import { DeltaCreatePage } from '../features/deltaCreate/DeltaCreatePage';
-import { DeltaCreateLabPage } from '../features/deltaCreate/DeltaCreateLabPage';
-import { DeltaCreateGeoLabPage } from '../features/deltaCreate/DeltaCreateGeoLabPage';
 
 import { Onboarding } from '../features/guide/Onboarding';
+const DeltaMapPage = lazy(() => import('../features/deltaMap/DeltaMapPage').then(module => ({ default: module.DeltaMapPage })));
 const ForecastPage = lazy(() => import('../features/forecasting/ui/ForecastPage').then(module => ({ default: module.ForecastPage })));
 const ForecastResolverPage = lazy(() => import('../features/forecasting/ui/ForecastResolverPage').then(module => ({ default: module.ForecastResolverPage })));
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage').then(module => ({ default: module.SettingsPage })));
@@ -156,6 +157,7 @@ function CuratorOverview() {
 
 function ResponsiveHomeRedirect() { const isMobile = useMediaQuery('(max-width: 900px)'); return <Navigate replace to={isMobile ? '/pulse' : '/wrapped'} />; }
 function DesktopPulseRedirect() { const isMobile = useMediaQuery('(max-width: 900px)'); return isMobile ? <MobilePulsePage /> : <Navigate replace to="/wrapped" />; }
-function Gate({ children }: { children: React.ReactNode }) { return isDemoMode ? children : <ProtectedRoute>{children}</ProtectedRoute>; }
-function AppRoutes() { return <Suspense fallback={<div className="route-loading" role="status">Загружаем раздел…</div>}><Routes><Route path="/" element={<ResponsiveHomeRedirect />} /><Route path="/auth" element={<AuthPage />} /><Route path="/about" element={<AboutPage />} /><Route path="/join" element={<Gate><Join /></Gate>} /><Route path="/contribute" element={<Gate><DeltaCreatePage /></Gate>} /><Route path="/lab/old-contribute" element={<Contribute />} /><Route path="/branch/:id" element={<Gate><Branch /></Gate>} /><Route path="/curator" element={<Gate><Curator /></Gate>} /><Route path="/curator/overview" element={<Gate><CuratorOverview /></Gate>} /><Route path="/demo" element={<Field />} /><Route path="/lab/old-home" element={<Field />} /><Route path="/lab" element={<LabShell />} /><Route path="/lab/v4" element={<LabV4Shell />} /><Route path="/wrapped" element={<Gate><WrappedPage /></Gate>} /><Route path="/pulse" element={<Gate><DesktopPulseRedirect /></Gate>} /><Route path="/forecast" element={<Gate><ForecastPage /></Gate>} /><Route path="/forecast/resolve" element={<Gate><ForecastResolverPage /></Gate>} /><Route path="/map" element={<Gate><DeltaMapPage /></Gate>} /><Route path="/settings" element={<Gate><SettingsPage /></Gate>} /><Route path="/lab/delta-create-core" element={<DeltaCreateLabPage />} /><Route path="/lab/delta-create-geo" element={<DeltaCreateGeoLabPage />} /><Route path="/lab/wrapped-reference" element={<WrappedReferencePage />} /><Route path="/lab/wrapped-reference-v2" element={<WrappedReferenceV2Page />} /></Routes></Suspense>; }
+function AuthGate({ children }: { children: React.ReactNode }) { return isDemoMode ? children : <AuthenticatedRoute>{children}</AuthenticatedRoute>; }
+function CityGate({ children }: { children: React.ReactNode }) { return isDemoMode ? children : <OpenCityRoute>{children}</OpenCityRoute>; }
+function AppRoutes() { return <Suspense fallback={<div className="route-loading" role="status">Загружаем раздел…</div>}><Routes><Route path="/" element={<ResponsiveHomeRedirect />} /><Route path="/auth" element={<AuthPage />} /><Route path="/about" element={<AboutPage />} /><Route path="/join" element={<AuthGate><Join /></AuthGate>} /><Route path="/contribute" element={<CityGate><DeltaCreatePage /></CityGate>} /><Route path="/lab/old-contribute" element={<Contribute />} /><Route path="/branch/:id" element={<AuthGate><Branch /></AuthGate>} /><Route path="/curator" element={<AuthGate><Curator /></AuthGate>} /><Route path="/curator/overview" element={<AuthGate><CuratorOverview /></AuthGate>} /><Route path="/demo" element={<Field />} /><Route path="/lab/old-home" element={<Field />} /><Route path="/lab" element={<LabShell />} /><Route path="/lab/v4" element={<LabV4Shell />} /><Route path="/wrapped" element={<CityGate><WrappedPage /></CityGate>} /><Route path="/pulse" element={<CityGate><DesktopPulseRedirect /></CityGate>} /><Route path="/forecast" element={<AuthGate><ForecastPage /></AuthGate>} /><Route path="/forecast/resolve" element={<AuthGate><ForecastResolverPage /></AuthGate>} /><Route path="/map" element={<CityGate><DeltaMapPage /></CityGate>} /><Route path="/settings" element={<AuthGate><SettingsPage /></AuthGate>} /><Route path="/lab/delta-create-core" element={<DeltaCreateLabPage />} /><Route path="/lab/delta-create-geo" element={<DeltaCreateGeoLabPage />} /><Route path="/lab/wrapped-reference" element={<WrappedReferencePage />} /><Route path="/lab/wrapped-reference-v2" element={<WrappedReferenceV2Page />} /></Routes></Suspense>; }
 export function App() { return <AuthProvider><AppRoutes /><Onboarding /></AuthProvider>; }

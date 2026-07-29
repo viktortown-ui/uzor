@@ -1,4 +1,5 @@
--- Open-city access. If automatic binding is ambiguous, an owner must explicitly run:
+-- Open-city access uses explicit owner binding. Never infer a public city from private circles.
+-- The owner must run:
 -- insert into public.open_city_circles(city_slug,circle_id,is_open) values ('perm','<existing-circle-uuid>',true)
 -- on conflict(city_slug) do update set circle_id=excluded.circle_id,is_open=true;
 create table if not exists public.open_city_circles(
@@ -9,16 +10,9 @@ create table if not exists public.open_city_circles(
 );
 alter table public.open_city_circles enable row level security;
 
-do $$
-declare eligible_count integer; eligible_circle uuid;
-begin
+do $$ begin
   if not exists(select 1 from public.open_city_circles where city_slug='perm') then
-    select count(*), min(id) into eligible_count, eligible_circle from public.circles;
-    if eligible_count=1 then
-      insert into public.open_city_circles(city_slug,circle_id) values('perm',eligible_circle) on conflict do nothing;
-    else
-      raise notice 'UZOR OWNER ACTION: bind the existing Perm circle to open_city_circles; % eligible circles found.',eligible_count;
-    end if;
+    raise notice 'UZOR OWNER ACTION: explicitly bind the existing Perm circle to open_city_circles; no private circle is opened automatically.';
   end if;
 end $$;
 
@@ -37,4 +31,5 @@ begin
 end $$;
 revoke all on function public.ensure_open_city_membership(text) from public;
 grant execute on function public.ensure_open_city_membership(text) to authenticated;
+revoke all on table public.open_city_circles from anon, authenticated;
 comment on table public.open_city_circles is 'Owner-controlled mapping from a public city slug to one existing circle; contains no invite code.';
