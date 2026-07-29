@@ -114,9 +114,9 @@ describe('app', () => {
 });
 
 describe('lab v3', () => {
-  it('/lab показывает бейдж, режимы и масштабы', () => {
+  it('/lab показывает бейдж, режимы и масштабы', async () => {
     renderAt('/lab');
-    expect(screen.getByText('ДЕМО-ЛАБОРАТОРИЯ · синтетические данные для проверки визуала')).toBeInTheDocument();
+    expect(await screen.findByText('ДЕМО-ЛАБОРАТОРИЯ · синтетические данные для проверки визуала')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Сводка' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ожидания' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Связи' })).toBeInTheDocument();
@@ -128,14 +128,14 @@ describe('lab v3', () => {
   it('при переключении масштаба меняется текст статуса', async () => {
     const u = userEvent.setup();
     renderAt('/lab?view=summary&scale=18&scenario=shift&copy=b');
-    expect(screen.getAllByText('РАННИЙ СИГНАЛ').length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('РАННИЙ СИГНАЛ')).length).toBeGreaterThan(0);
     await u.click(screen.getByRole('link', { name: /1\s*248 участников/ }));
     expect((await screen.findAllByText('УСТОЙЧИВЫЙ СИГНАЛ КРУГА')).length).toBeGreaterThan(0);
   });
 
-  it('сценарии показывают понятные итоги', () => {
+  it('сценарии показывают понятные итоги', async () => {
     const first = renderAt('/lab?view=summary&scale=126&scenario=shift&copy=b');
-    expect(screen.getByText('ДАВЛЕНИЕ УСИЛИВАЕТСЯ ↑')).toBeInTheDocument();
+    expect(await screen.findByText('ДАВЛЕНИЕ УСИЛИВАЕТСЯ ↑')).toBeInTheDocument();
     first.unmount();
     const second = renderAt('/lab?view=summary&scale=126&scenario=relief&copy=b');
     expect(screen.getByText('СТАЛО ЛЕГЧЕ ↓')).toBeInTheDocument();
@@ -144,18 +144,18 @@ describe('lab v3', () => {
     expect(screen.getByText(/расходятся/i)).toBeInTheDocument();
   });
 
-  it('лаборатория не вызывает Supabase API и показывает связи расхождения', () => {
+  it('лаборатория не вызывает Supabase API и показывает связи расхождения', async () => {
     renderAt('/lab?view=connections&scale=126&scenario=split&copy=b');
-    expect(screen.getByText('Продукты → Расходы → Свободные деньги')).toBeInTheDocument();
+    expect(await screen.findByText('Продукты → Расходы → Свободные деньги')).toBeInTheDocument();
     expect(screen.getByText('Продукты → Тревожность')).toBeInTheDocument();
     expect(screen.queryByText(/Нужна настройка Supabase|Войдите в закрытый круг|Код приглашения/)).not.toBeInTheDocument();
   });
 });
 
 describe('lab v4', () => {
-  it('/lab/v4 показывает бейдж и главный вывод про транспорт, время и усталость', () => {
+  it('/lab/v4 показывает бейдж и главный вывод про транспорт, время и усталость', async () => {
     renderAt('/lab/v4');
-    expect(screen.getByText('ДЕМО-ЛАБОРАТОРИЯ · синтетические данные')).toBeInTheDocument();
+    expect(await screen.findByText('ДЕМО-ЛАБОРАТОРИЯ · синтетические данные')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Транспорт сильнее всего забирает время.' })).toBeInTheDocument();
     expect(screen.getByText(/79 из 126 участников/)).toBeInTheDocument();
     expect(screen.getAllByText('Транспорт').length).toBeGreaterThan(0);
@@ -163,9 +163,9 @@ describe('lab v4', () => {
     expect(screen.getAllByText('Усталость').length).toBeGreaterThan(0);
   });
 
-  it('future показывает горизонты и числа ожиданий', () => {
+  it('future показывает горизонты и числа ожиданий', async () => {
     renderAt('/lab/v4?scale=126&scenario=signal&step=future&copy=a');
-    expect(screen.getByRole('button', { name: '7 дней' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '7 дней' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '30 дней' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '6–12 месяцев' })).toBeInTheDocument();
     expect(screen.getByText('46%')).toBeInTheDocument();
@@ -173,22 +173,22 @@ describe('lab v4', () => {
     expect(screen.getByText('20%')).toBeInTheDocument();
   });
 
-  it('why показывает объяснение доверия человеческим языком', () => {
+  it('why показывает объяснение доверия человеческим языком', async () => {
     renderAt('/lab/v4?scale=126&scenario=signal&step=why&copy=a');
-    expect(screen.getByRole('button', { name: 'Почему мы это показываем?' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Почему мы это показываем?' })).toBeInTheDocument();
     expect(screen.getByText(/Эта связь повторяется не у одного человека/)).toBeInTheDocument();
   });
 
-  it('fork показывает две разные ветки последствий', () => {
+  it('fork показывает две разные ветки последствий', async () => {
     renderAt('/lab/v4?scale=1248&scenario=fork&step=why&copy=a');
-    expect(screen.getByText(/Продукты → расходы → меньше свободных денег/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Продукты → расходы → меньше свободных денег/i)).toBeInTheDocument();
     expect(screen.getByText(/Продукты → расходы → больше тревоги/i)).toBeInTheDocument();
   });
 
   it('выбор Я среди других меняет текст', async () => {
     const u = userEvent.setup();
     renderAt('/lab/v4');
-    await u.click(screen.getByRole('button', { name: 'Продукты' }));
+    await u.click(await screen.findByRole('button', { name: 'Продукты' }));
     expect(screen.getByText(/меньшая часть круга/)).toBeInTheDocument();
     await u.click(screen.getByRole('button', { name: 'Транспорт' }));
     expect(screen.getByText(/Ты ближе к 42% круга/)).toBeInTheDocument();
@@ -202,9 +202,10 @@ describe('lab v4', () => {
     expect(screen.queryByText(/Нужна настройка Supabase|Код приглашения|Войдите в закрытый круг/)).not.toBeInTheDocument();
   });
 
-  it('важные маршруты продолжают рендериться', () => {
+  it('важные маршруты продолжают рендериться', async () => {
     for (const route of ['/', '/join', '/contribute', '/branch/support%7Cs2%7Cc8', '/curator', '/about', '/demo', '/lab/old-home', '/lab']) {
       const view = renderAt(route);
+      if (screen.queryByRole('status', { name: '' })) await waitFor(() => expect(screen.queryByText('Загружаем раздел…')).not.toBeInTheDocument());
       expect(document.body.textContent).toMatch(/УЗОР|ДЕМО-ЛАБОРАТОРИЯ|Что изменилось рядом с вами/);
       view.unmount();
     }
@@ -235,9 +236,9 @@ describe('wrapped dashboard', () => {
     expect(screen.getByRole('heading', { name: 'Личный итог недели' })).toBeInTheDocument();
   });
 
-  it('MVP support routes remain available', () => {
+  it('MVP support routes remain available', async () => {
     renderAt('/contribute');
-    expect(screen.getByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
     cleanup();
     renderAt('/join');
     expect(screen.getByRole('heading', { name: 'Вход в закрытый круг' })).toBeInTheDocument();
@@ -249,7 +250,7 @@ describe('wrapped dashboard', () => {
     expect(screen.getByRole('heading', { name: /Сводка круга/ })).toBeInTheDocument();
     cleanup();
     renderAt('/lab/wrapped-reference-v2');
-    expect(document.body.textContent).toMatch(/Итог недели|УЗОР/i);
+    expect(await screen.findByText(/Ваш итог недели/i)).toBeInTheDocument();
   });
   it('/wrapped renders core MVP blocks', () => {
     installMatchMedia(false);
@@ -401,20 +402,20 @@ describe('wrapped dashboard', () => {
     expect(await screen.findByText('Отчёт скопирован')).toBeInTheDocument();
   });
 
-  it('/curator/overview renders in demo and /lab/wrapped-reference-v2 remains available', () => {
+  it('/curator/overview renders in demo and /lab/wrapped-reference-v2 remains available', async () => {
     renderAt('/curator/overview');
     expect(screen.getByRole('heading', { name: /Сводка круга/ })).toBeInTheDocument();
     cleanup();
     renderAt('/lab/wrapped-reference-v2');
-    expect(document.body.textContent).toMatch(/Итог недели|УЗОР/i);
+    expect(await screen.findByText(/Ваш итог недели/i)).toBeInTheDocument();
   });
 });
 
 describe('delta create lab route', () => {
-  it('показывает заголовок, бейдж, четыре шага и не показывает старые preset-кнопки', () => {
+  it('показывает заголовок, бейдж, четыре шага и не показывает старые preset-кнопки', async () => {
     renderAt('/lab/delta-create-core');
-    expect(screen.getByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
-    expect(screen.getByText('Лаборатория · этап 3.1')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
+    expect(await screen.findByText('Лаборатория · этап 3.1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Место' })).toHaveAttribute('aria-current', 'step');
     expect(screen.getByRole('button', { name: 'Изменение' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Контекст' })).toBeInTheDocument();
@@ -426,7 +427,7 @@ describe('delta create lab route', () => {
   it('позволяет пройти четыре шага, редактировать statement и показать summary без Supabase', async () => {
     const u = userEvent.setup();
     renderAt('/lab/delta-create-core');
-    await u.click(screen.getByRole('button', { name: 'Ленинский район' }));
+    await u.click(await screen.findByRole('button', { name: 'Ленинский район' }));
     expect(screen.getByRole('button', { name: 'Далее' })).toBeEnabled();
     await u.click(screen.getByRole('button', { name: 'Далее' }));
     expect(screen.getByText('Изменение облегчило, ускорило или улучшило ситуацию.')).toBeInTheDocument();
@@ -462,18 +463,18 @@ describe('delta create lab route', () => {
     expect(screen.queryByText(/Нужна настройка Supabase|Код приглашения/)).not.toBeInTheDocument();
   }, 10000);
 
-  it('показывает restore prompt при draft и безопасно игнорирует damaged draft', () => {
+  it('показывает restore prompt при draft и безопасно игнорирует damaged draft', async () => {
     localStorage.setItem('uzor_delta_create_core_v1', JSON.stringify({ currentStep: 2, districtCode: 'leninsky', districtLabel: 'Ленинский район', locationHint: '', direction: '', categorySlug: '', changeType: '', subject: '', statement: '', statementMode: 'auto', observedWindow: '', impactLevel: '', details: '' }));
     const first = renderAt('/lab/delta-create-core');
-    expect(screen.getByText('У вас есть незавершённая Дельта')).toBeInTheDocument();
+    expect(await screen.findByText('У вас есть незавершённая Дельта')).toBeInTheDocument();
     first.unmount(); cleanup(); localStorage.setItem('uzor_delta_create_core_v1', '{bad');
     renderAt('/lab/delta-create-core');
-    expect(screen.getByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
   });
 
   it('production /contribute, /map и /wrapped продолжают открываться', async () => {
     renderAt('/contribute');
-    expect(screen.getByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
     cleanup();
     renderAt('/wrapped');
     expect(screen.getByRole('heading', { name: 'Личный итог недели' })).toBeInTheDocument();
@@ -481,22 +482,22 @@ describe('delta create lab route', () => {
     renderAt('/map');
     expect(await screen.findByRole('heading', { name: 'Дельты Перми' })).toBeInTheDocument();
   });
-  it('/lab/delta-create-geo открывается в demo и без выбранной точки блокирует шаг места', () => {
+  it('/lab/delta-create-geo открывается в demo и без выбранной точки блокирует шаг места', async () => {
     renderAt('/lab/delta-create-geo');
-    expect(screen.getByText('Лаборатория · этап 3.2')).toBeInTheDocument();
+    expect(await screen.findByText('Лаборатория · этап 3.2')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Где это изменилось?' })).toBeInTheDocument();
     expect(screen.getByText('Демо-режим · быстрый выбор учебной точки')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Далее' })).toBeDisabled();
   });
 
-  it('/lab/delta-create-core продолжает открываться после добавления geo route', () => {
+  it('/lab/delta-create-core продолжает открываться после добавления geo route', async () => {
     renderAt('/lab/delta-create-core');
-    expect(screen.getByText('Лаборатория · этап 3.1')).toBeInTheDocument();
+    expect(await screen.findByText('Лаборатория · этап 3.1')).toBeInTheDocument();
   });
 
-  it('production /contribute заменён geo-конструктором', () => {
+  it('production /contribute заменён geo-конструктором', async () => {
     renderAt('/contribute');
-    expect(screen.getByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).not.toBeInTheDocument();
     expect(screen.queryByText('Лаборатория · этап 3.2')).not.toBeInTheDocument();
   });

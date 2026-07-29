@@ -9,13 +9,6 @@ import type { ActiveTheme, BranchAggregate, CandidateProposal, CatalogItem, Evid
 import { appMode, isDemoMode, isProductionConfigured } from './appMode';
 import { t } from './text';
 import { WrappedPage } from '../features/wrapped/WrappedPage';
-import { DeltaCreatePage } from '../features/deltaCreate/DeltaCreatePage';
-import { DeltaCreateLabPage } from '../features/deltaCreate/DeltaCreateLabPage';
-import { DeltaCreateGeoLabPage } from '../features/deltaCreate/DeltaCreateGeoLabPage';
-import { LabShell } from '../lab/LabShell';
-import { LabV4Shell } from '../lab/v4/LabV4Shell';
-import { WrappedReferencePage } from '../lab/wrappedReference/WrappedReferencePage';
-import { WrappedReferenceV2Page } from '../lab/wrappedReferenceV2/WrappedReferenceV2Page';
 
 
 
@@ -32,6 +25,13 @@ import { AuthenticatedRoute, OpenCityRoute } from '../features/auth/ProtectedRou
 import { AboutPage } from '../features/guide/AboutPage';
 
 import { Onboarding } from '../features/guide/Onboarding';
+const DeltaCreatePage = lazy(() => import('../features/deltaCreate/DeltaCreatePage').then(module => ({ default: module.DeltaCreatePage })));
+const DeltaCreateLabPage = lazy(() => import('../features/deltaCreate/DeltaCreateLabPage').then(module => ({ default: module.DeltaCreateLabPage })));
+const DeltaCreateGeoLabPage = lazy(() => import('../features/deltaCreate/DeltaCreateGeoLabPage').then(module => ({ default: module.DeltaCreateGeoLabPage })));
+const LabShell = lazy(() => import('../lab/LabShell').then(module => ({ default: module.LabShell })));
+const LabV4Shell = lazy(() => import('../lab/v4/LabV4Shell').then(module => ({ default: module.LabV4Shell })));
+const WrappedReferencePage = lazy(() => import('../lab/wrappedReference/WrappedReferencePage').then(module => ({ default: module.WrappedReferencePage })));
+const WrappedReferenceV2Page = lazy(() => import('../lab/wrappedReferenceV2/WrappedReferenceV2Page').then(module => ({ default: module.WrappedReferenceV2Page })));
 const DeltaMapPage = lazy(() => import('../features/deltaMap/DeltaMapPage').then(module => ({ default: module.DeltaMapPage })));
 const ForecastPage = lazy(() => import('../features/forecasting/ui/ForecastPage').then(module => ({ default: module.ForecastPage })));
 const ForecastResolverPage = lazy(() => import('../features/forecasting/ui/ForecastResolverPage').then(module => ({ default: module.ForecastResolverPage })));

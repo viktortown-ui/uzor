@@ -133,6 +133,7 @@ jobs:
         run: npm run build
         env:
           VITE_BASE_PATH: /uzor/
+          VITE_VISUAL_TEST_MODE: 'true'
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium

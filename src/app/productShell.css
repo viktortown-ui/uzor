@@ -327,7 +327,8 @@
   .pwa-install-launcher {
     left: auto;
     right: 24px;
-    bottom: 24px;
+    top: 24px;
+    bottom: auto;
     width: min(360px, calc(100vw - 48px));
     justify-items: end;
   }

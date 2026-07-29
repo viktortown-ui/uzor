@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import { useDialogFocus } from './useDialogFocus';
 const screens=[['Добро пожаловать в УЗОР','Здесь жители замечают изменения города вместе.'],['Наблюдайте','Дельта описывает уже замеченное изменение, а не слух или ожидание.'],['Проверяйте независимо','Подтверждение и неподтверждение помогают увидеть общий сигнал и развилки.'],['Читайте Пульс','Недельный итог показывает изменения, а не рейтинг людей.'],['Берегите контекст','УЗОР не заменяет официальные факты, статистику и обращения.']];
-export function Onboarding(){const auth=useAuth();const [step,setStep]=useState(0);const [open,setOpen]=useState(false);const dialogRef=useRef<HTMLElement>(null);const key=`uzor.onboarding.${auth.user?.id??'demo'}`;
+export function Onboarding(){const auth=useAuth();const visualOpen=import.meta.env.VITE_VISUAL_TEST_MODE==='true'&&window.location.hash.includes('visualOnboarding=1');const [step,setStep]=useState(0);const [open,setOpen]=useState(visualOpen);const dialogRef=useRef<HTMLElement>(null);const key=`uzor.onboarding.${auth.user?.id??'demo'}`;
  useEffect(()=>{if(auth.authenticationState==='authenticated'&&auth.user&&localStorage.getItem(key)!=='done')void Promise.resolve().then(()=>setOpen(true))},[auth.authenticationState,auth.user,key]);
  useEffect(()=>{const replay=()=>{setStep(0);setOpen(true)};window.addEventListener('uzor:replay-onboarding',replay);return()=>window.removeEventListener('uzor:replay-onboarding',replay)},[]);
  const skip=useCallback(()=>setOpen(false),[]);useDialogFocus(open,dialogRef,skip);const finish=()=>{localStorage.setItem(key,'done');setOpen(false)};

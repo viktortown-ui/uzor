@@ -26,7 +26,8 @@ begin
   if coalesce((auth.jwt()->>'is_anonymous')::boolean,false) then raise exception using errcode='42501',message='real account required'; end if;
   select m.circle_id into mapped from public.open_city_circles m where m.city_slug=lower(trim(input_city_slug)) and m.is_open;
   if mapped is null then raise exception using errcode='42501',message='open city unavailable'; end if;
-  insert into public.circle_memberships(circle_id,user_id,role) values(mapped,caller,'participant') on conflict(circle_id,user_id) do nothing;
+  insert into public.circle_memberships(circle_id,user_id,role) values(mapped,caller,'participant')
+  on conflict on constraint circle_memberships_pkey do nothing;
   return query select lower(trim(input_city_slug)),mapped,cm.role from public.circle_memberships cm where cm.circle_id=mapped and cm.user_id=caller;
 end $$;
 revoke all on function public.ensure_open_city_membership(text) from public;
