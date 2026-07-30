@@ -111,7 +111,7 @@ describe('PwaInstallCard', () => {
     const css = readFileSync('src/app/productShell.css', 'utf8');
     expect(css).toContain('@media (min-width: 901px)');
     expect(css).toContain('width: min(360px, calc(100vw - 48px));');
-    expect(css).toContain('html[data-delta-desktop-inspector] .pwa-install-launcher--map{display:none}');
+    expect(css).toContain('@media(min-width:901px) and (max-width:1100px){.pwa-install-launcher--map{display:none}}');
   });
 
   it('captures beforeinstallprompt on direct mobile map entry', async () => { renderApp('/map'); const event=emitPrompt(); expect(event.preventDefault).toHaveBeenCalled(); expect(await screen.findByRole('button',{name:'Установить УЗОР'})).toBeInTheDocument(); });
