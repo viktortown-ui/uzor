@@ -33,7 +33,20 @@ type Props = {
 };
 
 export const PRODUCTION_MAP_STYLE_URL = import.meta.env.VITE_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty';
-const visualTestStyle: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [{ id: 'visual-background', type: 'background', paint: { 'background-color': '#173451' } }] };
+const visualTestStyle: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    'visual-attribution': {
+      type: 'geojson',
+      attribution: 'Visual test map data',
+      data: { type: 'FeatureCollection', features: [] },
+    },
+  },
+  layers: [
+    { id: 'visual-background', type: 'background', paint: { 'background-color': '#173451' } },
+    { id: 'visual-attribution-layer', type: 'circle', source: 'visual-attribution', paint: { 'circle-opacity': 0 } },
+  ],
+};
 const mapStyle = import.meta.env.VITE_VISUAL_TEST_MODE === 'true' ? visualTestStyle : PRODUCTION_MAP_STYLE_URL;
 export const DELTA_SOURCE_ID = 'delta-cluster-source';
 export const DELTA_CLUSTER_LAYER_ID = 'delta-clusters';
