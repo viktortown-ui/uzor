@@ -140,10 +140,10 @@ jobs:
 
       - name: Verify Chromium PWA installability
         run: npm run test:pwa-installability
-      - name: Verify product geometry and capture screenshots
-        run: npm run test:geometry
       - name: Verify production map style
         run: npm run test:production-map-style
+      - name: Verify product geometry and capture screenshots
+        run: npm run test:geometry
       - name: Upload product geometry screenshots
         if: always()
         uses: actions/upload-artifact@v4

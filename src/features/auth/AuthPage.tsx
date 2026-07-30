@@ -10,8 +10,9 @@ export function AuthPage() {
   const intended = useMemo(() => validatedReturnTo(new URLSearchParams(location.search).get('returnTo')), [location.search]);
   const [email,setEmail]=useState(visualState==='otp'?'visual@example.test':''); const [token,setToken]=useState(''); const [step,setStep]=useState<'email'|'code'>(visualState==='otp'?'code':'email');
   const codeRef=useRef<HTMLInputElement>(null); const [busy,setBusy]=useState(false); const [error,setError]=useState(''); const [cooldown,setCooldown]=useState(0);
+  useEffect(()=>{if(step==='code')codeRef.current?.focus()},[step]);
   useEffect(()=>{if(cooldown<=0)return;const timer=window.setInterval(()=>setCooldown(value=>Math.max(0,value-1)),1000);return()=>window.clearInterval(timer)},[cooldown]);
-  const send=async()=>{if(busy)return;setBusy(true);setError('');try{await auth.sendCode(email.trim());setStep('code');setCooldown(RESEND_SECONDS);window.requestAnimationFrame(()=>codeRef.current?.focus())}catch(cause){setError(cause instanceof Error?cause.message:'Не удалось отправить код.')}finally{setBusy(false)}};
+  const send=async()=>{if(busy)return;setBusy(true);setError('');try{await auth.sendCode(email.trim());setStep('code');setCooldown(RESEND_SECONDS)}catch(cause){setError(cause instanceof Error?cause.message:'Не удалось отправить код.')}finally{setBusy(false)}};
   const verify=async()=>{if(busy)return;setBusy(true);setError('');try{await auth.verifyCode(email.trim(),token.trim());navigate(intended,{replace:true})}catch(cause){setError(cause instanceof Error?cause.message:'Код неверный или уже истёк.')}finally{setBusy(false)}};
   if(!visualState&&auth.authenticationState==='loading')return <main className="auth-page"><p role="status">Восстанавливаем безопасную сессию…</p></main>;
   if(!visualState&&auth.authenticationState==='authenticated')return <Navigate replace to={intended}/>;
