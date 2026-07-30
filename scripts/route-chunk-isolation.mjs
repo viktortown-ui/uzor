@@ -53,6 +53,22 @@ const assertAll = (route, urls, assetNames) => {
   if (missing.length) throw new Error(`${route} did not request expected assets: ${missing.join(', ')}`);
 };
 const h1 = (name) => (page) => page.getByRole('heading', { level: 1, name });
+const expectedEyebrow = async (page, selector, route) => {
+  const locator = page.locator(selector).first();
+  await locator.waitFor();
+  const style = await locator.evaluate((node) => {
+    const computed = getComputedStyle(node);
+    return { color: computed.color, textTransform: computed.textTransform, fontWeight: computed.fontWeight, letterSpacing: computed.letterSpacing, fontSize: computed.fontSize };
+  });
+  const valid = style.color === 'rgb(125, 220, 255)'
+    && style.textTransform === 'uppercase'
+    && style.fontWeight === '800'
+    && Number.parseFloat(style.letterSpacing) > 1
+    && Number.parseFloat(style.fontSize) >= 12
+    && Number.parseFloat(style.fontSize) <= 13;
+  if (!valid) throw new Error(`${route} eyebrow baseline mismatch for ${selector}: ${JSON.stringify(style)}`);
+  return style;
+};
 
 const visualCases = [
   ['desktop-demo-fog', '/demo?scenario=fog', { width: 1440, height: 900 }, h1('Куда уходит твой час?'), true],
@@ -65,13 +81,14 @@ const visualCases = [
 ];
 
 try {
-  for (const [route, locator] of [
-    ['/auth?visual=email', h1('Войти по электронной почте')],
-    ['/about', h1('Карта городских изменений')],
-    ['/settings', h1('Настройки')],
+  for (const [route, locator, eyebrows] of [
+    ['/auth?visual=email', h1('Войти по электронной почте'), ['.auth-page .eyebrow']],
+    ['/about', h1('Карта городских изменений'), ['.about-page .eyebrow']],
+    ['/settings', h1('Настройки'), ['.settings-page > .eyebrow', '.settings-page .product-guide .eyebrow']],
   ]) {
-    const { context, urls } = await openClean(route, locator);
+    const { context, page, urls } = await openClean(route, locator);
     assertNone(route, urls, forbiddenOnModern);
+    for (const selector of eyebrows) await expectedEyebrow(page, selector, route);
     await context.close();
   }
 
@@ -83,6 +100,7 @@ try {
   const map = await openClean('/map', (page) => page.locator('.delta-map-page'));
   assertAll('/map', map.urls, maplibre);
   assertNone('/map', map.urls, legacy);
+  await expectedEyebrow(map.page, '.delta-map-header .eyebrow', '/map');
   await map.context.close();
 
   const wrapped = await openClean('/wrapped', h1('Личный итог недели'));
@@ -94,7 +112,7 @@ try {
   const authStyles = async () => stylePage.evaluate(() => {
     const take = (selector) => {
       const style = getComputedStyle(document.querySelector(selector));
-      return { fontFamily: style.fontFamily, fontSize: style.fontSize, color: style.color, borderRadius: style.borderRadius, backgroundColor: style.backgroundColor };
+      return { fontFamily: style.fontFamily, fontSize: style.fontSize, color: style.color, textTransform: style.textTransform, fontWeight: style.fontWeight, letterSpacing: style.letterSpacing, borderRadius: style.borderRadius, backgroundColor: style.backgroundColor };
     };
     return { eyebrow: take('.auth-page .eyebrow'), heading: take('.auth-page h1'), button: take('.auth-card button') };
   });
@@ -128,10 +146,11 @@ try {
         overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
         headingStyled: Boolean(headingStyle && headingStyle.color !== 'rgb(0, 0, 0)' && Number.parseFloat(headingStyle.fontSize) >= 24),
         actionStyled: Boolean(actionStyle && Number.parseFloat(actionStyle.borderRadius) >= 20),
+        eyebrowStyled: (() => { const eyebrow = document.querySelector('.legacy-shell .eyebrow'); const style = eyebrow && getComputedStyle(eyebrow); return Boolean(style && style.color === 'rgb(125, 220, 255)' && style.textTransform === 'uppercase' && style.fontWeight === '800' && Number.parseFloat(style.letterSpacing) > 1 && Number.parseFloat(style.fontSize) >= 12 && Number.parseFloat(style.fontSize) <= 13); })(),
         sceneVisible: !sceneExpected || Boolean(scene && scene.getBoundingClientRect().width > 200 && scene.getBoundingClientRect().height > 100),
       };
     }, expectsScene);
-    if (!visual.legacyCssLoaded || !visual.shell || visual.suspense || visual.overflow || !visual.headingStyled || !visual.actionStyled || !visual.sceneVisible) throw new Error(`${route} legacy visual contract failed: ${JSON.stringify(visual)}`);
+    if (!visual.legacyCssLoaded || !visual.shell || visual.suspense || visual.overflow || !visual.headingStyled || !visual.actionStyled || !visual.eyebrowStyled || !visual.sceneVisible) throw new Error(`${route} legacy visual contract failed: ${JSON.stringify(visual)}`);
     await page.screenshot({ path: resolve(artifactRoot, `${name}.png`), fullPage: true });
     await context.close();
   }

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const legacyCss = readFileSync('src/features/legacyCircle/legacyCircle.css', 'utf8');
 const modernBaseCss = readFileSync('src/styles/modernBase.css', 'utf8');
+const productPrimitivesCss = readFileSync('src/styles/productPrimitives.css', 'utf8');
 
 function scopedSelectors(css: string) {
   const selectors: string[] = [];
@@ -45,7 +46,14 @@ describe('legacy CSS isolation', () => {
       expect(selector, `unscoped legacy selector: ${selector}`).toMatch(/^\.legacy-shell(?:\b|[ >+~.#[:])/);
       expect(selector, `global universal selector: ${selector}`).not.toMatch(/^(?:\*|::?before|::?after)$/);
     }
-    expect(selectors).toContain('.legacy-shell .eyebrow');
+    expect(legacyCss).not.toContain('.eyebrow');
+  });
+
+  it('documents and owns .eyebrow exactly once as a shared product primitive', () => {
+    expect(productPrimitivesCss).toContain('Approved shared product primitive');
+    expect(productPrimitivesCss.match(/\.eyebrow\s*\{/g)).toHaveLength(1);
+    expect(productPrimitivesCss).toContain('.eyebrow{color:var(--cyan);text-transform:uppercase;letter-spacing:.16em;font-size:.78rem;font-weight:800}');
+    expect(legacyCss).not.toContain('.eyebrow');
   });
 
   it('owns the application-wide reduced-motion primitive in modernBase only', () => {

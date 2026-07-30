@@ -11,7 +11,7 @@
 .delta-map-desktop-chrome :is(select,button,input,label){pointer-events:auto}
 .delta-map-header { position:static;max-width:none;padding:0;background:none;text-shadow:0 1px 10px #07101f; }
 .delta-map-header h1 { margin: .1rem 0; font-size: clamp(1.7rem,4vw,3rem); }
-.delta-map-header p { margin: .2rem 0; color: #b7c7d8; }
+.delta-map-header p:not(.eyebrow) { margin: .2rem 0; color: #b7c7d8; }
 .delta-map-filters { position:static;display:flex;flex-wrap:wrap;gap:10px;max-width:100%; }
 .delta-map-filters label { display: grid; gap: 4px; color: #b7c7d8; font-size: .72rem; text-transform: uppercase; }
 .delta-map-filters select, .delta-map-button, .delta-empty button, .delta-map-reset, .delta-card-actions button, .delta-card-toggle { min-height: 44px; border: 1px solid rgba(125,249,255,.25); border-radius: 999px; background: rgba(11,25,48,.9); color: #ecfeff; padding: 9px 12px; }
@@ -112,7 +112,7 @@
 }
 @media(min-width:901px) and (max-width:1100px){
  .delta-map-desktop-chrome{top:10px;left:10px;width:calc(100% - 20px);padding:9px 10px;gap:7px}
- .delta-map-header h1{font-size:1.55rem}.delta-map-header p{font-size:.86rem}
+ .delta-map-header h1{font-size:1.55rem}.delta-map-header p:not(.eyebrow){font-size:.86rem}
  .delta-map-filters{gap:6px}.delta-map-filters label{font-size:.65rem}.delta-map-filters select{max-width:150px;padding-inline:8px}
  .delta-map-main.has-inspector .delta-map-card--desktop{flex-basis:320px;width:320px}
  .delta-map-main.has-inspector .delta-map-desktop-chrome{width:calc(100% - 20px)}
