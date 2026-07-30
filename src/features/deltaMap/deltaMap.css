@@ -128,3 +128,4 @@
  .delta-filter-sheet{overflow-y:auto}
 }
 @media(min-width:901px) and (max-width:1100px){.delta-map-desktop-utilities{max-width:min(240px,calc(100% - 40px))}}
+@media(max-width:900px){.delta-map-stage.has-mobile-delta-card :is(.maplibregl-ctrl-bottom-right,.delta-map-reset){display:none}}

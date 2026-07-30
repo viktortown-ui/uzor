@@ -77,7 +77,7 @@ export function DeltaMapPage() {
  };
  return <ProductShell layoutMode="fullscreen">
   <div className="delta-map-page"><div className={`delta-map-main${selectedId && !isMobile ? ' has-inspector' : ''}`}>
-   <div className="delta-map-stage">
+   <div className={`delta-map-stage${selectedId && isMobile ? ' has-mobile-delta-card' : ''}`}>
    {isMobile
     ? <MobileDeltaMapChrome filters={filters} categories={categories} onChange={setFilters} collapsed={mobileChromeCollapsed} onCollapsedChange={setMobileChromeCollapsed} />
     : <DesktopDeltaMapChrome loading={status === 'loading' && deltas.length > 0} filters={filters} categories={categories} onChange={setFilters} onResetPerm={resetToPerm} />}

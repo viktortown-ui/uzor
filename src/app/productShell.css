@@ -336,8 +336,7 @@
   .pwa-install-launcher--map.pwa-install-launcher--inspector-open { right: calc(clamp(360px, 26vw, 430px) + 24px); }
 }
 @media (max-width: 900px) {
-  .pwa-install-launcher--map { top: calc(max(8px, env(safe-area-inset-top)) + 58px); bottom: auto; justify-items: end; }
-  .pwa-install-launcher--map .pwa-install-launcher__sheet { margin-top: 4px; }
+  .pwa-install-launcher--map { display: none; }
 }
 @media(max-width:390px){.mobile-app-dock__label--settings{font-size:0}.mobile-app-dock__label--settings::after{content:"Настр.";font-size:9.5px}}
 @media(min-width:901px) and (max-width:1100px){.pwa-install-launcher--map{display:none}}

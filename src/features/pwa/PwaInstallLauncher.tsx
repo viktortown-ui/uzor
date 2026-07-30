@@ -20,7 +20,7 @@ export function PwaInstallLauncher() {
   const mobileMapObscured = pathname === '/map' && isMobile && (document.documentElement.hasAttribute('data-delta-mobile-card') || document.documentElement.hasAttribute('data-delta-filter-sheet'));
   void collisionState;
   if (!install.visible) return null;
-  if ((pathname === '/contribute' && isMobile) || mobileMapObscured) return null;
+  if ((pathname === '/contribute' && isMobile) || (pathname === '/map' && isMobile) || mobileMapObscured) return null;
   const pending = install.isPendingInstall;
   const label = launcherLabel(install.canInstall, pending, install.isPrompting, install.embedded);
   return <aside className={`pwa-install-launcher${pathname === '/map' ? ' pwa-install-launcher--map' : ''}${inspectorOpen ? ' pwa-install-launcher--inspector-open' : ''}`} aria-label="Установка приложения">
