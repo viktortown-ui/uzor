@@ -49,7 +49,7 @@ describe('app', () => {
   it('/demo показывает честный бейдж и переключает сценарии', async () => {
     const u = userEvent.setup();
     renderAt('/demo?scenario=fog');
-    expect(screen.getAllByText('ДЕМО — вымышленные отклики')[0]).toBeInTheDocument();
+    expect((await screen.findAllByText('ДЕМО — вымышленные отклики'))[0]).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Туман' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Контур' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Развилка' })).toBeInTheDocument();
@@ -60,27 +60,27 @@ describe('app', () => {
     expect(await screen.findByText('Люди видят одну причину, но расходятся в последствиях.')).toBeInTheDocument();
   }, 10000);
 
-  it('production-подобная пустая картина не показывает вымышленные цифры', () => {
+  it('production-подобная пустая картина не показывает вымышленные цифры', async () => {
     renderAt('/demo?scenario=fog');
     expect(screen.queryByText(/7 независимых/)).not.toBeInTheDocument();
     expect(screen.queryByText(/0\.69/)).not.toBeInTheDocument();
-    expect(screen.getByText('Пока один независимый отклик.')).toBeInTheDocument();
+    expect(await screen.findByText('Пока один независимый отклик.')).toBeInTheDocument();
   });
 
-  it('одна нить не показывает техническую силу и объясняет личный след', () => {
+  it('одна нить не показывает техническую силу и объясняет личный след', async () => {
     renderAt('/branch/support%7Cs2%7Cc8');
-    expect(screen.getByText('Пока личный след. Это ещё не общий вывод круга.')).toBeInTheDocument();
+    expect(await screen.findByText('Пока личный след. Это ещё не общий вывод круга.')).toBeInTheDocument();
     expect(screen.queryByText(/0\.69|Сила/)).not.toBeInTheDocument();
   });
 
   it('путь вклада: поле иначе скрыто, открывается, контекст сохраняется, результат остаётся на экране', async () => {
     const u = userEvent.setup();
     renderAt('/lab/old-contribute?layer=tension');
-    expect(screen.getByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Что ты сейчас узнаёшь?' })).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Опиши свой след')).not.toBeInTheDocument();
     await u.click(screen.getByRole('button', { name: 'У меня иначе' }));
     expect(screen.getByPlaceholderText('Опиши свой след')).toBeInTheDocument();
-    await u.click(screen.getByRole('button', { name: 'Дольше ждать транспорт' }));
+    await u.click(await screen.findByRole('button', { name: 'Дольше ждать транспорт' }));
     await u.click(screen.getByRole('button', { name: /Больше времени в дороге/ }));
     await u.click(screen.getByRole('button', { name: 'Работающие' }));
     expect(localStorage.getItem('uzor.preferredContext.v2')).toBe('g0');
@@ -106,9 +106,9 @@ describe('app', () => {
     expect(screen.queryByRole('heading', { name: 'Куда уходит твой час?' })).not.toBeInTheDocument();
   });
 
-  it('рендерит join route в HashRouter с query code на GitHub Pages base path', () => {
+  it('рендерит join route в HashRouter с query code на GitHub Pages base path', async () => {
     renderHashAt('#/join?code=TEST');
-    expect(screen.getByRole('link', { name: 'УЗОР' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'УЗОР' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Вход в закрытый круг' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('TEST')).toBeInTheDocument();
   });
@@ -242,13 +242,13 @@ describe('wrapped dashboard', () => {
     expect(await screen.findByRole('heading', { name: 'Что изменилось рядом с вами?' })).toBeInTheDocument();
     cleanup();
     renderAt('/join');
-    expect(screen.getByRole('heading', { name: 'Вход в закрытый круг' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Вход в закрытый круг' })).toBeInTheDocument();
     cleanup();
     renderAt('/curator');
-    expect(screen.getByRole('heading', { name: /Куратор|Кандидаты круга/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Куратор|Кандидаты круга/ })).toBeInTheDocument();
     cleanup();
     renderAt('/curator/overview');
-    expect(screen.getByRole('heading', { name: /Сводка круга/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Сводка круга/ })).toBeInTheDocument();
     cleanup();
     renderAt('/lab/wrapped-reference-v2');
     expect(await screen.findByText(/Ваш итог недели/i)).toBeInTheDocument();
@@ -405,7 +405,7 @@ describe('wrapped dashboard', () => {
 
   it('/curator/overview renders in demo and /lab/wrapped-reference-v2 remains available', async () => {
     renderAt('/curator/overview');
-    expect(screen.getByRole('heading', { name: /Сводка круга/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Сводка круга/ })).toBeInTheDocument();
     cleanup();
     renderAt('/lab/wrapped-reference-v2');
     expect(await screen.findByText(/Ваш итог недели/i)).toBeInTheDocument();

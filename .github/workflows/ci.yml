@@ -128,16 +128,20 @@ jobs:
         run: npm run build
         env:
           VITE_BASE_PATH: /
+      - run: npm run verify:bundle-budget
 
       - name: Build PWA at GitHub Pages base
         run: npm run build
         env:
           VITE_BASE_PATH: /uzor/
           VITE_VISUAL_TEST_MODE: 'true'
+      - run: npm run verify:bundle-budget
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Verify route chunk isolation
+        run: npm run test:route-chunk-isolation
       - name: Verify Chromium PWA installability
         run: npm run test:pwa-installability
       - name: Verify production map style

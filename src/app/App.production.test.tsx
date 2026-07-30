@@ -76,7 +76,7 @@ describe('production fallback', () => {
     const { App } = await import('./App');
     render(<MemoryRouter initialEntries={['/lab/old-home']}><App /></MemoryRouter>);
 
-    expect(screen.getByRole('link', { name: 'УЗОР' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'УЗОР' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Нужна настройка Supabase' })).toBeInTheDocument();
     expect(screen.getByText(/VITE_SUPABASE_URL/)).toBeInTheDocument();
     expect(screen.getByText(/VITE_SUPABASE_PUBLISHABLE_KEY/)).toBeInTheDocument();
