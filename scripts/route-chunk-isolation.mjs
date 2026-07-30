@@ -1,30 +1,142 @@
-/* global URL, console, process */
+/* global URL, console, process, location, performance, getComputedStyle, document */
 import { createServer } from 'node:http';
-import { readFile, readdir } from 'node:fs/promises';
+import { mkdir, readFile, readdir } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { chromium } from 'playwright';
 
 const root = resolve(process.cwd(), 'dist');
+const artifactRoot = resolve(process.cwd(), 'artifacts/legacy-circle-visuals');
 const assets = await readdir(resolve(root, 'assets'));
 const named = (pattern) => assets.filter((name) => pattern.test(name));
-const legacy = named(/^LegacyCircleRoutes-.*\.(?:js|css)$/);
-const maplibre = named(/^maplibre-gl-.*\.(?:js|css)$/);
-if (!legacy.some((name) => name.endsWith('.js')) || !legacy.some((name) => name.endsWith('.css'))) throw new Error('Legacy JS/CSS assets were not emitted');
-if (!maplibre.length) throw new Error('MapLibre assets were not emitted');
+const requireAssets = (label, pattern, count) => {
+  const matches = named(pattern);
+  if (matches.length !== count) throw new Error(`Expected ${count} ${label} assets, found ${matches.length}: ${matches.join(', ') || 'none'}`);
+  return matches;
+};
+const legacy = requireAssets('legacy route', /^LegacyCircleRoutes-.*\.(?:js|css)$/, 2);
+const motion = requireAssets('Framer Motion route', /^use-reduced-motion-.*\.js$/, 1);
+const maplibre = requireAssets('MapLibre', /^maplibre-gl-.*\.(?:js|css)$/, 2);
+const forbiddenOnModern = [...legacy, ...motion, ...maplibre];
 const types = new Map([['.html','text/html'],['.js','text/javascript'],['.css','text/css'],['.svg','image/svg+xml'],['.png','image/png'],['.webmanifest','application/manifest+json']]);
-const server = createServer(async (req,res) => { const url = new URL(req.url ?? '/', 'http://localhost'); const relative = url.pathname.replace(/^\/uzor\/?/, '') || 'index.html'; const file = resolve(root, relative); if (!(file === root || file.startsWith(root + sep))) { res.writeHead(404).end(); return; } try { const body = await readFile(file); res.writeHead(200, {'content-type': types.get(extname(file)) ?? 'application/octet-stream'}).end(body); } catch { res.writeHead(404).end(); } });
+const server = createServer(async (req, res) => {
+  const url = new URL(req.url ?? '/', 'http://localhost');
+  const relative = url.pathname.replace(/^\/uzor\/?/, '') || 'index.html';
+  const file = resolve(root, relative);
+  if (!(file === root || file.startsWith(root + sep))) { res.writeHead(404).end(); return; }
+  try { const body = await readFile(file); res.writeHead(200, {'content-type': types.get(extname(file)) ?? 'application/octet-stream'}).end(body); }
+  catch { res.writeHead(404).end(); }
+});
 await new Promise((done) => server.listen(0, '127.0.0.1', done));
 const port = server.address().port;
 const origin = `http://127.0.0.1:${port}/uzor/`;
 const browser = await chromium.launch();
-const requested = async (route, expectedText) => { const context = await browser.newContext({ serviceWorkers: 'block' }); const page = await context.newPage(); const urls = []; page.on('request', (request) => urls.push(request.url())); await page.goto(`${origin}#${route}`, { waitUntil: 'networkidle' }); if (expectedText) await page.getByText(expectedText, { exact: false }).first().waitFor(); await context.close(); return urls.map((url) => decodeURIComponent(url)); };
+await mkdir(artifactRoot, { recursive: true });
+
+const openClean = async (route, locator) => {
+  const context = await browser.newContext({ serviceWorkers: 'block' });
+  const page = await context.newPage();
+  const urls = [];
+  page.on('request', (request) => urls.push(decodeURIComponent(request.url())));
+  await page.goto(`${origin}#${route}`, { waitUntil: 'domcontentloaded' });
+  try { await locator(page).waitFor({ timeout: 15_000 }); }
+  catch (error) { throw new Error(`Route ${route} did not render. URL: ${page.url()}; body: ${(await page.locator('body').innerText()).slice(0, 500)}`, { cause: error }); }
+  await page.waitForLoadState('networkidle');
+  return { context, page, urls };
+};
+const requested = (urls, asset) => urls.some((url) => url.includes(asset));
+const assertNone = (route, urls, assetNames) => {
+  const found = assetNames.filter((asset) => requested(urls, asset));
+  if (found.length) throw new Error(`${route} requested isolated assets: ${found.join(', ')}`);
+};
+const assertAll = (route, urls, assetNames) => {
+  const missing = assetNames.filter((asset) => !requested(urls, asset));
+  if (missing.length) throw new Error(`${route} did not request expected assets: ${missing.join(', ')}`);
+};
+const h1 = (name) => (page) => page.getByRole('heading', { level: 1, name });
+
+const visualCases = [
+  ['desktop-demo-fog', '/demo?scenario=fog', { width: 1440, height: 900 }, h1('Куда уходит твой час?'), true],
+  ['desktop-demo-contour', '/demo?scenario=contour', { width: 1440, height: 900 }, h1('Куда уходит твой час?'), true],
+  ['desktop-old-contribute', '/lab/old-contribute?layer=tension', { width: 1440, height: 900 }, h1('Что ты сейчас узнаёшь?'), false],
+  ['desktop-demo-branch', '/branch/support%7Cs2%7Cc8', { width: 1440, height: 900 }, (page) => page.locator('.branch-detail h1'), false],
+  ['desktop-curator-overview', '/curator/overview', { width: 1440, height: 900 }, h1(/Сводка круга/), false],
+  ['mobile-demo-fog', '/demo?scenario=fog', { width: 390, height: 844 }, h1('Куда уходит твой час?'), true],
+  ['mobile-old-contribute', '/lab/old-contribute?layer=tension', { width: 390, height: 844 }, h1('Что ты сейчас узнаёшь?'), false],
+];
+
 try {
-  for (const route of ['/auth','/about','/settings']) { const urls = await requested(route); if ([...legacy,...maplibre].some((asset) => urls.some((url) => url.includes(asset)))) throw new Error(`${route} requested an isolated asset: ${urls.filter((url) => [...legacy,...maplibre].some((asset) => url.includes(asset))).join(', ')}`); }
-  const demoUrls = await requested('/demo?scenario=fog', 'Куда уходит твой час?');
-  for (const asset of legacy.filter((name) => /^LegacyCircleRoutes-/.test(name))) if (!demoUrls.some((url) => url.includes(asset))) throw new Error(`/demo did not request ${asset}`);
-  if (maplibre.some((asset) => demoUrls.some((url) => url.includes(asset)))) throw new Error('/demo requested MapLibre');
-  const mapUrls = await requested('/map');
-  if (!maplibre.some((asset) => mapUrls.some((url) => url.includes(asset)))) throw new Error('/map did not request MapLibre');
-  if (legacy.some((asset) => mapUrls.some((url) => url.includes(asset)))) throw new Error('/map requested legacy assets');
-  console.log('Production network isolation verified for auth, about, settings, demo, and map routes.');
-} finally { await browser.close(); server.close(); }
+  for (const [route, locator] of [
+    ['/auth?visual=email', h1('Войти по электронной почте')],
+    ['/about', h1('Карта городских изменений')],
+    ['/settings', h1('Настройки')],
+  ]) {
+    const { context, urls } = await openClean(route, locator);
+    assertNone(route, urls, forbiddenOnModern);
+    await context.close();
+  }
+
+  const demo = await openClean('/demo?scenario=fog', h1('Куда уходит твой час?'));
+  assertAll('/demo', demo.urls, [...legacy, ...motion]);
+  assertNone('/demo', demo.urls, maplibre);
+  await demo.context.close();
+
+  const map = await openClean('/map', (page) => page.locator('.delta-map-page'));
+  assertAll('/map', map.urls, maplibre);
+  assertNone('/map', map.urls, legacy);
+  await map.context.close();
+
+  const wrapped = await openClean('/wrapped', h1('Личный итог недели'));
+  assertNone('/wrapped', wrapped.urls, legacy);
+  await wrapped.context.close();
+
+  const styleContext = await browser.newContext({ serviceWorkers: 'block' });
+  const stylePage = await styleContext.newPage();
+  const authStyles = async () => stylePage.evaluate(() => {
+    const take = (selector) => {
+      const style = getComputedStyle(document.querySelector(selector));
+      return { fontFamily: style.fontFamily, fontSize: style.fontSize, color: style.color, borderRadius: style.borderRadius, backgroundColor: style.backgroundColor };
+    };
+    return { eyebrow: take('.auth-page .eyebrow'), heading: take('.auth-page h1'), button: take('.auth-card button') };
+  });
+  await stylePage.goto(`${origin}#/auth?visual=email`, { waitUntil: 'domcontentloaded' });
+  await h1('Войти по электронной почте')(stylePage).waitFor();
+  const cleanAuthStyles = await authStyles();
+  await stylePage.evaluate(() => { location.hash = '#/demo?scenario=fog'; });
+  await h1('Куда уходит твой час?')(stylePage).waitFor();
+  await stylePage.evaluate(() => { location.hash = '#/auth?visual=email'; });
+  await h1('Войти по электронной почте')(stylePage).waitFor();
+  const postLegacyAuthStyles = await authStyles();
+  if (JSON.stringify(cleanAuthStyles) !== JSON.stringify(postLegacyAuthStyles)) throw new Error(`Legacy CSS changed modern computed styles: ${JSON.stringify({ cleanAuthStyles, postLegacyAuthStyles })}`);
+  await styleContext.close();
+
+  for (const [name, route, viewport, locator, expectsScene] of visualCases) {
+    const context = await browser.newContext({ viewport, serviceWorkers: 'block', reducedMotion: 'no-preference' });
+    const page = await context.newPage();
+    await page.goto(`${origin}#${route}`, { waitUntil: 'domcontentloaded' });
+    await locator(page).waitFor();
+    await page.waitForLoadState('networkidle');
+    const visual = await page.evaluate((sceneExpected) => {
+      const heading = document.querySelector('.legacy-shell h1');
+      const action = document.querySelector('.legacy-shell button,.legacy-shell .primary');
+      const headingStyle = heading && getComputedStyle(heading);
+      const actionStyle = action && getComputedStyle(action);
+      const scene = document.querySelector('.legacy-shell .scene-wrap svg');
+      return {
+        legacyCssLoaded: performance.getEntriesByType('resource').some((entry) => /LegacyCircleRoutes-.*\.css/.test(entry.name)),
+        shell: Boolean(document.querySelector('.legacy-shell')),
+        suspense: Boolean(document.querySelector('[role="status"].route-loading')),
+        overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        headingStyled: Boolean(headingStyle && headingStyle.color !== 'rgb(0, 0, 0)' && Number.parseFloat(headingStyle.fontSize) >= 24),
+        actionStyled: Boolean(actionStyle && Number.parseFloat(actionStyle.borderRadius) >= 20),
+        sceneVisible: !sceneExpected || Boolean(scene && scene.getBoundingClientRect().width > 200 && scene.getBoundingClientRect().height > 100),
+      };
+    }, expectsScene);
+    if (!visual.legacyCssLoaded || !visual.shell || visual.suspense || visual.overflow || !visual.headingStyled || !visual.actionStyled || !visual.sceneVisible) throw new Error(`${route} legacy visual contract failed: ${JSON.stringify(visual)}`);
+    await page.screenshot({ path: resolve(artifactRoot, `${name}.png`), fullPage: true });
+    await context.close();
+  }
+  console.log(`Production route isolation and ${visualCases.length} legacy visual artifacts verified.`);
+} finally {
+  await browser.close();
+  server.close();
+}

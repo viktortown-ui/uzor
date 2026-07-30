@@ -142,6 +142,13 @@ jobs:
 
       - name: Verify route chunk isolation
         run: npm run test:route-chunk-isolation
+      - name: Upload legacy route screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-circle-visuals
+          path: artifacts/legacy-circle-visuals/*.png
+          if-no-files-found: error
       - name: Verify Chromium PWA installability
         run: npm run test:pwa-installability
       - name: Verify production map style
