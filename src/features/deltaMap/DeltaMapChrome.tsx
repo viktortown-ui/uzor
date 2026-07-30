@@ -19,13 +19,18 @@ export function DeltaMapLegend() {
   </div>;
 }
 
-export function DesktopDeltaMapChrome({ loading, filters, categories, onChange }: ChromeProps & { loading: boolean }) {
+export function DesktopDeltaMapChrome({ loading, filters, categories, onChange, onResetPerm }: ChromeProps & { loading: boolean; onResetPerm: () => void }) {
   const [legendOpen, setLegendOpen] = useState(false);
   return <>
-    <DeltaMapHeader loading={loading} />
-    <DeltaMapFiltersView filters={filters} categories={categories} onChange={onChange} />
-    <button type="button" className="delta-legend-toggle" aria-expanded={legendOpen} onClick={() => setLegendOpen((value) => !value)}>{legendOpen ? 'Скрыть легенду' : 'Легенда'}</button>
-    {legendOpen && <DeltaMapLegend />}
+    <div className="delta-map-desktop-chrome">
+      <DeltaMapHeader loading={loading} />
+      <DeltaMapFiltersView filters={filters} categories={categories} onChange={onChange} />
+    </div>
+    <div className="delta-map-desktop-utilities">
+      {legendOpen && <DeltaMapLegend />}
+      <button type="button" className="delta-legend-toggle secondary-action" aria-expanded={legendOpen} onClick={() => setLegendOpen((value) => !value)}>{legendOpen ? 'Скрыть легенду' : 'Легенда'}</button>
+      <button type="button" className="delta-map-reset secondary-action" onClick={onResetPerm}>К центру Перми</button>
+    </div>
   </>;
 }
 

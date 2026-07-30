@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DeltaCard } from '../deltas/deltaTypes';
@@ -24,6 +24,15 @@ describe('Delta map cards', () => {
     expect(screen.getByText('Формулировка')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Свернуть' }));
     expect(screen.queryByText('Формулировка')).not.toBeInTheDocument();
+  });
+  it('Escape collapses an expanded mobile card before closing it', async () => {
+    render(<MobileDeltaMapCard card={card} {...common} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Подробнее' }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.getByRole('button', { name: 'Подробнее' })).toBeInTheDocument();
+    expect(common.onClose).not.toHaveBeenCalled();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(common.onClose).toHaveBeenCalledOnce();
   });
   it('falls back to statement only for blank subject', () => {
     render(<DesktopDeltaMapCard card={{ ...card, subject: ' ' }} {...common} />);

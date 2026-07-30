@@ -10,3 +10,5 @@ artifacts/*.jpeg
 artifacts/*.webp
 playwright-report/
 test-results/
+
+artifacts/**/*.png

@@ -34,7 +34,7 @@ describe('ProductShell CSS ownership', () => {
   });
 
   it('keeps mobile protected navigation geometry owned only by ProductShell', () => {
-    expect(productShellCss).toContain('--mobile-app-dock-height: 64px;');
+    expect(productShellCss).toContain('--mobile-app-dock-height: 76px;');
     expect(productShellCss).toContain('--mobile-app-dock-overhang: 6px;');
     expect(productShellCss).toMatch(/--mobile-app-dock-space:\s*calc\(var\(--mobile-app-dock-height\) \+ var\(--mobile-app-dock-overhang\) \+ env\(safe-area-inset-bottom\)\);/);
     expect(productShellCss).toContain('--product-mobile-nav-space: var(--mobile-app-dock-space);');
@@ -42,6 +42,10 @@ describe('ProductShell CSS ownership', () => {
     expect(productShellCss).toContain('min-height: calc(100svh - var(--mobile-app-dock-space));');
     expect(productShellCss).toContain('min-height: calc(100dvh - var(--mobile-app-dock-space));');
     expect(productShellCss).toMatch(/\.mobile-app-dock\s*\{[\s\S]*?min-height:\s*calc\(var\(--mobile-app-dock-height\) \+ env\(safe-area-inset-bottom\)\)/);
+    expect(productShellCss).toMatch(/\.mobile-app-dock\s*\{[\s\S]*?grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\)/);
+    expect(productShellCss).toMatch(/\.mobile-app-dock\s*\{[\s\S]*?padding:\s*6px max\(4px, env\(safe-area-inset-right\)\)/);
+    expect(productShellCss).toMatch(/\.mobile-app-shell--fullscreen \.mobile-app-main\s*\{[^}]*height:\s*calc\(100dvh - var\(--mobile-app-dock-space\)\)/);
+    expect(deltaMapCss).not.toContain('var(--mobile-app-dock-space)');
     expect(productShellCss).toContain('translateY(calc(-1 * var(--mobile-app-dock-overhang)))');
     expect(wrappedCss).not.toMatch(/wrapped-dashboard-mvp[\s\S]*?safe-area-inset-bottom/);
     expect(wrappedCss).not.toContain('calc(96px + env(safe-area-inset-bottom))');

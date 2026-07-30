@@ -9,6 +9,21 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  open-city-migration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: postgres }
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env: { PGHOST: localhost, PGPORT: 5432, PGUSER: postgres, PGPASSWORD: postgres, PGDATABASE: postgres }
+    steps:
+      - uses: actions/checkout@v5
+      - name: Run open-city migration smoke tests
+        run: psql --set ON_ERROR_STOP=1 --file scripts/open-city-postgres-smoke.sql
+
   forecast-migration:
     runs-on: ubuntu-latest
     services:
@@ -118,9 +133,21 @@ jobs:
         run: npm run build
         env:
           VITE_BASE_PATH: /uzor/
+          VITE_VISUAL_TEST_MODE: 'true'
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
       - name: Verify Chromium PWA installability
         run: npm run test:pwa-installability
+      - name: Verify production map style
+        run: npm run test:production-map-style
+      - name: Verify product geometry and capture screenshots
+        run: npm run test:geometry
+      - name: Upload product geometry screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: product-foundation-visuals
+          path: artifacts/product-foundation-visuals/*.png
+          if-no-files-found: error

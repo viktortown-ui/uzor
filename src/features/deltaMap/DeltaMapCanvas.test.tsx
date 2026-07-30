@@ -32,6 +32,7 @@ class MockMap {
     const callback = typeof layerOrHandler === 'function' ? layerOrHandler : handler!;
     this.handlers.set(key, [...(this.handlers.get(key) ?? []), callback]); return this;
   });
+  once = vi.fn((event: string, handler: (payload?: unknown) => void) => { this.on(event, handler); return this; });
   off = vi.fn((event: string, layerOrHandler: string | ((payload?: unknown) => void), handler?: (payload?: unknown) => void) => {
     const key = typeof layerOrHandler === 'string' ? `${event}:${layerOrHandler}` : event;
     const callback = typeof layerOrHandler === 'function' ? layerOrHandler : handler!;
@@ -56,6 +57,7 @@ async function renderLoaded(zoom = 12, deltas = [delta('1')]) {
   const view = render(<Canvas deltas={deltas} onViewport={vi.fn()} onSelect={onSelect} />);
   maps[0].zoom = zoom;
   act(() => maps[0].emit('load'));
+  act(() => maps[0].emit('idle'));
   return { Canvas, onSelect, view, map: maps[0] };
 }
 

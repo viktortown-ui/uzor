@@ -27,11 +27,27 @@ type Props = {
   onViewport: (bounds: Bounds) => void;
   onSelect: (delta: DeltaMapItem) => void;
   onResetPerm?: () => void;
+  showReset?: boolean;
   permResetKey?: number;
   onInteraction?: () => void;
 };
 
-const styleUrl = import.meta.env.VITE_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty';
+export const PRODUCTION_MAP_STYLE_URL = import.meta.env.VITE_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty';
+const visualTestStyle: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    'visual-attribution': {
+      type: 'geojson',
+      attribution: 'Visual test map data',
+      data: { type: 'FeatureCollection', features: [] },
+    },
+  },
+  layers: [
+    { id: 'visual-background', type: 'background', paint: { 'background-color': '#173451' } },
+    { id: 'visual-attribution-layer', type: 'circle', source: 'visual-attribution', paint: { 'circle-opacity': 0 } },
+  ],
+};
+const mapStyle = import.meta.env.VITE_VISUAL_TEST_MODE === 'true' ? visualTestStyle : PRODUCTION_MAP_STYLE_URL;
 export const DELTA_SOURCE_ID = 'delta-cluster-source';
 export const DELTA_CLUSTER_LAYER_ID = 'delta-clusters';
 export const DELTA_CLUSTER_COUNT_LAYER_ID = 'delta-cluster-count';
@@ -92,6 +108,7 @@ export function DeltaMapCanvas({
   onViewport,
   onSelect,
   onResetPerm,
+  showReset = true,
   permResetKey = 0,
   onInteraction,
 }: Props) {
@@ -124,12 +141,12 @@ export function DeltaMapCanvas({
     let map: maplibregl.Map | null = null;
     let removed = false;
     const cleanups: Array<() => void> = [];
-    const fatal = () => setMapError(true);
+    const fatal = () => { setMapReady(false); setMapError(true); };
 
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style: styleUrl,
+        style: mapStyle,
         center: [initialCityRef.current.lng, initialCityRef.current.lat],
         zoom: initialCityRef.current.zoom,
         attributionControl: { compact: true },
@@ -229,9 +246,13 @@ export function DeltaMapCanvas({
             });
           }
           usableMapRef.current = true;
-          setMapReady(true);
-          setMapError(false);
-          onViewportRef.current(boundsFromMap(map));
+          const readyAfterIdle = () => {
+            if (!map || removed) return;
+            setMapReady(true);
+            setMapError(false);
+            onViewportRef.current(boundsFromMap(map));
+          };
+          map.once('idle', readyAfterIdle);
         } catch { fatal(); }
       };
       const moveend = () => {
@@ -301,12 +322,12 @@ export function DeltaMapCanvas({
 
   const resetToPerm = () => onResetPerm ? onResetPerm() : fly([PERM_FALLBACK.lng, PERM_FALLBACK.lat], PERM_FALLBACK.zoom);
   const retry = () => { setMapError(false); setMapReady(false); setRetryKey((key) => key + 1); };
-  return <div className="delta-map-canvas">
+  return <div className="delta-map-canvas" data-map-render-state={mapError ? 'error' : mapReady ? 'ready' : 'loading'}>
     <div ref={containerRef} className="delta-map-surface" role="application" aria-label="Карта дельт Перми" />
     {mapError && <div className="delta-map-local-error" role="alert">
       <h2>Не удалось открыть карту</h2><p>Проверьте соединение или попробуйте ещё раз.</p>
       <button className="delta-map-button" onClick={retry}>Повторить</button>
     </div>}
-    <button className="delta-map-reset" onClick={resetToPerm}>К центру Перми</button>
+    {showReset && <button className="delta-map-reset secondary-action" onClick={resetToPerm}>К центру Перми</button>}
   </div>;
 }

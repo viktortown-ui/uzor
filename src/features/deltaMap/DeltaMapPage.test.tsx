@@ -1,6 +1,6 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 afterEach(()=>{ cleanup(); vi.resetModules(); vi.unstubAllEnvs(); vi.clearAllMocks(); });
@@ -13,6 +13,19 @@ describe('DeltaMapPage component states',()=>{
  it('/map рендерит shell и filters без token', async()=>{ const Page=await loadPage(); render(<MemoryRouter><Page/></MemoryRouter>); expect(await screen.findByText('Направление')).toBeInTheDocument(); expect(screen.getByTestId('mock-map')).toBeInTheDocument(); });
  it('/map показывает empty state и filters отображаются', async()=>{ const Page=await loadPage(); render(<MemoryRouter><Page/></MemoryRouter>); expect(await screen.findByText('Направление')).toBeInTheDocument(); await userEvent.click(screen.getByText('empty viewport')); expect(await screen.findByText('В этой части карты пока нет дельт')).toBeInTheDocument(); });
  it('выбор marker открывает sibling inspector, confirm/disconfirm показывают effect', async()=>{ const Page=await loadPage(); const view=render(<MemoryRouter><Page/></MemoryRouter>); await userEvent.click(await screen.findByText('viewport')); await userEvent.click(await screen.findByText('Стало дольше ждать транспорт вечером.')); const inspector=await screen.findByLabelText('Карточка дельты'); expect(inspector).toBeInTheDocument(); expect(inspector.parentElement).toBe(view.container.querySelector('.delta-map-main')); expect(view.container.querySelector('.delta-map-stage')?.nextElementSibling).toBe(inspector); await userEvent.click(screen.getByRole('button',{name:'Подтверждаю'})); expect(await screen.findByText(/Ваш отклик усилил дельту/)).toBeInTheDocument(); await waitFor(()=>expect(screen.getByRole('button',{name:'Не подтверждаю'})).toBeEnabled()); await userEvent.click(screen.getByRole('button',{name:'Не подтверждаю'})); expect(await screen.findByText(/Вы создали развилку/)).toBeInTheDocument(); });
+ it('deep-link card closes once, preserves other params, and does not reopen', async()=>{
+  const Page=await loadPage();
+  function LocationProbe(){const location=useLocation();return <output data-testid="location">{location.pathname}{location.search}</output>}
+  const view=render(<MemoryRouter initialEntries={['/map?delta=demo-1&keep=yes']}><Page/><LocationProbe/></MemoryRouter>);
+  await screen.findByLabelText('Карточка дельты');
+  await userEvent.click(screen.getByRole('button',{name:'Закрыть'}));
+  await waitFor(()=>expect(screen.queryByLabelText('Карточка дельты')).not.toBeInTheDocument());
+  expect(screen.getByTestId('location')).toHaveTextContent('/map?keep=yes');
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  expect(screen.queryByLabelText('Карточка дельты')).not.toBeInTheDocument();
+  expect(document.documentElement).not.toHaveAttribute('data-delta-desktop-inspector');
+  expect(view.container.querySelector('.has-mobile-delta-card')).not.toBeInTheDocument();
+ });
 });
 
 describe('DeltaMapPage request deduplication',()=>{

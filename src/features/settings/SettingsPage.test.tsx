@@ -1,0 +1,11 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
+const signOut=vi.fn().mockRejectedValue(new Error('network'));
+vi.mock('../auth/AuthProvider',()=>({useAuth:()=>({user:{id:'u',email:'user@example.test'},authenticationState:'authenticated',accessState:'ready',membership:{role:'participant'},signOut})}));
+vi.mock('../pwa/usePwaInstallSurface',()=>({usePwaInstallSurface:()=>({canInstall:false,openInstructions:vi.fn()})}));
+vi.mock('../guide/ProductGuide',()=>({ProductGuide:()=>null}));
+vi.mock('../../app/useMediaQuery',()=>({useMediaQuery:()=>false}));
+import { SettingsPage } from './SettingsPage';
+describe('Settings account actions',()=>{it('shows a recoverable sign-out failure',async()=>{render(<MemoryRouter><SettingsPage/></MemoryRouter>);await userEvent.click(screen.getByRole('button',{name:'Выйти'}));expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось выйти')})});
