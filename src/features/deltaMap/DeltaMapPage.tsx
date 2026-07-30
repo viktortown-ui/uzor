@@ -24,7 +24,7 @@ export function DeltaMapPage() {
  const isMobile=useMediaQuery('(max-width: 900px)');
  const [mobileChromeCollapsed,setMobileChromeCollapsed]=useState(false);
  const [permResetKey,setPermResetKey]=useState(0);
- const [filters,setFilters]=useState<DeltaMapFilters>(defaultDeltaMapFilters); const [categories,setCategories]=useState<DeltaCategory[]>(fallbackCategories); const [city,setCity]=useState<DeltaCity|null>(null); const [context,setContext]=useState<{circleId:string;citySlug:'perm'}|null>(isDemoMode?{circleId:'demo-circle',citySlug:'perm'}:null); const [status,setStatus]=useState<'loading'|'ready'|'empty'|'no-circle'|'missing-migration'|'error'>('loading'); const [deltas,setDeltas]=useState<DeltaMapItem[]>([]); const [selectedId,setSelectedId]=useState<string|null>(null); const [card,setCard]=useState<DeltaCard|null>(null); const [cardLoading,setCardLoading]=useState(false); const [reacting,setReacting]=useState(false); const [effect,setEffect]=useState(''); const [cardError,setCardError]=useState(''); const [highlightedId,setHighlightedId]=useState<string|null>(null); const seq=useRef(0); const highlightTimerRef=useRef<number | null>(null); const filtersRef=useRef(filters); const contextRef=useRef(context); const boundsRef=useRef<Bounds|null>(null); const hasDeltasRef=useRef(false);
+ const [filters,setFilters]=useState<DeltaMapFilters>(defaultDeltaMapFilters); const [categories,setCategories]=useState<DeltaCategory[]>(fallbackCategories); const [city,setCity]=useState<DeltaCity|null>(null); const [context,setContext]=useState<{circleId:string;citySlug:'perm'}|null>(isDemoMode?{circleId:'demo-circle',citySlug:'perm'}:null); const [status,setStatus]=useState<'loading'|'ready'|'empty'|'no-circle'|'missing-migration'|'error'>('loading'); const [deltas,setDeltas]=useState<DeltaMapItem[]>([]); const [selectedId,setSelectedId]=useState<string|null>(null); const [card,setCard]=useState<DeltaCard|null>(null); const [cardLoading,setCardLoading]=useState(false); const [reacting,setReacting]=useState(false); const [effect,setEffect]=useState(''); const [cardError,setCardError]=useState(''); const [highlightedId,setHighlightedId]=useState<string|null>(null); const seq=useRef(0); const cardRequestRef=useRef(0); const handledQueryRef=useRef<string|null>(null); const highlightTimerRef=useRef<number | null>(null); const filtersRef=useRef(filters); const contextRef=useRef(context); const boundsRef=useRef<Bounds|null>(null); const hasDeltasRef=useRef(false);
  const center = useMemo(()=>cityCenter(city),[city]);
  useEffect(()=>{ filtersRef.current=filters; },[filters]);
  useEffect(()=>()=>{ if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current); },[]);
@@ -37,6 +37,7 @@ export function DeltaMapPage() {
  useEffect(()=>{ if (!context || !boundsRef.current || isDemoMode) return; const id = window.setTimeout(()=>{ void fetchDeltas(boundsRef.current ?? undefined,{force:true}); },0); return ()=>window.clearTimeout(id); },[context,fetchDeltas]);
  useEffect(()=>{ if (searchParams.get('delta')) return; if (!(selectedId && !deltas.some(d=>d.id===selectedId && deltaMatchesFilters(d,filters)))) return; const id = window.setTimeout(()=>{ setSelectedId(null); setCard(null); },0); return ()=>window.clearTimeout(id); },[filters,deltas,selectedId,searchParams]);
  const openDeltaId = useCallback((id: string) => {
+  const request=++cardRequestRef.current;
   setSelectedId(id);
   setCard(null);
   setCardLoading(true);
@@ -45,25 +46,33 @@ export function DeltaMapPage() {
   void (async () => {
     try {
       const loaded = isDemoMode ? demoCard(id) : await getDeltaCard(id);
-      setCard(loaded);
+      if(request===cardRequestRef.current)setCard(loaded);
     } catch {
-      setCardError('Не удалось открыть Дельту');
+      if(request===cardRequestRef.current)setCardError('Не удалось открыть Дельту');
     } finally {
-      setCardLoading(false);
+      if(request===cardRequestRef.current)setCardLoading(false);
     }
   })();
  }, []);
  const selectDelta=useCallback((delta:DeltaMapItem)=>{ void openDeltaId(delta.id); },[openDeltaId]);
- useEffect(()=>{ const queried=searchParams.get('delta'); if(!queried||selectedId) return; const id=window.setTimeout(()=>void openDeltaId(queried),0); return()=>window.clearTimeout(id); },[searchParams,selectedId,openDeltaId]);
+ useEffect(()=>{ const queried=searchParams.get('delta'); if(!queried){handledQueryRef.current=null;return} if(handledQueryRef.current===queried)return;handledQueryRef.current=queried;void openDeltaId(queried); },[searchParams,openDeltaId]);
 
  const handleReact=async(reaction:DeltaReaction)=>{ if(!selectedId||!card) return; setReacting(true); setCardError(''); try { if (isDemoMode) { const next={...card, viewerReaction:reaction, confirmCount:card.confirmCount+(reaction==='confirm'?1:0), disconfirmCount:card.disconfirmCount+(reaction==='disconfirm'?1:0), status: reaction==='disconfirm'?'fork':card.confirmCount+1>=card.confirmationTarget?'confirmed':'checking'} as DeltaCard; setCard(next); setDeltas(rows=>rows.map(d=>d.id===next.id?{...d,status:next.status,confirmCount:next.confirmCount,disconfirmCount:next.disconfirmCount,lastActivityAt:new Date().toISOString()}:d)); setEffect(reaction==='disconfirm'?'Вы создали развилку. В этом месте ситуацию видят по-разному.':'Ваш отклик усилил дельту. Она перешла в стадию проверки.'); setHighlightedId(next.id); return; } const result=await reactToDelta(selectedId,reaction); setEffect(`${result.effect.message}. ${result.effect.detail}`); setCard({...card,...result.delta,viewerReaction:reaction}); setDeltas(rows=>rows.map(d=>d.id===selectedId?{...d,status:result.delta.status,confirmCount:result.delta.confirmCount,disconfirmCount:result.delta.disconfirmCount,lastActivityAt:new Date().toISOString()}:d)); setHighlightedId(selectedId); void getDeltaCard(selectedId).then(setCard).catch(()=>undefined); } catch(e) { setCardError(e instanceof DeltaApiError && e.code==='author_reaction_locked' ? 'Первая отметка автора закреплена. Другие участники помогут проверить вашу дельту.' : 'Не удалось сохранить отклик. Попробуйте ещё раз.'); } finally { setReacting(false); if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current); highlightTimerRef.current = window.setTimeout(()=>setHighlightedId(null),600); } };
  const resetFilters=()=>setFilters(defaultDeltaMapFilters);
  const resetToPerm=useCallback(()=>setPermResetKey((key)=>key+1),[]);
  const retryCurrentViewport=useCallback(()=>{ const currentBounds=boundsRef.current; if (!currentBounds) return; void fetchDeltas(currentBounds,{force:true}); },[fetchDeltas]);
  const closeCard = () => {
+  const queried=searchParams.get('delta');
+  if(queried)handledQueryRef.current=queried;
+  cardRequestRef.current+=1;
   setSelectedId(null);
   setCard(null);
-  if (searchParams.get('delta')) setSearchParams({});
+  setCardLoading(false);
+  setCardError('');
+  setEffect('');
+  setReacting(false);
+  setHighlightedId(null);
+  if(queried){const next=new URLSearchParams(searchParams);next.delete('delta');setSearchParams(next,{replace:true})}
  };
  const cardProps = {
   card,
