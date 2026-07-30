@@ -8,13 +8,13 @@ import { getThemeSnapshot, isCurrentUserCurator, joinCircleByCode, listPendingCa
 import type { ActiveTheme, BranchAggregate, CandidateProposal, CatalogItem, Evidence, Intensity, Layer, ThemeSnapshot } from '../types/domain';
 import { appMode, isDemoMode, isProductionConfigured } from './appMode';
 import { t } from './text';
-import { WrappedPage } from '../features/wrapped/WrappedPage';
+const WrappedPage = lazy(() => import('../features/wrapped/WrappedPage').then(module => ({ default: module.WrappedPage })));
 
 
 
 
 
-import { MobilePulsePage } from '../features/mobilePulse/MobilePulsePage';
+const MobilePulsePage = lazy(() => import('../features/mobilePulse/MobilePulsePage').then(module => ({ default: module.MobilePulsePage })));
 
 
 import { useMediaQuery } from './useMediaQuery';

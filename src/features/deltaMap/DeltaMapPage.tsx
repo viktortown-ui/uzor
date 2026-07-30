@@ -80,13 +80,13 @@ export function DeltaMapPage() {
    <div className="delta-map-stage">
    {isMobile
     ? <MobileDeltaMapChrome filters={filters} categories={categories} onChange={setFilters} collapsed={mobileChromeCollapsed} onCollapsedChange={setMobileChromeCollapsed} />
-    : <DesktopDeltaMapChrome loading={status === 'loading' && deltas.length > 0} filters={filters} categories={categories} onChange={setFilters} />}
+    : <DesktopDeltaMapChrome loading={status === 'loading' && deltas.length > 0} filters={filters} categories={categories} onChange={setFilters} onResetPerm={resetToPerm} />}
    {status === 'no-circle'
     ? <DeltaMapState kind="no-circle" />
     : status === 'missing-migration'
      ? <DeltaMapState kind="missing-migration" onRetry={retryCurrentViewport} />
      : <>
-      <DeltaMapCanvas city={center} deltas={deltas} selectedId={selectedId} highlightedId={highlightedId} onViewport={fetchDeltas} onSelect={selectDelta} onResetPerm={resetToPerm} permResetKey={permResetKey} onInteraction={() => isMobile && setMobileChromeCollapsed(true)} />
+      <DeltaMapCanvas city={center} deltas={deltas} selectedId={selectedId} highlightedId={highlightedId} onViewport={fetchDeltas} onSelect={selectDelta} onResetPerm={resetToPerm} showReset={isMobile} permResetKey={permResetKey} onInteraction={() => isMobile && setMobileChromeCollapsed(true)} />
       {status === 'loading' && deltas.length === 0 && <DeltaMapState kind="loading" />}
       {status === 'empty' && <div className="delta-empty">
        <h2>В этой части карты пока нет дельт</h2><p>Переместите карту или сбросьте фильтры.</p>

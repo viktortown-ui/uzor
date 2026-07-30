@@ -98,9 +98,10 @@ describe('app', () => {
     expect(screen.getByText(/Сейчас ты отвечаешь из контекста: Работающие/)).toBeInTheDocument();
   });
 
-  it('рендерит Wrapped MVP на root в HashRouter на GitHub Pages base path без basename', () => {
+  it('рендерит Wrapped MVP на root в HashRouter на GitHub Pages base path без basename', async () => {
+    installMatchMedia(false);
     renderHashAt('#/');
-    expect(screen.getByRole('link', { name: /УЗОР/ })).toHaveAttribute('href', '#/wrapped');
+    expect(await screen.findByRole('link', { name: /УЗОР/ })).toHaveAttribute('href', '#/wrapped');
     expect(screen.getByRole('heading', { name: 'Личный итог недели' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Куда уходит твой час?' })).not.toBeInTheDocument();
   });
@@ -522,7 +523,7 @@ describe('ProductShell shared navigation routes', () => {
     installMatchMedia(true);
     const mobileView = renderAt('/pulse');
     expect(screen.queryByRole('complementary', { name: 'Основная навигация' })).not.toBeInTheDocument();
-    const mobileNav = screen.getByRole('navigation', { name: 'Мобильная навигация' });
+    const mobileNav = await screen.findByRole('navigation', { name: 'Мобильная навигация' });
     expect(Array.from(mobileNav.querySelectorAll('a')).map((link) => link.textContent)).toEqual(['Пульс', 'Карта', 'Добавить', 'Прогнозы', 'Настройки']);
     expect(mobileNav.querySelectorAll('a')[2]).toHaveAttribute('href', '/contribute');
     expect(mobileNav.querySelectorAll('a')[2]).toHaveClass('mobile-app-dock__primary');

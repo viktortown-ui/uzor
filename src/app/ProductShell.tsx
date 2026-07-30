@@ -60,7 +60,7 @@ function MobileAppDock() {
   const active = mobileActive(pathname);
   return <nav className="mobile-app-dock" aria-label="Мобильная навигация">{mobileItems.map((item) => {
     const isActive = active === item.to;
-    return <Link key={item.to} to={item.to} aria-label={item.label} className={item.primary ? `mobile-app-dock__primary${isActive ? ' active' : ''}` : `mobile-app-dock__item${isActive ? ' active' : ''}`} aria-current={isActive ? 'page' : undefined}>{item.primary ? <span className="mobile-app-dock__primary-icon"><NavigationIcon icon={item.icon} /></span> : <NavigationIcon icon={item.icon} className="mobile-app-dock__icon" />}<span className="mobile-app-dock__label">{item.label}</span></Link>;
+    return <Link key={item.to} to={item.to} aria-label={item.label} className={item.primary ? `mobile-app-dock__primary${isActive ? ' active' : ''}` : `mobile-app-dock__item${isActive ? ' active' : ''}`} aria-current={isActive ? 'page' : undefined}>{item.primary ? <span className="mobile-app-dock__primary-icon"><NavigationIcon icon={item.icon} /></span> : <NavigationIcon icon={item.icon} className="mobile-app-dock__icon" />}<span className={`mobile-app-dock__label${item.icon === 'settings' ? ' mobile-app-dock__label--settings' : ''}`}>{item.label}</span></Link>;
   })}</nav>;
 }
 

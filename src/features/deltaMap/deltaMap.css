@@ -7,14 +7,16 @@
 .delta-map-canvas, .delta-map-surface { position: absolute; inset: 0; }
 
 /* Desktop chrome */
-.delta-map-header { position: absolute; z-index: 5; top: 16px; left: 18px; max-width: 430px; padding: 10px 14px; border-left: 2px solid rgba(125,249,255,.42); background: linear-gradient(90deg,rgba(7,16,31,.88),rgba(7,16,31,.45),transparent); text-shadow:0 1px 10px #07101f; }
+.delta-map-desktop-chrome { position:absolute;z-index:5;top:16px;left:18px;display:grid;gap:10px;width:min(560px,calc(100% - 36px));padding:12px 14px;border:1px solid rgba(125,249,255,.18);border-left:2px solid rgba(125,249,255,.55);border-radius:0 18px 18px 0;background:rgba(7,16,31,.84);backdrop-filter:blur(14px);box-shadow:0 12px 30px rgba(0,0,0,.24);pointer-events:none; }
+.delta-map-desktop-chrome :is(select,button,input,label){pointer-events:auto}
+.delta-map-header { position:static;max-width:none;padding:0;background:none;text-shadow:0 1px 10px #07101f; }
 .delta-map-header h1 { margin: .1rem 0; font-size: clamp(1.7rem,4vw,3rem); }
 .delta-map-header p { margin: .2rem 0; color: #b7c7d8; }
-.delta-map-filters { position: absolute; z-index: 6; top: 180px; left: 18px; display: flex; gap: 10px; max-width: calc(100% - 40px); }
+.delta-map-filters { position:static;display:flex;flex-wrap:wrap;gap:10px;max-width:100%; }
 .delta-map-filters label { display: grid; gap: 4px; color: #b7c7d8; font-size: .72rem; text-transform: uppercase; }
 .delta-map-filters select, .delta-map-button, .delta-empty button, .delta-map-reset, .delta-card-actions button, .delta-card-toggle { min-height: 44px; border: 1px solid rgba(125,249,255,.25); border-radius: 999px; background: rgba(11,25,48,.9); color: #ecfeff; padding: 9px 12px; }
 .delta-map-refresh { display: inline-block; margin-top: 8px; color: #67e8f9; }
-.delta-legend-toggle{position:absolute;z-index:6;right:18px;bottom:20px;min-height:44px;border:1px solid rgba(125,249,255,.25);border-radius:999px;padding:9px 14px;background:rgba(11,25,48,.9);color:#ecfeff}
+.delta-legend-toggle{min-height:44px}
 
 /* Mobile toolbar */
 .delta-mobile-toolbar { position: absolute; z-index: 6; top: max(8px, env(safe-area-inset-top)); left: 8px; right: 8px; min-height: 50px; display: flex; align-items: center; gap: 8px; padding: 4px 8px 4px 14px; border: 1px solid rgba(125,249,255,.22); border-radius: 18px; background: rgba(7,16,31,.88); backdrop-filter: blur(14px); }
@@ -77,7 +79,7 @@
 .delta-card-toggle { margin-top: 9px; }
 
 /* Legend */
-.delta-map-legend { position: absolute; z-index: 4; right: 18px; bottom: 24px; padding: 12px; border-radius: 18px; background: rgba(7,16,31,.82); }
+.delta-map-legend { padding:12px;border-radius:18px;background:rgba(7,16,31,.92); }
 .delta-map-legend p { display:flex;align-items:center;gap:8px;margin:7px 0; }
 .delta-map-legend i { box-sizing:border-box;display:inline-block;width:20px;height:20px;flex:0 0 20px;border-radius:50%; }
 .delta-map-legend .positive,.delta-map-legend .negative { position:relative;border:2px solid #07101f; }
@@ -102,9 +104,18 @@
 
 /* A selected desktop Delta is an attached inspector, not a floating second screen. */
 @media(min-width:901px){
- .delta-map-card--desktop{position:relative;inset:auto;flex:0 0 clamp(360px,26vw,430px);width:clamp(360px,26vw,430px);height:100%;padding:22px 24px calc(24px + env(safe-area-inset-bottom));overflow:auto;border-width:0 0 0 1px;border-radius:0;box-shadow:-18px 0 40px rgba(0,0,0,.28)}
- .delta-legend-toggle,.delta-map-legend{left:20px;right:auto;bottom:84px}
- .delta-map-legend{padding:8px 10px;border-radius:12px}
+ .delta-map-card--desktop{position:relative;inset:auto;flex:0 0 clamp(320px,26vw,430px);width:clamp(320px,26vw,430px);height:100%;padding:22px 24px calc(24px + env(safe-area-inset-bottom));overflow:auto;border-width:0 0 0 1px;border-radius:0;box-shadow:-18px 0 40px rgba(0,0,0,.28)}
+ .delta-map-desktop-utilities{position:absolute;z-index:6;left:20px;bottom:24px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;max-width:min(385px,calc(100% - 40px));pointer-events:none}
+ .delta-map-desktop-utilities>*{position:static;pointer-events:auto}
+ .delta-map-legend{width:100%;padding:8px 10px;border-radius:12px}
+ .delta-map-main.has-inspector .delta-map-desktop-chrome{width:min(480px,calc(100% - 36px))}
+}
+@media(min-width:901px) and (max-width:1100px){
+ .delta-map-desktop-chrome{top:10px;left:10px;width:calc(100% - 20px);padding:9px 10px;gap:7px}
+ .delta-map-header h1{font-size:1.55rem}.delta-map-header p{font-size:.86rem}
+ .delta-map-filters{gap:6px}.delta-map-filters label{font-size:.65rem}.delta-map-filters select{max-width:150px;padding-inline:8px}
+ .delta-map-main.has-inspector .delta-map-card--desktop{flex-basis:320px;width:320px}
+ .delta-map-main.has-inspector .delta-map-desktop-chrome{width:calc(100% - 20px)}
 }
 .delta-card-category{font-weight:700;color:#d7e7f0}.delta-card-location,.delta-card-status{padding-block:5px;border-bottom:1px solid rgba(148,211,231,.12)}
 .delta-card-close,.delta-card-toggle{min-width:44px;min-height:44px}
@@ -116,3 +127,4 @@
  .delta-filter-sheet>fieldset,.delta-filter-sheet>details{flex:0 0 auto}
  .delta-filter-sheet{overflow-y:auto}
 }
+@media(min-width:901px) and (max-width:1100px){.delta-map-desktop-utilities{max-width:min(240px,calc(100% - 40px))}}
