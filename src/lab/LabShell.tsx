@@ -1,3 +1,4 @@
+import './lab.css';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { copyOptions, demoBadge, scaleStatus } from './labData';
 import { LabConnections } from './LabConnections';

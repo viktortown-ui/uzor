@@ -8,7 +8,9 @@
     "verify:pwa-build": "node scripts/verify-pwa-build.mjs",
     "test:pwa-installability": "node scripts/pwa-chromium-installability.mjs",
     "test:geometry": "node scripts/product-geometry.mjs",
-    "test:production-map-style": "node scripts/production-map-style-smoke.mjs"
+    "test:production-map-style": "node scripts/production-map-style-smoke.mjs",
+    "verify:bundle-budget": "node scripts/verify-bundle-budget.mjs",
+    "test:route-chunk-isolation": "node scripts/route-chunk-isolation.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "~2.45.6",
