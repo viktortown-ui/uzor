@@ -44,11 +44,11 @@ function DemoForecastCard({ event }: { event: ForecastEvent }) {
   };
   const review = () => { if (canReview) setStage('review'); };
 
-  return <article className="forecast-card">
-    <section className="forecast-event" aria-labelledby="forecast-event-title">
+  return <article aria-label="Экспериментальный проверяемый прогноз" className="forecast-card">
+    <section className="forecast-event" aria-labelledby="forecast-event-title"><p className="forecast-kicker">ЭКСПЕРИМЕНТАЛЬНЫЙ ПРОГНОЗ</p>
       <div className="forecast-event__badges"><span>{event.category}</span><span>Вымышленное событие</span></div>
       <p className="forecast-demo-label">Интерактивное демо · время сценария зафиксировано</p>
-      <h2 id="forecast-event-title">{event.title}</h2>
+      <p>Вы указываете личную вероятность конкретного исхода. После появления проверяемого результата система сможет математически оценить только этот отдельный прогноз.</p><h2 id="forecast-event-title">{event.title}</h2>
       <dl className="forecast-event__facts">
         <div><dt>География</dt><dd>{event.geographicScope ?? event.cityId ?? 'Не указана'}</dd></div>
         <div><dt>Точное условие разрешения</dt><dd>{event.shortDescription}</dd></div>
@@ -91,7 +91,7 @@ function ProductionForecastCard({event,initialForecast,submissionPermitted,locke
  const [percentage,setPercentage]=useState(initialForecast?String(initialForecast.probability*100):'');
  const [reasoning,setReasoning]=useState(initialForecast?.reasoning??'');
  const parsed=parsePercentage(percentage); const readonly=locked||!submissionPermitted; const option=event.options.find(o=>o.id===selected); const numericValue=parsed.valid?parsed.percentage:0;
- return <article className="forecast-card"><section className="forecast-event" aria-labelledby="forecast-event-title"><div className="forecast-event__badges"><span>{event.category}</span><span>Вымышленное событие</span></div><p className="forecast-demo-label">Вымышленное событие · прогноз сохраняется в вашем аккаунте</p><h2 id="forecast-event-title">{event.title}</h2><dl className="forecast-event__facts"><div><dt>Точное условие разрешения</dt><dd>{event.shortDescription}</dd></div><div><dt>Приём прогнозов до</dt><dd>{formatRussianUtcDateTime(event.closesAt)}</dd></div><div><dt>Источник проверки</dt><dd>{formatResolutionSource(event.resolutionSource)}</dd></div></dl></section><section className="forecast-workspace">
+ return <article aria-label="Экспериментальный проверяемый прогноз" className="forecast-card"><section className="forecast-event" aria-labelledby="forecast-event-title"><p className="forecast-kicker">ЭКСПЕРИМЕНТАЛЬНЫЙ ПРОГНОЗ</p><div className="forecast-event__badges"><span>{event.category}</span><span>Вымышленное событие</span></div><p className="forecast-demo-label">Вымышленное событие · прогноз сохраняется в вашем аккаунте</p><p>Вы указываете личную вероятность конкретного исхода. После появления проверяемого результата система сможет математически оценить только этот отдельный прогноз.</p><h2 id="forecast-event-title">{event.title}</h2><dl className="forecast-event__facts"><div><dt>Точное условие разрешения</dt><dd>{event.shortDescription}</dd></div><div><dt>Приём прогнозов до</dt><dd>{formatRussianUtcDateTime(event.closesAt)}</dd></div><div><dt>Источник проверки</dt><dd>{formatResolutionSource(event.resolutionSource)}</dd></div></dl></section><section className="forecast-workspace">
  {authenticationRequired||lockReason==='not_authenticated'?<div className="forecast-status"><strong>Чтобы сохранить прогноз, войдите в круг.</strong><p><Link className="forecast-primary" to="/join">Войти</Link></p></div>:<>
  {lockReason==='before_open'&&<div className="forecast-status" role="status"><strong>Приём прогнозов ещё не начался.</strong></div>}
  {lockReason==='deadline_passed'&&<div className="forecast-status" role="status"><strong>Срок приёма прогнозов завершён.</strong>{initialForecast&&<p>Прогноз зафиксирован и больше не может быть изменён.</p>}</div>}

@@ -11,7 +11,7 @@ const desktopItems: NavItem[] = [
   { label: 'Итог недели', to: '/wrapped', icon: 'summary' },
   { label: 'Карта дельт', to: '/map', icon: 'map' },
   { label: 'Добавить Дельту', to: '/contribute', icon: 'add' },
-  { label: 'Прогнозы', to: '/forecast', icon: 'forecast' },
+  { label: 'Будущее', to: '/forecast', icon: 'forecast' },
   { label: 'Настройки', to: '/settings', icon: 'settings' },
 ];
 
@@ -19,7 +19,7 @@ const mobileItems: NavItem[] = [
   { label: 'Пульс', to: '/pulse', icon: 'pulse' },
   { label: 'Карта', to: '/map', icon: 'map' },
   { label: 'Добавить', to: '/contribute', icon: 'add', primary: true },
-  { label: 'Прогнозы', to: '/forecast', icon: 'forecast' },
+  { label: 'Будущее', to: '/forecast', icon: 'forecast' },
   { label: 'Настройки', to: '/settings', icon: 'settings' },
 ];
 

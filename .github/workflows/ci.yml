@@ -114,6 +114,26 @@ jobs:
       - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/009_forecast_brier_scoring_v1.sql
       - run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-scoring-postgres-smoke.sql
 
+  forecast-question-pipeline-migration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: postgres }
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env: { PGHOST: localhost, PGPORT: 5432, PGUSER: postgres, PGPASSWORD: postgres, PGDATABASE: postgres }
+    steps:
+      - uses: actions/checkout@v5
+      - run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-postgres-prerequisites.sql
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/007_forecast_persistence_deadline_v1.sql
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/008_forecast_outcome_resolution_v1.sql
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/009_forecast_brier_scoring_v1.sql
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/010_open_city_access.sql
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/011_forecast_question_pipeline_v1.sql
+      - run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-question-pipeline-postgres-smoke.sql
+
   check:
     runs-on: ubuntu-latest
     steps:
