@@ -59,14 +59,21 @@ const actions: Record<ProposalStatus, readonly [ModerationAction, string][]> = {
   archived: [],
   converted: [],
 };
-export const getInitialEditorFilter = (visualFixturesActive: boolean) =>
-  visualFixturesActive ? visualEditorProposal.status : "submitted";
+export const getInitialEditorFilter = (
+  visualFixturesActive: boolean,
+  fixtureStatus: ProposalStatus,
+) => (visualFixturesActive ? fixtureStatus : "submitted");
 export function ForecastQuestionAdminPage() {
   const [accessState, setAccessState] = useState<
     "checking" | "authorized" | "unauthorized" | "error"
   >(forecastVisualFixturesActive ? "authorized" : "checking");
   const [filter, setFilter] = useState<ProposalStatus>(
-    getInitialEditorFilter(forecastVisualFixturesActive),
+    getInitialEditorFilter(
+      forecastVisualFixturesActive,
+      forecastVisualFixturesActive
+        ? visualEditorProposal.status
+        : "submitted",
+    ),
   );
   const [items, setItems] = useState<EditorProposal[]>(
     forecastVisualFixturesActive ? [visualEditorProposal] : [],

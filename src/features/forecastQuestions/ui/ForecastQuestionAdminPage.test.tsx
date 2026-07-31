@@ -66,8 +66,8 @@ afterEach(() => {
 
 describe("ForecastQuestionAdminPage queue integrity", () => {
   it("согласует визуальный фильтр со статусом публичного рассмотрения", () => {
-    expect(getInitialEditorFilter(true)).toBe("public_review");
-    expect(getInitialEditorFilter(false)).toBe("submitted");
+    expect(getInitialEditorFilter(true, "public_review")).toBe("public_review");
+    expect(getInitialEditorFilter(false, "public_review")).toBe("submitted");
   });
   it("clears stale selection after a failed filter load and never submits its fields for the retry result", async () => {
     const a = proposal("1", "submitted", "Заголовок A");
