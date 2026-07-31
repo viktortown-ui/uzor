@@ -32,9 +32,13 @@ do $$ begin
  assert not has_table_privilege('authenticated','public.forecast_question_proposals','insert');
  assert not has_table_privilege('authenticated','public.forecast_question_proposals','update');
  assert not has_table_privilege('authenticated','public.forecast_question_proposals','delete');
+ assert not has_table_privilege('authenticated','public.forecast_question_editors','select,insert,update,delete');
+ assert not has_table_privilege('authenticated','public.forecast_question_proposal_options','select,insert,update,delete');
+ assert not has_table_privilege('authenticated','public.forecast_question_consideration_votes','select,insert,update,delete');
 end $$;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
 do $$ begin assert jsonb_array_length(public.get_my_forecast_question_proposals('perm',30))=0; end $$;
+select pg_temp.expect_error($q$select public.vote_forecast_question_consideration('59999999-0000-4000-8000-000000000099','support')$q$,'proposal_not_found');
 select pg_temp.expect_error(format('select public.vote_forecast_question_consideration(%L,%L)',(select payload->>'id' from submitted),'support'),'voting_closed');
 select pg_temp.expect_error(format('select public.moderate_forecast_question_proposal(%L,%L,null,null,null)',(select payload->>'id' from submitted),'start_review'),'editor_not_authorized');
 insert into public.forecast_question_editors(user_id,created_by) values('10000000-0000-4000-8000-000000000004','10000000-0000-4000-8000-000000000004');

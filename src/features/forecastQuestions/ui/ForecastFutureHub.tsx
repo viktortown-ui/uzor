@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { isProductionConfigured } from "../../../app/appMode";
 import { ProductShell } from "../../../app/ProductShell";
@@ -17,6 +17,7 @@ export function ForecastFutureHub() {
     isProductionConfigured ? "loading" : "loaded",
   );
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
+  const pendingIdsRef = useRef(new Set<string>());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const load = useCallback(async () => {
     if (!isProductionConfigured) return;
@@ -32,7 +33,8 @@ export function ForecastFutureHub() {
     queueMicrotask(() => void load());
   }, [load]);
   const voting = async (id: string, vote: ConsiderationVote) => {
-    if (pendingIds.has(id)) return;
+    if (pendingIdsRef.current.has(id)) return;
+    pendingIdsRef.current.add(id);
     setPendingIds((current) => new Set(current).add(id));
     setErrors((current) => ({ ...current, [id]: "" }));
     try {
@@ -46,6 +48,7 @@ export function ForecastFutureHub() {
         [id]: "Не удалось сохранить выбор. Попробуйте ещё раз.",
       }));
     } finally {
+      pendingIdsRef.current.delete(id);
       setPendingIds((current) => {
         const next = new Set(current);
         next.delete(id);

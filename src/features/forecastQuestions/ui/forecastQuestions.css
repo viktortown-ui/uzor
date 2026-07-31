@@ -177,3 +177,22 @@
     scroll-margin-bottom: 120px;
   }
 }
+@media (max-width: 900px) {
+  .future-shell.mobile-app-shell {
+    height: 100dvh;
+    min-height: 100dvh;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+  .future-shell.mobile-app-shell .mobile-app-main {
+    height: calc(100dvh - var(--mobile-app-dock-space));
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+}
+@media (max-width: 900px) {
+  [data-testid="experimental-forecast"] {
+    margin-top: calc(var(--mobile-app-dock-space) + 24px);
+  }
+}

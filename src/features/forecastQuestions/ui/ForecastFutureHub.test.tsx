@@ -1,5 +1,6 @@
 import {
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -143,6 +144,35 @@ describe("ForecastFutureHub production states", () => {
     await waitFor(() =>
       expect(within(cardA).getByText(/Голосов: 2/)).toBeInTheDocument(),
     );
+    expect(api.castVote).toHaveBeenCalledTimes(2);
+  });
+  it("uses a synchronous per-proposal lock for rapid vote clicks", async () => {
+    const item = proposal("1");
+    api.listPublicProposals.mockResolvedValue([item]);
+    let resolveVote!: (value: unknown) => void;
+    api.castVote.mockReturnValue(
+      new Promise((resolve) => {
+        resolveVote = resolve;
+      }),
+    );
+    renderHub();
+    const card = (await screen.findByText("Тема 1")).closest("article")!;
+    const support = within(card).getByRole("button", {
+      name: "Да, стоит рассмотреть",
+    });
+    const notNow = within(card).getByRole("button", { name: "Нет, не сейчас" });
+    fireEvent.click(support);
+    fireEvent.click(support);
+    fireEvent.click(notNow);
+    expect(api.castVote).toHaveBeenCalledTimes(1);
+    resolveVote({
+      supportCount: 2,
+      notNowCount: 0,
+      totalVotes: 2,
+      viewerVote: "support",
+    });
+    await waitFor(() => expect(support).toBeEnabled());
+    fireEvent.click(notNow);
     expect(api.castVote).toHaveBeenCalledTimes(2);
   });
 });

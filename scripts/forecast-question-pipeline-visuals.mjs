@@ -86,17 +86,36 @@ try {
         const dock = document.querySelector(".mobile-app-dock");
         if (!dock) return false;
         const dockRect = dock.getBoundingClientRect();
-        return [
+        const overlapping = [
           ...document.querySelectorAll(
             ".future-page h1,.future-page h2,.future-page h3,.future-page button,.future-page input,.future-page textarea,.future-card",
           ),
-        ].some((node) => {
+        ].find((node) => {
           const rect = node.getBoundingClientRect();
           const visible = rect.bottom > 0 && rect.top < innerHeight;
           return (
             visible && rect.bottom > dockRect.top && rect.top < dockRect.bottom
           );
         });
+        if (!overlapping) return null;
+        const rect = overlapping.getBoundingClientRect();
+        return {
+          tagName: overlapping.tagName,
+          className: overlapping.className,
+          text: overlapping.textContent?.trim().slice(0, 120),
+          elementRect: {
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            left: rect.left,
+          },
+          dockRect: {
+            top: dockRect.top,
+            right: dockRect.right,
+            bottom: dockRect.bottom,
+            left: dockRect.left,
+          },
+        };
       })(),
     }));
     if (
@@ -105,7 +124,7 @@ try {
       contract.clipped ||
       !contract.voteTargets ||
       !contract.headerSpacing ||
-      contract.dockOverlap
+      Boolean(contract.dockOverlap)
     )
       throw new Error(
         `${route} visual contract failed: ${JSON.stringify(contract)}`,
