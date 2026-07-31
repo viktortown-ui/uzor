@@ -74,12 +74,12 @@ do $$ begin assert (select count(*)=0 from public.forecast_question_consideratio
 insert into public.forecast_question_proposals(author_user_id,circle_id,city_id,raw_question)
 select '10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','Приватный вопрос номер '||n from generate_series(1,105) n;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
-do $$ begin assert jsonb_array_length(public.get_my_forecast_question_proposals('perm',null))=100; end $$;
+do $$ begin assert jsonb_array_length(public.get_my_forecast_question_proposals('perm',null))=30; assert jsonb_array_length(public.get_my_forecast_question_proposals('perm',10000))=100; end $$;
 insert into public.forecast_question_proposals(author_user_id,circle_id,city_id,raw_question,public_title,public_summary,editor_user_id,status,public_review_started_at)
 select '10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','Публичный вопрос номер '||n,'Публичная тема '||n,'Описание темы '||n,'10000000-0000-4000-8000-000000000004','public_review',now() from generate_series(1,105) n;
-do $$ begin assert jsonb_array_length(public.list_public_forecast_question_proposals('perm',null,null))=100; end $$;
+do $$ begin assert jsonb_array_length(public.list_public_forecast_question_proposals('perm',null,null))=30; assert jsonb_array_length(public.list_public_forecast_question_proposals('perm',10000,0))=100; end $$;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
-do $$ begin assert jsonb_array_length(public.get_forecast_question_editor_queue(null,null))=200; end $$;
+do $$ begin assert jsonb_array_length(public.get_forecast_question_editor_queue(null,null))=100; assert jsonb_array_length(public.get_forecast_question_editor_queue(null,10000))=200; end $$;
 select pg_temp.expect_error($q$delete from auth.users where id='10000000-0000-4000-8000-000000000004'$q$,'foreign key');
 rollback;
 \echo 'forecast question pipeline behavioral smoke passed'
