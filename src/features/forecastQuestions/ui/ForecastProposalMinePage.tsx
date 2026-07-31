@@ -5,6 +5,10 @@ import { ProductShell } from "../../../app/ProductShell";
 import { getMyProposals } from "../api/forecastQuestionApi";
 import type { MyProposal } from "../api/forecastQuestionApiTypes";
 import "./forecastQuestions.css";
+import {
+  forecastVisualFixturesActive,
+  visualMyProposals,
+} from "./visualFixtures";
 const labels: Record<MyProposal["status"], string> = {
   submitted: "Получено редакцией",
   in_review: "Редактор изучает",
@@ -21,12 +25,16 @@ const formatDate = (value: string) =>
     timeStyle: "short",
   }).format(new Date(value));
 export function ForecastProposalMinePage() {
-  const [items, setItems] = useState<MyProposal[]>([]);
+  const [items, setItems] = useState<MyProposal[]>(
+    forecastVisualFixturesActive ? visualMyProposals : [],
+  );
   const [state, setState] = useState<"loading" | "loaded" | "error">(
-    isProductionConfigured ? "loading" : "loaded",
+    isProductionConfigured && !forecastVisualFixturesActive
+      ? "loading"
+      : "loaded",
   );
   const load = useCallback(async () => {
-    if (!isProductionConfigured) return;
+    if (!isProductionConfigured || forecastVisualFixturesActive) return;
     setState("loading");
     try {
       setItems(await getMyProposals());
@@ -39,11 +47,11 @@ export function ForecastProposalMinePage() {
     queueMicrotask(() => void load());
   }, [load]);
   return (
-    <ProductShell>
+    <ProductShell className="future-shell">
       <div className="future-page">
         <Link to="/forecast">← Будущее</Link>
         <h1>Мои предложения</h1>
-        {!isProductionConfigured ? (
+        {!isProductionConfigured && !forecastVisualFixturesActive ? (
           <p className="future-empty">
             История предложений доступна в подключённой версии УЗОРА.
           </p>

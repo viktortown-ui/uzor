@@ -13,6 +13,10 @@ import type {
 } from "../api/forecastQuestionApiTypes";
 import { ForecastProposalCard } from "./ForecastProposalCard";
 import "./forecastQuestions.css";
+import {
+  forecastVisualFixturesActive,
+  visualEditorProposal,
+} from "./visualFixtures";
 const filters: readonly [ProposalStatus, string][] = [
   ["submitted", "Новые"],
   ["in_review", "В работе"],
@@ -58,15 +62,33 @@ const actions: Record<ProposalStatus, readonly [ModerationAction, string][]> = {
 export function ForecastQuestionAdminPage() {
   const [accessState, setAccessState] = useState<
     "checking" | "authorized" | "unauthorized" | "error"
-  >("checking");
+  >(forecastVisualFixturesActive ? "authorized" : "checking");
   const [filter, setFilter] = useState<ProposalStatus>("submitted");
-  const [items, setItems] = useState<EditorProposal[]>([]);
-  const [selected, setSelected] = useState<EditorProposal>();
-  const [title, setTitle] = useState("");
-  const [summary, setSummary] = useState("");
-  const [note, setNote] = useState("");
+  const [items, setItems] = useState<EditorProposal[]>(
+    forecastVisualFixturesActive ? [visualEditorProposal] : [],
+  );
+  const [selected, setSelected] = useState<EditorProposal | undefined>(
+    forecastVisualFixturesActive ? visualEditorProposal : undefined,
+  );
+  const [title, setTitle] = useState(
+    forecastVisualFixturesActive
+      ? (visualEditorProposal.publicTitle ?? visualEditorProposal.rawQuestion)
+      : "",
+  );
+  const [summary, setSummary] = useState(
+    forecastVisualFixturesActive
+      ? (visualEditorProposal.publicSummary ??
+          visualEditorProposal.whyItMatters ??
+          "")
+      : "",
+  );
+  const [note, setNote] = useState(
+    forecastVisualFixturesActive
+      ? (visualEditorProposal.publicDecisionNote ?? "")
+      : "",
+  );
   const [pending, setPending] = useState<ModerationAction>();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!forecastVisualFixturesActive);
   const [mutating, setMutating] = useState(false);
   const [error, setError] = useState("");
   const choose = useCallback((proposal?: EditorProposal) => {
@@ -95,6 +117,7 @@ export function ForecastQuestionAdminPage() {
     [choose],
   );
   const checkAccess = useCallback(async () => {
+    if (forecastVisualFixturesActive) return;
     setAccessState("checking");
     setLoading(true);
     try {
@@ -137,7 +160,7 @@ export function ForecastQuestionAdminPage() {
     }
   };
   return (
-    <ProductShell>
+    <ProductShell className="future-shell">
       <div className="future-page">
         <h1>Редакторская очередь вопросов</h1>
         <p>

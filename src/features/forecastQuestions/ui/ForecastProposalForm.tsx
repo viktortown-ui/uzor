@@ -7,6 +7,7 @@ import {
   submitProposal,
 } from "../api/forecastQuestionApi";
 import "./forecastQuestions.css";
+import { forecastVisualFixturesActive } from "./visualFixtures";
 export function permLocalDateTimeToIso(value: string) {
   if (!value) return undefined;
   const parsed = new Date(`${value}:00+05:00`);
@@ -27,7 +28,7 @@ export function ForecastProposalForm() {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (submittingRef.current) return;
-    if (!isProductionConfigured) {
+    if (!isProductionConfigured && !forecastVisualFixturesActive) {
       setError("Отправка доступна в подключённой версии УЗОРА.");
       return;
     }
@@ -57,14 +58,14 @@ export function ForecastProposalForm() {
     }
   };
   return (
-    <ProductShell>
+    <ProductShell className="future-shell">
       <div className="future-page future-form-page">
         <header className="future-form-header">
           <Link to="/forecast">← Будущее</Link>
           <p className="future-badge">ЭКСПЕРИМЕНТАЛЬНЫЙ РАЗДЕЛ</p>
           <h1>Предложить вопрос</h1>
         </header>
-        {!isProductionConfigured ? (
+        {!isProductionConfigured && !forecastVisualFixturesActive ? (
           <section className="future-demo-panel">
             <h2>Как работает предложение</h2>
             <p>Отправка предложений доступна в подключённой версии УЗОРА</p>

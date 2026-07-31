@@ -10,17 +10,25 @@ import type {
 } from "../api/forecastQuestionApiTypes";
 import { ForecastProposalCard } from "./ForecastProposalCard";
 import "./forecastQuestions.css";
+import {
+  forecastVisualFixturesActive,
+  visualPublicProposals,
+} from "./visualFixtures";
 type LoadState = "loading" | "loaded" | "error";
 export function ForecastFutureHub() {
-  const [items, setItems] = useState<PublicProposal[]>([]);
+  const [items, setItems] = useState<PublicProposal[]>(
+    forecastVisualFixturesActive ? visualPublicProposals : [],
+  );
   const [state, setState] = useState<LoadState>(
-    isProductionConfigured ? "loading" : "loaded",
+    isProductionConfigured && !forecastVisualFixturesActive
+      ? "loading"
+      : "loaded",
   );
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
   const pendingIdsRef = useRef(new Set<string>());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const load = useCallback(async () => {
-    if (!isProductionConfigured) return;
+    if (!isProductionConfigured || forecastVisualFixturesActive) return;
     setState("loading");
     try {
       setItems(await listPublicProposals());
@@ -89,7 +97,7 @@ export function ForecastFutureHub() {
             Здесь выбирают темы для подготовки. Это ещё не прогноз и не
             голосование за будущий исход.
           </p>
-          {!isProductionConfigured ? (
+          {!isProductionConfigured && !forecastVisualFixturesActive ? (
             <p className="future-empty">
               Демонстрационный режим: общественное рассмотрение доступно в
               подключённой версии.
