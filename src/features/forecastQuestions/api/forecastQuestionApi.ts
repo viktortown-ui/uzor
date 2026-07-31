@@ -69,3 +69,9 @@ export async function castVote(id: string, selectedVote: ConsiderationVote) { co
 export async function getEditorAccess() { const row = object(await rpc('get_forecast_question_editor_access', {})); if (typeof row.authenticated !== 'boolean' || typeof row.authorized !== 'boolean') throw new ForecastQuestionApiError('invalid_response'); return { authenticated: row.authenticated, authorized: row.authorized }; }
 export async function getEditorQueue(filter?: string) { return array(await rpc('get_forecast_question_editor_queue', { input_status: filter ?? null, input_limit: 100 })).map(parseEditorProposal); }
 export async function moderateProposal(id: string, action: ModerationAction, title?: string, summary?: string, note?: string) { return parseEditorProposal(await rpc('moderate_forecast_question_proposal', { input_proposal_id: id, input_action: action, input_public_title: title ?? null, input_public_summary: summary ?? null, input_public_decision_note: note ?? null })); }
+
+export const forecastQuestionValidation = {
+  parseMyProposal,
+  parsePublicProposal,
+  parseEditorProposal,
+};
