@@ -74,8 +74,9 @@ describe("ForecastProposalForm production submission", () => {
       }),
     );
     expect(
-      await screen.findByText(/10000000-0000-4000-8000-000000000001/),
+      await screen.findByText('Предложение сохранено в разделе «Мои предложения».'),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/10000000-0000-4000-8000-000000000001/)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/UUID/i)).not.toBeInTheDocument();
   });
   it("prevents duplicate submission while pending", async () => {

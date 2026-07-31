@@ -42,8 +42,8 @@ const origin = `http://127.0.0.1:${server.address().port}/uzor/`;
 const browser = await chromium.launch();
 await mkdir(artifacts, { recursive: true });
 const cases = [
-  { name: "future-hub-demo-desktop", route: "/forecast?visualDemo=true", viewport: { width: 1440, height: 900 }, text: "Будущее города" },
-  { name: "future-hub-demo-mobile-top", route: "/forecast?visualDemo=true", viewport: { width: 390, height: 844 }, text: "Будущее города", target: "h1" },
+  { name: "future-hub-demo-desktop", route: "/forecast?visualDemo=true", viewport: { width: 1440, height: 900 }, text: "Вопросы о будущем" },
+  { name: "future-hub-demo-mobile-top", route: "/forecast?visualDemo=true", viewport: { width: 390, height: 844 }, text: "Вопросы о будущем", target: "h1" },
   { name: "public-consideration-desktop", route: "/forecast", viewport: { width: 1440, height: 900 }, text: "РАССМОТРЕНИЕ ТЕМЫ · НЕ ПРОГНОЗ", target: ".future-card--interactive" },
   { name: "public-consideration-mobile-top", route: "/forecast", viewport: { width: 390, height: 844 }, text: "Да, стоит рассмотреть", target: ".future-card--interactive" },
   { name: "selected-proposal-desktop", route: "/forecast", viewport: { width: 1440, height: 900 }, text: "ВЫБРАНО ДЛЯ ПОДГОТОВКИ", target: ".future-card--selected" },

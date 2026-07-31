@@ -63,8 +63,8 @@ export function ForecastProposalForm() {
       <div className="future-page future-form-page">
         <header className="future-form-header">
           <Link to="/forecast">← Будущее</Link>
-          <p className="future-badge">ЭКСПЕРИМЕНТАЛЬНЫЙ РАЗДЕЛ</p>
-          <h1>Предложить вопрос</h1>
+          <p className="future-badge">EXPERIMENTAL</p>
+          <h1>Предложить вопрос о будущем</h1>
         </header>
         {!isProductionConfigured && !forecastVisualFixturesActive ? (
           <section className="future-demo-panel">
@@ -79,9 +79,7 @@ export function ForecastProposalForm() {
         ) : proposalId ? (
           <section role="status">
             <h2>Получено редакцией</h2>
-            <p>
-              ID предложения: <code>{proposalId}</code>
-            </p>
+            <p>Предложение сохранено в разделе «Мои предложения».</p>
             <p>
               Редактор изучит тему. Предложение не публикуется автоматически.
             </p>

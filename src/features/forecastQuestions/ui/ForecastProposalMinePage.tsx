@@ -50,6 +50,7 @@ export function ForecastProposalMinePage() {
     <ProductShell className="future-shell">
       <div className="future-page">
         <Link to="/forecast">← Будущее</Link>
+        <p className="future-badge">EXPERIMENTAL</p>
         <h1>Мои предложения</h1>
         {!isProductionConfigured && !forecastVisualFixturesActive ? (
           <p className="future-empty">
