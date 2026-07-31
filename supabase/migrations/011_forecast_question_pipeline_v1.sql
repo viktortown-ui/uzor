@@ -85,7 +85,7 @@ begin
  if input_action in('request_clarification','reject') and nullif(trim(coalesce(input_public_decision_note,'')),'') is null then
   raise exception 'decision_note_required';
  end if;
- if p.status='public_review' and next_status='in_review' then
+ if p.status in('public_review','selected') and next_status='in_review' then
   delete from public.forecast_question_consideration_votes where proposal_id=p.id;
  end if;
  update public.forecast_question_proposals set
@@ -93,7 +93,7 @@ begin
   public_summary=coalesce(nullif(trim(input_public_summary),''),public_summary),
   public_decision_note=nullif(trim(coalesce(input_public_decision_note,'')),''),
   editor_user_id=auth.uid(), reviewed_at=server_now, updated_at=server_now,
-  public_review_started_at=case when next_status='public_review' then server_now when p.status='public_review' and next_status='in_review' then null else p.public_review_started_at end,
+  public_review_started_at=case when next_status='public_review' then server_now when p.status in('public_review','selected') and next_status='in_review' then null else p.public_review_started_at end,
   selected_at=case when next_status='selected' then server_now when next_status='in_review' then null else p.selected_at end,
   converted_event_id=null
  where id=p.id returning * into p;

@@ -44,6 +44,16 @@ select public.moderate_forecast_question_proposal((select(payload->>'id')::uuid 
 do $$ begin assert (select count(*)=0 from public.forecast_question_consideration_votes); assert (select public_review_started_at is null and converted_event_id is null from public.forecast_question_proposals where id=(select(payload->>'id')::uuid from submitted)); end $$;
 select public.moderate_forecast_question_proposal((select(payload->>'id')::uuid from submitted),'open_public_review','Новая формулировка','Новое описание',null);
 do $$ begin assert (select count(*)=0 from public.forecast_question_consideration_votes); assert (select count(*)=0 from public.forecast_events where id like 'proposal-%'); end $$;
+-- Votes remain visible while selected, but a selected topic starts clean after editorial rewriting.
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
+select public.vote_forecast_question_consideration((select(payload->>'id')::uuid from submitted),'support');
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
+select public.moderate_forecast_question_proposal((select(payload->>'id')::uuid from submitted),'select',null,null,null);
+do $$ begin assert (select count(*)=1 from public.forecast_question_consideration_votes); assert (select selected_at is not null from public.forecast_question_proposals where id=(select(payload->>'id')::uuid from submitted)); end $$;
+select public.moderate_forecast_question_proposal((select(payload->>'id')::uuid from submitted),'return_to_review',null,null,null);
+do $$ begin assert (select count(*)=0 from public.forecast_question_consideration_votes); assert (select selected_at is null and public_review_started_at is null from public.forecast_question_proposals where id=(select(payload->>'id')::uuid from submitted)); end $$;
+select public.moderate_forecast_question_proposal((select(payload->>'id')::uuid from submitted),'open_public_review','Третья формулировка','Описание нового раунда',null);
+do $$ begin assert (select count(*)=0 from public.forecast_question_consideration_votes); assert (select public_review_started_at is not null from public.forecast_question_proposals where id=(select(payload->>'id')::uuid from submitted)); assert (select (public.list_public_forecast_question_proposals('perm',30,0)->0->>'totalVotes')::int=0); end $$;
 select pg_temp.expect_error($q$delete from auth.users where id='10000000-0000-4000-8000-000000000004'$q$,'foreign key');
 rollback;
 \echo 'forecast question pipeline behavioral smoke passed'
