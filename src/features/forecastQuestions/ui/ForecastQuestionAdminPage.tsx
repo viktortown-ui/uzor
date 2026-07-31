@@ -277,10 +277,8 @@ export function ForecastQuestionAdminPage() {
                         <dd>{formatOptionalDate(selected.selectedAt)}</dd>
                       </div>
                     </dl>
-                    <p className="admin-technical">
-                      Автор: {selected.authorUserId} · связанная Дельта:{" "}
-                      {selected.linkedDeltaId || "нет"}
-                    </p>
+                    <p>Автор предложения: участник городского пространства</p>
+                    <p>{selected.linkedDeltaId ? "Связана с Дельтой" : "Связь с Дельтой отсутствует"}</p>
                     <p>
                       Варианты: {selected.suggestedOptions.join(" · ") || "нет"}
                     </p>
