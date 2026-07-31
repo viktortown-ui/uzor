@@ -25,7 +25,13 @@ select pg_temp.expect_error($q$select public.submit_forecast_question_proposal('
 select pg_temp.expect_error($q$select public.submit_forecast_question_proposal('perm','Достаточно длинный вопрос?',null,null,null,array['a','b','c','d','e','f','g'],null,null)$q$,'too_many_options');
 select pg_temp.expect_error($q$select public.submit_forecast_question_proposal('perm','Достаточно длинный вопрос?',null,null,null,array[' Да ','да'],null,null)$q$,'duplicate_options');
 create temporary table submitted as select public.submit_forecast_question_proposal('perm','Откроют ли мост до сентября?',null,'Пермь','40000000-0000-4000-8000-000000000001',array['Да','Нет'],null,null) payload;
-do $$ begin assert (select payload->>'status'='submitted' and jsonb_array_length(payload->'suggestedOptions')=2 from submitted); assert not has_table_privilege('authenticated','public.forecast_question_proposals','select'); end $$;
+do $$ begin
+ assert (select payload->>'status'='submitted' and jsonb_array_length(payload->'suggestedOptions')=2 from submitted);
+ assert not has_table_privilege('authenticated','public.forecast_question_proposals','select');
+ assert not has_table_privilege('authenticated','public.forecast_question_proposals','insert');
+ assert not has_table_privilege('authenticated','public.forecast_question_proposals','update');
+ assert not has_table_privilege('authenticated','public.forecast_question_proposals','delete');
+end $$;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
 do $$ begin assert jsonb_array_length(public.get_my_forecast_question_proposals('perm',30))=0; end $$;
 select pg_temp.expect_error(format('select public.vote_forecast_question_consideration(%L,%L)',(select payload->>'id' from submitted),'support'),'voting_closed');
@@ -44,6 +50,7 @@ select public.moderate_forecast_question_proposal((select(payload->>'id')::uuid 
 do $$ begin assert (select count(*)=0 from public.forecast_question_consideration_votes); assert (select public_review_started_at is null and converted_event_id is null from public.forecast_question_proposals where id=(select(payload->>'id')::uuid from submitted)); end $$;
 select public.moderate_forecast_question_proposal((select(payload->>'id')::uuid from submitted),'open_public_review','Новая формулировка','Новое описание',null);
 do $$ begin assert (select count(*)=0 from public.forecast_question_consideration_votes); assert (select count(*)=0 from public.forecast_events where id like 'proposal-%'); end $$;
+do $$ declare item jsonb := public.list_public_forecast_question_proposals('perm',30,0)->0; begin assert not item ? 'authorUserId'; assert not item ? 'editorUserId'; assert not item ? 'suggestedOptions'; end $$;
 -- Votes remain visible while selected, but a selected topic starts clean after editorial rewriting.
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
 select public.vote_forecast_question_consideration((select(payload->>'id')::uuid from submitted),'support');

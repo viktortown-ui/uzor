@@ -38,3 +38,31 @@ describe('ForecastQuestionAdminPage queue integrity', () => {
     expect(JSON.stringify(api.moderateProposal.mock.calls)).not.toContain('Несохранённый текст A');
   });
 });
+
+describe('ForecastQuestionAdminPage access semantics', () => {
+  it('keeps access checking inside ProductShell without queue controls', () => {
+    api.getEditorAccess.mockReturnValue(new Promise(() => undefined));
+    renderPage();
+    expect(screen.getByRole('status')).toHaveTextContent('Проверяем доступ…');
+    expect(screen.getByRole('main')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Новые' })).not.toBeInTheDocument();
+  });
+
+  it('distinguishes an authorization denial from a request failure', async () => {
+    api.getEditorAccess.mockResolvedValue({ authenticated: true, authorized: false });
+    renderPage();
+    expect(await screen.findByText('Нет доступа к редакторской очереди')).toBeInTheDocument();
+    expect(screen.queryByText('Не удалось проверить права редактора')).not.toBeInTheDocument();
+  });
+
+  it('retries a technical access failure and loads the authorized queue', async () => {
+    api.getEditorAccess.mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce({ authenticated: true, authorized: true });
+    api.getEditorQueue.mockResolvedValueOnce([]);
+    renderPage();
+    expect(await screen.findByText('Не удалось проверить права редактора')).toBeInTheDocument();
+    expect(screen.queryByText('Нет доступа к редакторской очереди')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Повторить проверку доступа' }));
+    expect(await screen.findByText('В этой очереди пока нет предложений.')).toBeInTheDocument();
+    expect(api.getEditorAccess).toHaveBeenCalledTimes(2);
+  });
+});
