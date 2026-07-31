@@ -126,7 +126,7 @@ jobs:
     env: { PGHOST: localhost, PGPORT: 5432, PGUSER: postgres, PGPASSWORD: postgres, PGDATABASE: postgres }
     steps:
       - uses: actions/checkout@v5
-      - run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-postgres-prerequisites.sql
+      - run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-question-pipeline-prerequisites.sql
       - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/007_forecast_persistence_deadline_v1.sql
       - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/008_forecast_outcome_resolution_v1.sql
       - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/009_forecast_brier_scoring_v1.sql

@@ -1,13 +1,71 @@
-import {getSupabaseClient}from'../../../lib/supabase/client';import{proposalStatuses,type ConsiderationVote,type EditorProposal,type MyProposal,type PublicProposal,type SubmitProposalInput}from'./forecastQuestionApiTypes';
-export class ForecastQuestionApiError extends Error{constructor(public code:string,public userMessage='Не удалось выполнить действие. Попробуйте ещё раз.'){super(code)}}
-const obj=(v:unknown)=>{if(!v||typeof v!=='object'||Array.isArray(v))throw new ForecastQuestionApiError('invalid_response');return v as Record<string,unknown>},str=(v:unknown,max=2000)=>{if(typeof v!=='string'||v.length>max)throw new ForecastQuestionApiError('invalid_response');return v},uuid=(v:unknown)=>{const s=str(v,36);if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s))throw new ForecastQuestionApiError('invalid_response');return s},date=(v:unknown)=>{const s=str(v,40);if(!Number.isFinite(Date.parse(s)))throw new ForecastQuestionApiError('invalid_response');return new Date(s).toISOString()},nullable=<T>(v:unknown,f:(x:unknown)=>T)=>v==null?undefined:f(v),count=(v:unknown)=>{if(!Number.isInteger(v)||Number(v)<0||Number(v)>2147483647)throw new ForecastQuestionApiError('invalid_response');return Number(v)},arr=(v:unknown)=>{if(!Array.isArray(v))throw new ForecastQuestionApiError('invalid_response');return v},status=(v:unknown)=>{const s=str(v,30);if(!proposalStatuses.includes(s as never))throw new ForecastQuestionApiError('invalid_response');return s as MyProposal['status']},vote=(v:unknown)=>{if(v!=='support'&&v!=='not_now')throw new ForecastQuestionApiError('invalid_response');return v as ConsiderationVote};
-const err=(e:unknown)=>{const m=e&&typeof e==='object'&&'message'in e?String(e.message):'unknown';const code=['duplicate_options','not_authenticated','not_circle_member','invalid_linked_delta','voting_closed','editor_not_authorized','invalid_transition'].find(x=>m.includes(x))??'unknown';return new ForecastQuestionApiError(code,{duplicate_options:'Удалите повторяющиеся варианты.',voting_closed:'Рассмотрение этой темы уже завершено.',editor_not_authorized:'Нет доступа к редакторской очереди.'}[code]??'Не удалось выполнить действие. Попробуйте ещё раз.')};
-const my=(v:unknown):MyProposal=>{const x=obj(v),options=arr(x.suggestedOptions).map(o=>str(o,120));return{id:uuid(x.id),rawQuestion:str(x.rawQuestion,280),publicTitle:nullable(x.publicTitle,v=>str(v,280)),publicSummary:nullable(x.publicSummary,v=>str(v,800)),status:status(x.status),publicDecisionNote:nullable(x.publicDecisionNote,v=>str(v,1000)),createdAt:date(x.createdAt),updatedAt:date(x.updatedAt),linkedDeltaId:nullable(x.linkedDeltaId,uuid),suggestedDeadline:nullable(x.suggestedDeadline,date),suggestedOptions:options}};
-const pub=(v:unknown):PublicProposal=>{const x=obj(v),s=status(x.status);if(s!=='public_review'&&s!=='selected')throw new ForecastQuestionApiError('invalid_response');const a=count(x.supportCount),n=count(x.notNowCount),t=count(x.totalVotes);if(a+n!==t)throw new ForecastQuestionApiError('invalid_response');return{id:uuid(x.id),publicTitle:str(x.publicTitle,280),publicSummary:str(x.publicSummary,800),locationLabel:nullable(x.locationLabel,v=>str(v,160)),linkedDeltaId:nullable(x.linkedDeltaId,uuid),status:s,publicReviewStartedAt:nullable(x.publicReviewStartedAt,date),supportCount:a,notNowCount:n,totalVotes:t,viewerVote:nullable(x.viewerVote,vote),createdAt:date(x.createdAt),selectedAt:nullable(x.selectedAt,date)}};
-async function rpc(name:string,args:Record<string,unknown>){const{data,error}=await getSupabaseClient().rpc(name,args);if(error)throw err(error);return data}
-export async function submitProposal(i:SubmitProposalInput){if(i.rawQuestion.trim().length<10||i.rawQuestion.trim().length>280)throw new ForecastQuestionApiError('invalid_question','Вопрос должен содержать от 10 до 280 символов.');const opts=i.suggestedOptions.map(x=>x.trim()).filter(Boolean);if(new Set(opts.map(x=>x.toLocaleLowerCase('ru'))).size!==opts.length)throw new ForecastQuestionApiError('duplicate_options','Удалите повторяющиеся варианты.');return my({...obj(await rpc('submit_forecast_question_proposal',{input_city_slug:i.citySlug,input_raw_question:i.rawQuestion,input_why_it_matters:i.whyItMatters??null,input_location_label:i.locationLabel??null,input_linked_delta_id:i.linkedDeltaId??null,input_suggested_options:opts,input_suggested_source_reference:i.suggestedSourceReference??null,input_suggested_deadline:i.suggestedDeadline||null})),publicTitle:null,publicSummary:null,publicDecisionNote:null,linkedDeltaId:i.linkedDeltaId??null,suggestedDeadline:i.suggestedDeadline??null});}
-export async function listPublicProposals(){return arr(await rpc('list_public_forecast_question_proposals',{input_city_slug:'perm',input_limit:30,input_offset:0})).map(pub)}export async function getMyProposals(){return arr(await rpc('get_my_forecast_question_proposals',{input_city_slug:'perm',input_limit:30})).map(my)}
-export async function castVote(id:string,v:ConsiderationVote){const x=obj(await rpc('vote_forecast_question_consideration',{input_proposal_id:id,input_vote:v}));return{supportCount:count(x.supportCount),notNowCount:count(x.notNowCount),totalVotes:count(x.totalVotes),viewerVote:vote(x.viewerVote)}}
-export async function getEditorAccess(){const x=obj(await rpc('get_forecast_question_editor_access',{}));if(typeof x.authenticated!=='boolean'||typeof x.authorized!=='boolean')throw new ForecastQuestionApiError('invalid_response');return{authenticated:x.authenticated,authorized:x.authorized}}
-export async function getEditorQueue(filter?:string){return arr(await rpc('get_forecast_question_editor_queue',{input_status:filter??null,input_limit:100})).map(v=>{const x=obj(v);return{...my(v),authorUserId:uuid(x.authorUserId),whyItMatters:nullable(x.whyItMatters,v=>str(v,800)),locationLabel:nullable(x.locationLabel,v=>str(v,160)),suggestedSourceReference:nullable(x.suggestedSourceReference,v=>str(v,2000)),reviewedAt:nullable(x.reviewedAt,date),publicReviewStartedAt:nullable(x.publicReviewStartedAt,date),selectedAt:nullable(x.selectedAt,date),supportCount:count(x.supportCount),notNowCount:count(x.notNowCount),totalVotes:count(x.totalVotes)}as EditorProposal})}
-export async function moderateProposal(id:string,action:string,title?:string,summary?:string,note?:string){return obj(await rpc('moderate_forecast_question_proposal',{input_proposal_id:id,input_action:action,input_public_title:title??null,input_public_summary:summary??null,input_public_decision_note:note??null}))}
+import { getSupabaseClient } from '../../../lib/supabase/client';
+import {
+  proposalStatuses, type ConsiderationVote, type EditorProposal,
+  type ModerationAction, type MyProposal, type PublicProposal,
+  type SubmitProposalInput,
+} from './forecastQuestionApiTypes';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const messages: Record<string, string> = {
+  not_authenticated: 'Необходимо войти в аккаунт.', anonymous_identity: 'Гостевой аккаунт не может выполнить это действие.',
+  not_circle_member: 'Нет доступа к пространству города.', invalid_linked_delta: 'Связанная Дельта недоступна.',
+  too_many_options: 'Можно предложить не больше шести вариантов.', duplicate_options: 'Удалите повторяющиеся варианты.',
+  invalid_vote: 'Выберите доступный вариант рассмотрения.', voting_closed: 'Рассмотрение этой темы уже завершено.',
+  proposal_not_found: 'Предложение не найдено.', editor_not_authorized: 'Нет доступа к редакторской очереди.',
+  invalid_transition: 'Это редакторское действие недоступно для текущего статуса.',
+  public_content_required: 'Для публикации нужны заголовок и описание.',
+  decision_note_required: 'Добавьте пояснение редактора.', invalid_response: 'Сервер вернул некорректные данные.',
+};
+export class ForecastQuestionApiError extends Error {
+  constructor(public code: string, public userMessage = messages[code] ?? 'Не удалось выполнить действие. Попробуйте ещё раз.') {
+    super(code);
+  }
+}
+const object = (value: unknown): Record<string, unknown> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new ForecastQuestionApiError('invalid_response');
+  return value as Record<string, unknown>;
+};
+const string = (value: unknown, max = 2000) => {
+  if (typeof value !== 'string' || value.length > max) throw new ForecastQuestionApiError('invalid_response');
+  return value;
+};
+const uuid = (value: unknown) => { const valueString = string(value, 36); if (!UUID.test(valueString)) throw new ForecastQuestionApiError('invalid_response'); return valueString; };
+const date = (value: unknown) => { const valueString = string(value, 40); if (!Number.isFinite(Date.parse(valueString))) throw new ForecastQuestionApiError('invalid_response'); return new Date(valueString).toISOString(); };
+const nullable = <T>(value: unknown, map: (input: unknown) => T) => value == null ? undefined : map(value);
+const array = (value: unknown) => { if (!Array.isArray(value)) throw new ForecastQuestionApiError('invalid_response'); return value; };
+const count = (value: unknown) => { if (!Number.isInteger(value) || Number(value) < 0 || Number(value) > 2_147_483_647) throw new ForecastQuestionApiError('invalid_response'); return Number(value); };
+const status = (value: unknown): MyProposal['status'] => { const candidate = string(value, 30); if (!proposalStatuses.includes(candidate as MyProposal['status'])) throw new ForecastQuestionApiError('invalid_response'); return candidate as MyProposal['status']; };
+const vote = (value: unknown): ConsiderationVote => { if (value !== 'support' && value !== 'not_now') throw new ForecastQuestionApiError('invalid_response'); return value; };
+const parseCounts = (row: Record<string, unknown>) => { const supportCount = count(row.supportCount); const notNowCount = count(row.notNowCount); const totalVotes = count(row.totalVotes); if (supportCount + notNowCount !== totalVotes) throw new ForecastQuestionApiError('invalid_response'); return { supportCount, notNowCount, totalVotes }; };
+const parseError = (error: unknown) => { const raw = error && typeof error === 'object' && 'message' in error ? String(error.message) : ''; const code = Object.keys(messages).find(key => raw.includes(key)) ?? 'unknown'; return new ForecastQuestionApiError(code); };
+
+function parseMyProposal(value: unknown): MyProposal {
+  const row = object(value);
+  const suggestedOptions = array(row.suggestedOptions).map(option => string(option, 120));
+  if (suggestedOptions.length > 6) throw new ForecastQuestionApiError('invalid_response');
+  return { id: uuid(row.id), rawQuestion: string(row.rawQuestion, 280), publicTitle: nullable(row.publicTitle, value => string(value, 280)), publicSummary: nullable(row.publicSummary, value => string(value, 800)), status: status(row.status), publicDecisionNote: nullable(row.publicDecisionNote, value => string(value, 1000)), createdAt: date(row.createdAt), updatedAt: date(row.updatedAt), linkedDeltaId: nullable(row.linkedDeltaId, uuid), suggestedDeadline: nullable(row.suggestedDeadline, date), suggestedOptions };
+}
+function parsePublicProposal(value: unknown): PublicProposal {
+  const row = object(value); const proposalStatus = status(row.status);
+  if (proposalStatus !== 'public_review' && proposalStatus !== 'selected') throw new ForecastQuestionApiError('invalid_response');
+  return { id: uuid(row.id), publicTitle: string(row.publicTitle, 280), publicSummary: string(row.publicSummary, 800), locationLabel: nullable(row.locationLabel, value => string(value, 160)), linkedDeltaId: nullable(row.linkedDeltaId, uuid), status: proposalStatus, publicReviewStartedAt: nullable(row.publicReviewStartedAt, date), ...parseCounts(row), viewerVote: nullable(row.viewerVote, vote), createdAt: date(row.createdAt), selectedAt: nullable(row.selectedAt, date) };
+}
+function parseEditorProposal(value: unknown): EditorProposal {
+  const row = object(value);
+  return { ...parseMyProposal(value), authorUserId: uuid(row.authorUserId), whyItMatters: nullable(row.whyItMatters, value => string(value, 800)), locationLabel: nullable(row.locationLabel, value => string(value, 160)), suggestedSourceReference: nullable(row.suggestedSourceReference, value => string(value, 2000)), reviewedAt: nullable(row.reviewedAt, date), publicReviewStartedAt: nullable(row.publicReviewStartedAt, date), selectedAt: nullable(row.selectedAt, date), ...parseCounts(row) };
+}
+async function rpc(name: string, args: Record<string, unknown>) { const { data, error } = await getSupabaseClient().rpc(name, args); if (error) throw parseError(error); return data; }
+export async function submitProposal(input: SubmitProposalInput) {
+  const options = input.suggestedOptions.map(value => value.trim()).filter(Boolean);
+  if (input.rawQuestion.trim().length < 10 || input.rawQuestion.trim().length > 280) throw new ForecastQuestionApiError('invalid_question', 'Вопрос должен содержать от 10 до 280 символов.');
+  if (options.length > 6) throw new ForecastQuestionApiError('too_many_options');
+  if (options.some(option => option.length > 120)) throw new ForecastQuestionApiError('invalid_options', 'Каждый вариант должен быть не длиннее 120 символов.');
+  if (new Set(options.map(value => value.toLocaleLowerCase('ru'))).size !== options.length) throw new ForecastQuestionApiError('duplicate_options');
+  return parseMyProposal(await rpc('submit_forecast_question_proposal', { input_city_slug: input.citySlug, input_raw_question: input.rawQuestion, input_why_it_matters: input.whyItMatters ?? null, input_location_label: input.locationLabel ?? null, input_linked_delta_id: input.linkedDeltaId ?? null, input_suggested_options: options, input_suggested_source_reference: input.suggestedSourceReference ?? null, input_suggested_deadline: input.suggestedDeadline ?? null }));
+}
+export async function listPublicProposals() { return array(await rpc('list_public_forecast_question_proposals', { input_city_slug: 'perm', input_limit: 30, input_offset: 0 })).map(parsePublicProposal); }
+export async function getMyProposals() { return array(await rpc('get_my_forecast_question_proposals', { input_city_slug: 'perm', input_limit: 30 })).map(parseMyProposal); }
+export async function castVote(id: string, selectedVote: ConsiderationVote) { const row = object(await rpc('vote_forecast_question_consideration', { input_proposal_id: id, input_vote: selectedVote })); return { ...parseCounts(row), viewerVote: vote(row.viewerVote) }; }
+export async function getEditorAccess() { const row = object(await rpc('get_forecast_question_editor_access', {})); if (typeof row.authenticated !== 'boolean' || typeof row.authorized !== 'boolean') throw new ForecastQuestionApiError('invalid_response'); return { authenticated: row.authenticated, authorized: row.authorized }; }
+export async function getEditorQueue(filter?: string) { return array(await rpc('get_forecast_question_editor_queue', { input_status: filter ?? null, input_limit: 100 })).map(parseEditorProposal); }
+export async function moderateProposal(id: string, action: ModerationAction, title?: string, summary?: string, note?: string) { return parseEditorProposal(await rpc('moderate_forecast_question_proposal', { input_proposal_id: id, input_action: action, input_public_title: title ?? null, input_public_summary: summary ?? null, input_public_decision_note: note ?? null })); }

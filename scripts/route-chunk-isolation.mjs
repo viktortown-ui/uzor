@@ -16,7 +16,8 @@ const requireAssets = (label, pattern, count) => {
 const legacy = requireAssets('legacy route', /^LegacyCircleRoutes-.*\.(?:js|css)$/, 2);
 const motion = requireAssets('Framer Motion route', /^use-reduced-motion-.*\.js$/, 1);
 const maplibre = requireAssets('MapLibre', /^maplibre-gl-.*\.(?:js|css)$/, 2);
-const forbiddenOnModern = [...legacy, ...motion, ...maplibre];
+const admin = requireAssets('forecast-question admin route', /^ForecastQuestionAdminPage-.*\.js$/, 1);
+const forbiddenOnModern = [...legacy, ...motion, ...maplibre, ...admin];
 const types = new Map([['.html','text/html'],['.js','text/javascript'],['.css','text/css'],['.svg','image/svg+xml'],['.png','image/png'],['.webmanifest','application/manifest+json']]);
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
@@ -91,6 +92,14 @@ try {
     for (const selector of eyebrows) await expectedEyebrow(page, selector, route);
     await context.close();
   }
+
+  const forecast = await openClean('/forecast', h1('Будущее города'));
+  assertNone('/forecast', forecast.urls, admin);
+  await forecast.context.close();
+
+  const adminRoute = await openClean('/forecast/admin/questions', (page) => page.getByText(/Нет доступа к редакторской очереди|Редакторская очередь вопросов/).first());
+  assertAll('/forecast/admin/questions', adminRoute.urls, admin);
+  await adminRoute.context.close();
 
   const demo = await openClean('/demo?scenario=fog', h1('Куда уходит твой час?'));
   assertAll('/demo', demo.urls, [...legacy, ...motion]);

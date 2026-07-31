@@ -1,14 +1,49 @@
 \set ON_ERROR_STOP on
--- Apply after prerequisites and migrations 006–011. Assertions exercise the security contract.
 begin;
-do $$ begin
-  assert to_regclass('public.forecast_question_proposals') is not null;
-  assert (select relrowsecurity from pg_class where oid='public.forecast_question_proposals'::regclass);
-  assert not has_table_privilege('authenticated','public.forecast_question_proposals','SELECT');
-  assert not has_table_privilege('authenticated','public.forecast_question_proposals','INSERT');
-  assert not has_table_privilege('authenticated','public.forecast_question_proposals','UPDATE');
-  assert has_function_privilege('authenticated','public.submit_forecast_question_proposal(text,text,text,text,uuid,text[],text,timestamptz)','EXECUTE');
-  assert pg_get_functiondef('public.moderate_forecast_question_proposal(uuid,text,text,text,text)'::regprocedure) not ilike '%insert into public.forecast_events%';
-end $$;
+create or replace function pg_temp.expect_error(statement text, expected text) returns void language plpgsql as $$
+begin execute statement; raise exception 'expected error %',expected; exception when others then if sqlerrm not like '%'||expected||'%' then raise; end if; end $$;
+insert into auth.users(id) values
+ ('10000000-0000-4000-8000-000000000001'),('10000000-0000-4000-8000-000000000002'),
+ ('10000000-0000-4000-8000-000000000003'),('10000000-0000-4000-8000-000000000004');
+insert into public.circles(id) values('20000000-0000-4000-8000-000000000001'),('20000000-0000-4000-8000-000000000002');
+insert into public.delta_cities(id,slug) values('30000000-0000-4000-8000-000000000001','perm'),('30000000-0000-4000-8000-000000000002','other');
+insert into public.open_city_circles(city_slug,circle_id) values('perm','20000000-0000-4000-8000-000000000001');
+insert into public.circle_memberships(circle_id,user_id) values
+ ('20000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001'),
+ ('20000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002');
+insert into public.deltas(id,circle_id,city_id) values
+ ('40000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001'),
+ ('40000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000002','30000000-0000-4000-8000-000000000002');
+select pg_temp.expect_error($q$select public.submit_forecast_question_proposal('perm','Достаточно длинный вопрос?',null,null,null,'{}',null,null)$q$,'not_authenticated');
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000003',true);
+select pg_temp.expect_error($q$select public.submit_forecast_question_proposal('perm','Достаточно длинный вопрос?',null,null,null,'{}',null,null)$q$,'not_circle_member');
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
+select set_config('request.jwt.claims','{"is_anonymous":true}',true);
+select pg_temp.expect_error($q$select public.submit_forecast_question_proposal('perm','Достаточно длинный вопрос?',null,null,null,'{}',null,null)$q$,'anonymous_identity');
+select set_config('request.jwt.claims','{}',true);
+select pg_temp.expect_error($q$select public.submit_forecast_question_proposal('perm','Достаточно длинный вопрос?',null,null,'40000000-0000-4000-8000-000000000002','{}',null,null)$q$,'invalid_linked_delta');
+select pg_temp.expect_error($q$select public.submit_forecast_question_proposal('perm','Достаточно длинный вопрос?',null,null,null,array['a','b','c','d','e','f','g'],null,null)$q$,'too_many_options');
+select pg_temp.expect_error($q$select public.submit_forecast_question_proposal('perm','Достаточно длинный вопрос?',null,null,null,array[' Да ','да'],null,null)$q$,'duplicate_options');
+create temporary table submitted as select public.submit_forecast_question_proposal('perm','Откроют ли мост до сентября?',null,'Пермь','40000000-0000-4000-8000-000000000001',array['Да','Нет'],null,null) payload;
+do $$ begin assert (select payload->>'status'='submitted' and jsonb_array_length(payload->'suggestedOptions')=2 from submitted); assert not has_table_privilege('authenticated','public.forecast_question_proposals','select'); end $$;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
+do $$ begin assert jsonb_array_length(public.get_my_forecast_question_proposals('perm',30))=0; end $$;
+select pg_temp.expect_error(format('select public.vote_forecast_question_consideration(%L,%L)',(select payload->>'id' from submitted),'support'),'voting_closed');
+select pg_temp.expect_error(format('select public.moderate_forecast_question_proposal(%L,%L,null,null,null)',(select payload->>'id' from submitted),'start_review'),'editor_not_authorized');
+insert into public.forecast_question_editors(user_id,created_by) values('10000000-0000-4000-8000-000000000004','10000000-0000-4000-8000-000000000004');
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
+select public.moderate_forecast_question_proposal((select(payload->>'id')::uuid from submitted),'start_review',null,null,null);
+select pg_temp.expect_error(format('select public.moderate_forecast_question_proposal(%L,%L,null,null,null)',(select payload->>'id' from submitted),'open_public_review'),'public_content_required');
+select public.moderate_forecast_question_proposal((select(payload->>'id')::uuid from submitted),'open_public_review','Откроют ли мост?','Редакционное описание',null);
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
+select public.vote_forecast_question_consideration((select(payload->>'id')::uuid from submitted),'support');
+select public.vote_forecast_question_consideration((select(payload->>'id')::uuid from submitted),'not_now');
+do $$ begin assert (select count(*)=1 and min(vote)='not_now' from public.forecast_question_consideration_votes); end $$;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
+select public.moderate_forecast_question_proposal((select(payload->>'id')::uuid from submitted),'return_to_review',null,null,null);
+do $$ begin assert (select count(*)=0 from public.forecast_question_consideration_votes); assert (select public_review_started_at is null and converted_event_id is null from public.forecast_question_proposals where id=(select(payload->>'id')::uuid from submitted)); end $$;
+select public.moderate_forecast_question_proposal((select(payload->>'id')::uuid from submitted),'open_public_review','Новая формулировка','Новое описание',null);
+do $$ begin assert (select count(*)=0 from public.forecast_question_consideration_votes); assert (select count(*)=0 from public.forecast_events where id like 'proposal-%'); end $$;
+select pg_temp.expect_error($q$delete from auth.users where id='10000000-0000-4000-8000-000000000004'$q$,'foreign key');
 rollback;
-\echo 'forecast question pipeline smoke: schema, RLS, grants and no automatic event conversion verified'
+\echo 'forecast question pipeline behavioral smoke passed'

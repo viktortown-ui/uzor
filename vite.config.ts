@@ -35,12 +35,12 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webmanifest}'],
-        globIgnores: ['**/{maplibre-gl,DeltaMapPage,DeltaCreatePage,DesktopDeltaCreateFlow,DeltaCreateLabPage,DeltaCreateGeoLabPage,ForecastPage,ForecastResolverPage,LabShell,LabV4Shell,WrappedReferencePage,WrappedReferenceV2Page,WrappedPage,MobilePulsePage,LegacyCircleRoutes,use-reduced-motion}-*.{js,css}'],
+        globIgnores: ['**/{maplibre-gl,DeltaMapPage,DeltaCreatePage,DesktopDeltaCreateFlow,DeltaCreateLabPage,DeltaCreateGeoLabPage,ForecastPage,ForecastProposalForm,ForecastProposalMinePage,ForecastQuestionAdminPage,forecastQuestions,ForecastResolverPage,LabShell,LabV4Shell,WrappedReferencePage,WrappedReferenceV2Page,WrappedPage,MobilePulsePage,LegacyCircleRoutes,use-reduced-motion}-*.{js,css}'],
         navigateFallback: 'index.html',
         runtimeCaching: [{
-          urlPattern: /\/assets\/(?:maplibre-gl|DeltaMapPage|DeltaCreatePage|DesktopDeltaCreateFlow|DeltaCreateLabPage|DeltaCreateGeoLabPage|ForecastPage|ForecastResolverPage|LabShell|LabV4Shell|WrappedReferencePage|WrappedReferenceV2Page|WrappedPage|MobilePulsePage|LegacyCircleRoutes|use-reduced-motion)-.*\.(?:js|css)$/,
+          urlPattern: /\/assets\/(?:maplibre-gl|DeltaMapPage|DeltaCreatePage|DesktopDeltaCreateFlow|DeltaCreateLabPage|DeltaCreateGeoLabPage|ForecastPage|ForecastProposalForm|ForecastProposalMinePage|ForecastQuestionAdminPage|forecastQuestions|ForecastResolverPage|LabShell|LabV4Shell|WrappedReferencePage|WrappedReferenceV2Page|WrappedPage|MobilePulsePage|LegacyCircleRoutes|use-reduced-motion)-.*\.(?:js|css)$/,
           handler: 'CacheFirst',
-          options: { cacheName: 'uzor-route-chunks-v2', expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 30 } },
+          options: { cacheName: 'uzor-route-chunks-v2', expiration: { maxEntries: 48, maxAgeSeconds: 60 * 60 * 24 * 30 } },
         }],
       },
     }),
