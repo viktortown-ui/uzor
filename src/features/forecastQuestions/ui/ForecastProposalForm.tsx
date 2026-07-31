@@ -1,0 +1,200 @@
+import { FormEvent, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { isProductionConfigured } from "../../../app/appMode";
+import { ProductShell } from "../../../app/ProductShell";
+import {
+  ForecastQuestionApiError,
+  submitProposal,
+} from "../api/forecastQuestionApi";
+import "./forecastQuestions.css";
+import { forecastVisualFixturesActive } from "./visualFixtures";
+export function permLocalDateTimeToIso(value: string) {
+  if (!value) return undefined;
+  const parsed = new Date(`${value}:00+05:00`);
+  if (!Number.isFinite(parsed.getTime())) throw new Error("invalid_date");
+  return parsed.toISOString();
+}
+export function ForecastProposalForm() {
+  const [question, setQuestion] = useState("");
+  const [why, setWhy] = useState("");
+  const [place, setPlace] = useState("");
+  const [options, setOptions] = useState(["", ""]);
+  const [deadline, setDeadline] = useState("");
+  const [source, setSource] = useState("");
+  const [error, setError] = useState("");
+  const [proposalId, setProposalId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (forecastVisualFixturesActive) return;
+    if (submittingRef.current) return;
+    if (!isProductionConfigured && !forecastVisualFixturesActive) {
+      setError("Отправка доступна в подключённой версии УЗОРА.");
+      return;
+    }
+    submittingRef.current = true;
+    setSubmitting(true);
+    setError("");
+    try {
+      const proposal = await submitProposal({
+        citySlug: "perm",
+        rawQuestion: question,
+        whyItMatters: why,
+        locationLabel: place,
+        suggestedOptions: options.map((option) => option.trim()),
+        suggestedDeadline: permLocalDateTimeToIso(deadline),
+        suggestedSourceReference: source,
+      });
+      setProposalId(proposal.id);
+    } catch (submitError) {
+      setError(
+        submitError instanceof ForecastQuestionApiError
+          ? submitError.userMessage
+          : "Проверьте дату и заполненные поля.",
+      );
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  };
+  return (
+    <ProductShell className="future-shell">
+      <div className="future-page future-form-page">
+        <header className="future-form-header">
+          <Link to="/forecast">← Будущее</Link>
+          <p className="future-badge">ЭКСПЕРИМЕНТАЛЬНЫЙ РАЗДЕЛ</p>
+          <h1>Предложить вопрос</h1>
+        </header>
+        {!isProductionConfigured && !forecastVisualFixturesActive ? (
+          <section className="future-demo-panel">
+            <h2>Как работает предложение</h2>
+            <p>Отправка предложений доступна в подключённой версии УЗОРА</p>
+            <ol>
+              <li>Житель предлагает тему.</li>
+              <li>Редактор изучает её.</li>
+              <li>Сообщество может рассмотреть тему.</li>
+            </ol>
+          </section>
+        ) : proposalId ? (
+          <section role="status">
+            <h2>Получено редакцией</h2>
+            <p>
+              ID предложения: <code>{proposalId}</code>
+            </p>
+            <p>
+              Редактор изучит тему. Предложение не публикуется автоматически.
+            </p>
+            <Link to="/forecast/mine">Мои предложения</Link>
+          </section>
+        ) : (
+          <form onSubmit={submit}>
+            <label>
+              Что о будущем города стоит обсудить?
+              <textarea
+                required
+                minLength={10}
+                maxLength={280}
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                placeholder="Успеют ли открыть движение по мосту до сентября?"
+              />
+            </label>
+            <label>
+              Почему это важно?
+              <textarea
+                maxLength={800}
+                value={why}
+                onChange={(event) => setWhy(event.target.value)}
+              />
+            </label>
+            <label>
+              Где это происходит?
+              <input
+                maxLength={160}
+                value={place}
+                onChange={(event) => setPlace(event.target.value)}
+              />
+            </label>
+            <fieldset>
+              <legend>Какие варианты вы видите?</legend>
+              {options.map((option, index) => (
+                <div className="future-option" key={index}>
+                  <label>
+                    <span>Вариант {index + 1}</span>
+                    <input
+                      maxLength={120}
+                      value={option}
+                      onChange={(event) =>
+                        setOptions((current) =>
+                          current.map((value, optionIndex) =>
+                            optionIndex === index ? event.target.value : value,
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                  {options.length > 2 && (
+                    <button
+                      type="button"
+                      aria-label={`Удалить вариант ${index + 1}`}
+                      onClick={() =>
+                        setOptions((current) =>
+                          current.filter(
+                            (_, optionIndex) => optionIndex !== index,
+                          ),
+                        )
+                      }
+                    >
+                      Удалить
+                    </button>
+                  )}
+                </div>
+              ))}
+              {options.length < 6 && (
+                <button
+                  type="button"
+                  onClick={() => setOptions((current) => [...current, ""])}
+                >
+                  Добавить вариант
+                </button>
+              )}
+              <small>
+                Это только предложения авторских вариантов. Редактор сможет их
+                изменить.
+              </small>
+            </fieldset>
+            <label>
+              Когда это можно будет проверить? (время Перми, UTC+05:00)
+              <input
+                type="datetime-local"
+                value={deadline}
+                onChange={(event) => setDeadline(event.target.value)}
+              />
+            </label>
+            <label>
+              Есть ли источник, по которому можно проверить результат?
+              <input
+                maxLength={2000}
+                value={source}
+                onChange={(event) => setSource(event.target.value)}
+              />
+            </label>
+            <p>
+              Вы предлагаете тему, а не публикуете прогноз. Редактор сможет
+              уточнить формулировку, срок, варианты и источник проверки.
+            </p>
+            {error && (
+              <p className="future-error" role="alert">
+                {error}
+              </p>
+            )}
+            <button disabled={submitting} type="submit">
+              {submitting ? "Отправляем…" : "Отправить редакции"}
+            </button>
+          </form>
+        )}
+      </div>
+    </ProductShell>
+  );
+}

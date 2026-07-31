@@ -114,6 +114,26 @@ jobs:
       - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/009_forecast_brier_scoring_v1.sql
       - run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-scoring-postgres-smoke.sql
 
+  forecast-question-pipeline-migration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: postgres }
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env: { PGHOST: localhost, PGPORT: 5432, PGUSER: postgres, PGPASSWORD: postgres, PGDATABASE: postgres }
+    steps:
+      - uses: actions/checkout@v5
+      - run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-question-pipeline-prerequisites.sql
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/007_forecast_persistence_deadline_v1.sql
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/008_forecast_outcome_resolution_v1.sql
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/009_forecast_brier_scoring_v1.sql
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/010_open_city_access.sql
+      - run: psql --set ON_ERROR_STOP=1 --file supabase/migrations/011_forecast_question_pipeline_v1.sql
+      - run: psql --set ON_ERROR_STOP=1 --file scripts/forecast-question-pipeline-postgres-smoke.sql
+
   check:
     runs-on: ubuntu-latest
     steps:
@@ -149,14 +169,24 @@ jobs:
           name: legacy-circle-visuals
           path: artifacts/legacy-circle-visuals/*.png
           if-no-files-found: error
+      - name: Capture forecast-question pipeline visuals
+        run: npm run test:forecast-question-visuals
+      - name: Upload forecast-question pipeline visuals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forecast-question-pipeline-visuals
+          path: artifacts/forecast-question-pipeline-visuals/*.png
+          if-no-files-found: error
       - name: Verify Chromium PWA installability
         run: npm run test:pwa-installability
       - name: Verify production map style
         run: npm run test:production-map-style
       - name: Verify product geometry and capture screenshots
+        id: product_geometry
         run: npm run test:geometry
       - name: Upload product geometry screenshots
-        if: always()
+        if: always() && steps.product_geometry.outcome != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: product-foundation-visuals
