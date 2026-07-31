@@ -89,8 +89,8 @@ export function ForecastFutureHub() {
     <ProductShell className="future-shell">
       <div className="future-page">
         <header className="future-hero">
-          <p className="future-badge">ЭКСПЕРИМЕНТАЛЬНЫЙ РАЗДЕЛ</p>
-          <h1>Будущее города</h1>
+          <p className="future-badge">EXPERIMENTAL</p>
+          <h1>Вопросы о будущем</h1>
           <p>
             Здесь жители предлагают темы о будущем города. Сообщество
             показывает, какие темы стоит рассмотреть, а редактор превращает
@@ -113,10 +113,9 @@ export function ForecastFutureHub() {
           aria-labelledby="future-consideration-title"
           data-testid="future-consideration"
         >
-          <h2 id="future-consideration-title">Стоит рассмотреть</h2>
+          <h2 id="future-consideration-title">Вопросы на общественном рассмотрении</h2>
           <p>
-            Здесь выбирают темы для подготовки. Это ещё не прогноз и не
-            голосование за будущий исход.
+            Здесь отвечают на вопрос: «Стоит ли редакции подготовить этот вопрос?» Это рекомендательный сигнал для редакции, а не прогноз, официальный опрос или голосование за будущий исход.
           </p>
           {!isProductionConfigured && !forecastVisualFixturesActive ? (
             <p className="future-empty">

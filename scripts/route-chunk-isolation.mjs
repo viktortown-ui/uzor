@@ -93,11 +93,11 @@ try {
     await context.close();
   }
 
-  const forecast = await openClean('/forecast', h1('Будущее города'));
+  const forecast = await openClean('/forecast', h1('Вопросы о будущем'));
   assertNone('/forecast', forecast.urls, admin);
   await forecast.context.close();
 
-  const adminRoute = await openClean('/forecast/admin/questions', (page) => page.getByText(/Нет доступа к редакторской очереди|Редакторская очередь вопросов/).first());
+  const adminRoute = await openClean('/forecast/admin/questions', (page) => page.getByText(/Нет доступа к редакторской очереди|Редакторская очередь/).first());
   assertAll('/forecast/admin/questions', adminRoute.urls, admin);
   await adminRoute.context.close();
 

@@ -162,4 +162,14 @@ describe("ForecastQuestionAdminPage access semantics", () => {
     ).toBeInTheDocument();
     expect(api.getEditorAccess).toHaveBeenCalledTimes(2);
   });
+
+  it("does not expose raw author or Delta identifiers in the editor workspace", async () => {
+    api.getEditorAccess.mockResolvedValue({ authorized: true });
+    api.getEditorQueue.mockResolvedValue([proposal("1", "submitted", "")]);
+    renderPage();
+    expect(await screen.findByText("Автор предложения: участник городского пространства")).toBeInTheDocument();
+    expect(screen.getByText("Связана с Дельтой")).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(proposal("1", "submitted", "").authorUserId);
+    expect(document.body).not.toHaveTextContent(proposal("1", "submitted", "").linkedDeltaId!);
+  });
 });

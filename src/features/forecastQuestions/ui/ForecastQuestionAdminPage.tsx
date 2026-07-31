@@ -175,7 +175,8 @@ export function ForecastQuestionAdminPage() {
   return (
     <ProductShell className="future-shell">
       <div className="future-page">
-        <h1>Редакторская очередь вопросов</h1>
+        <p className="future-badge">EXPERIMENTAL</p>
+        <h1>Редакторская очередь</h1>
         <p>
           Редакторская очередь относится к экспериментальному разделу «Будущее».
           Публикация темы не делает её официальным прогнозом.
@@ -276,10 +277,8 @@ export function ForecastQuestionAdminPage() {
                         <dd>{formatOptionalDate(selected.selectedAt)}</dd>
                       </div>
                     </dl>
-                    <p className="admin-technical">
-                      Автор: {selected.authorUserId} · связанная Дельта:{" "}
-                      {selected.linkedDeltaId || "нет"}
-                    </p>
+                    <p>Автор предложения: участник городского пространства</p>
+                    <p>{selected.linkedDeltaId ? "Связана с Дельтой" : "Связь с Дельтой отсутствует"}</p>
                     <p>
                       Варианты: {selected.suggestedOptions.join(" · ") || "нет"}
                     </p>

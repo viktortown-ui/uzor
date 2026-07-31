@@ -68,7 +68,7 @@ describe("ForecastFutureHub production states", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("region", { name: "Стоит рассмотреть" }),
+      screen.getByRole("region", { name: "Вопросы на общественном рассмотрении" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("region", {
