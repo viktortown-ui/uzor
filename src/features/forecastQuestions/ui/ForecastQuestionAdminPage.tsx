@@ -59,11 +59,15 @@ const actions: Record<ProposalStatus, readonly [ModerationAction, string][]> = {
   archived: [],
   converted: [],
 };
+export const getInitialEditorFilter = (visualFixturesActive: boolean) =>
+  visualFixturesActive ? visualEditorProposal.status : "submitted";
 export function ForecastQuestionAdminPage() {
   const [accessState, setAccessState] = useState<
     "checking" | "authorized" | "unauthorized" | "error"
   >(forecastVisualFixturesActive ? "authorized" : "checking");
-  const [filter, setFilter] = useState<ProposalStatus>("submitted");
+  const [filter, setFilter] = useState<ProposalStatus>(
+    getInitialEditorFilter(forecastVisualFixturesActive),
+  );
   const [items, setItems] = useState<EditorProposal[]>(
     forecastVisualFixturesActive ? [visualEditorProposal] : [],
   );
@@ -138,11 +142,13 @@ export function ForecastQuestionAdminPage() {
     queueMicrotask(() => void checkAccess());
   }, [checkAccess]);
   const changeFilter = (nextFilter: ProposalStatus) => {
+    if (forecastVisualFixturesActive) return;
     setFilter(nextFilter);
     void load(nextFilter);
   };
   const moderate = async () => {
-    if (!selected || !pending || mutating) return;
+    if (!selected || !pending || mutating || forecastVisualFixturesActive)
+      return;
     setMutating(true);
     setError("");
     try {

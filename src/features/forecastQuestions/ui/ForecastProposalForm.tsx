@@ -27,6 +27,7 @@ export function ForecastProposalForm() {
   const submittingRef = useRef(false);
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (forecastVisualFixturesActive) return;
     if (submittingRef.current) return;
     if (!isProductionConfigured && !forecastVisualFixturesActive) {
       setError("Отправка доступна в подключённой версии УЗОРА.");

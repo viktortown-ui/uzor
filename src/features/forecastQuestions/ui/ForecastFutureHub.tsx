@@ -46,6 +46,27 @@ export function ForecastFutureHub() {
     setPendingIds((current) => new Set(current).add(id));
     setErrors((current) => ({ ...current, [id]: "" }));
     try {
+      if (forecastVisualFixturesActive) {
+        setItems((current) =>
+          current.map((item) => {
+            if (item.id !== id) return item;
+            const supportDelta =
+              (vote === "support" ? 1 : 0) -
+              (item.viewerVote === "support" ? 1 : 0);
+            const notNowDelta =
+              (vote === "not_now" ? 1 : 0) -
+              (item.viewerVote === "not_now" ? 1 : 0);
+            return {
+              ...item,
+              supportCount: item.supportCount + supportDelta,
+              notNowCount: item.notNowCount + notNowDelta,
+              totalVotes: item.totalVotes + (item.viewerVote ? 0 : 1),
+              viewerVote: vote,
+            };
+          }),
+        );
+        return;
+      }
       const counts = await castVote(id, vote);
       setItems((current) =>
         current.map((item) => (item.id === id ? { ...item, ...counts } : item)),

@@ -13,7 +13,10 @@ vi.mock("../api/forecastQuestionApi", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/forecastQuestionApi")>()),
   ...api,
 }));
-import { ForecastQuestionAdminPage } from "./ForecastQuestionAdminPage";
+import {
+  ForecastQuestionAdminPage,
+  getInitialEditorFilter,
+} from "./ForecastQuestionAdminPage";
 
 const proposal = (
   suffix: string,
@@ -62,6 +65,10 @@ afterEach(() => {
 });
 
 describe("ForecastQuestionAdminPage queue integrity", () => {
+  it("согласует визуальный фильтр со статусом публичного рассмотрения", () => {
+    expect(getInitialEditorFilter(true)).toBe("public_review");
+    expect(getInitialEditorFilter(false)).toBe("submitted");
+  });
   it("clears stale selection after a failed filter load and never submits its fields for the retry result", async () => {
     const a = proposal("1", "submitted", "Заголовок A");
     const b = proposal("2", "in_review", "Заголовок B");
