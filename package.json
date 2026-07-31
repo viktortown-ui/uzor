@@ -10,7 +10,8 @@
     "test:geometry": "node scripts/product-geometry.mjs",
     "test:production-map-style": "node scripts/production-map-style-smoke.mjs",
     "verify:bundle-budget": "node scripts/verify-bundle-budget.mjs",
-    "test:route-chunk-isolation": "node scripts/route-chunk-isolation.mjs"
+    "test:route-chunk-isolation": "node scripts/route-chunk-isolation.mjs",
+    "test:forecast-question-visuals": "node scripts/forecast-question-pipeline-visuals.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "~2.45.6",
