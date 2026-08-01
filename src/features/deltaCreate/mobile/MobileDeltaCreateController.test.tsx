@@ -312,6 +312,23 @@ describe('MobileDeltaCreateFlow observation controller', () => {
     expect(createDelta).toHaveBeenCalledTimes(2);
   });
 
+  it('shows the safe city-boundary error, preserves the draft, and resets for retry', async () => {
+    vi.mocked(createDelta)
+      .mockRejectedValueOnce({ code: 'outside_city_area', message: 'create_delta raw database UUID 00000000-0000-0000-0000-000000000000' })
+      .mockResolvedValueOnce({ delta, effect: { type: 'created', previousStatus: null, newStatus: 'checking', message: 'ok', detail: 'Первая отметка закреплена.' } });
+    renderFlow();
+    await reachPresetReview();
+    fireEvent.click(await screen.findByRole('button', { name: 'Опубликовать' }));
+    expect(await screen.findByText('Сейчас Дельты можно добавлять только в Перми и ближайших районах.')).toBeInTheDocument();
+    expect(screen.queryByText(/create_delta|00000000-0000-0000-0000-000000000000/)).not.toBeInTheDocument();
+    expect(screen.getByText('Автобус приходится ждать дольше')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Изменить место' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Повторить' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    expect(await screen.findByRole('heading', { name: 'Дельта опубликована' })).toBeInTheDocument();
+    expect(createDelta).toHaveBeenCalledTimes(2);
+  });
+
   it('confirms an existing Delta and uses fallback when card reload fails', async () => {
     vi.mocked(findSimilarDeltas).mockResolvedValueOnce([{ id: 'delta-existing', statement: 'Автобус ходит реже', status: 'new', confirmCount: 1, disconfirmCount: 0, distanceMeters: 100, locationLabel: 'Остановка', createdAt: '2026-01-01T00:00:00.000Z' }]);
     vi.mocked(getDeltaCard).mockRejectedValueOnce(new Error('reload failed'));
