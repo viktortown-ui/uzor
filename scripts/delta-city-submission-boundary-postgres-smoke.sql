@@ -4,8 +4,10 @@ begin;
 \ir ../supabase/migrations/001_uzor_init.sql
 \ir ../supabase/migrations/006_delta_foundation.sql
 
-create temporary table create_delta_acl_before as
-select proacl from pg_proc where oid = 'public.create_delta(uuid,text,text,text,text,text,text,text,text,text,double precision,double precision,text,text)'::regprocedure;
+create temporary table create_delta_contract_before as
+select proowner, proacl, prosecdef, proconfig
+from pg_proc
+where oid = 'public.create_delta(uuid,text,text,text,text,text,text,text,text,text,double precision,double precision,text,text)'::regprocedure;
 
 \ir ../supabase/migrations/012_delta_city_submission_boundary_v1.sql
 
@@ -22,18 +24,27 @@ create or replace function pg_temp.submit(city_slug text, point geography) retur
 $$;
 
 do $$
-declare centre geography; inside geography; just_inside geography; just_outside geography; result jsonb; before_deltas bigint; before_reactions bigint;
+declare centre geography; inside geography; just_inside geography; just_outside geography; result jsonb; before_deltas bigint; before_reactions bigint; current_contract pg_proc%rowtype;
 begin
+  select * into current_contract from pg_proc where oid='public.create_delta(uuid,text,text,text,text,text,text,text,text,text,double precision,double precision,text,text)'::regprocedure;
   select ST_SetSRID(ST_MakePoint(center_lng,center_lat),4326)::geography into centre from public.delta_cities where slug='perm';
   if (select submission_radius_m from public.delta_cities where slug='perm') <> 60000 then raise exception 'Perm radius is not 60000'; end if;
   if (select outskirts_distance_m from public.delta_cities where slug='perm') <> 8000 then raise exception 'outskirts_distance_m changed'; end if;
-  if (select proacl from pg_proc where oid='public.create_delta(uuid,text,text,text,text,text,text,text,text,text,double precision,double precision,text,text)'::regprocedure)
-     is distinct from (select proacl from create_delta_acl_before) then raise exception 'create_delta execute ACL changed'; end if;
+  if current_contract.proowner is distinct from (select proowner from create_delta_contract_before) then raise exception 'create_delta owner changed'; end if;
+  if not (coalesce(current_contract.proacl,'{}'::aclitem[]) <@ coalesce((select proacl from create_delta_contract_before),'{}'::aclitem[])
+          and coalesce((select proacl from create_delta_contract_before),'{}'::aclitem[]) <@ coalesce(current_contract.proacl,'{}'::aclitem[])) then raise exception 'create_delta execute ACL changed'; end if;
+  if current_contract.prosecdef is not true or (select prosecdef from create_delta_contract_before) is not true then raise exception 'create_delta is not SECURITY DEFINER'; end if;
+  if current_contract.proconfig is null
+     or not (current_contract.proconfig @> array['search_path=public, extensions, gis']::text[])
+     or cardinality(current_contract.proconfig) <> 1 then raise exception 'create_delta search_path changed: %', current_contract.proconfig; end if;
 
   result := pg_temp.submit('perm', centre);
   if result->'delta'->>'id' is null or result->'effect'->>'type' <> 'created' or result->'delta'->'progress'->>'current' <> '1' then raise exception 'response shape changed'; end if;
   if (select count(*) from public.delta_reactions where delta_id=(result->'delta'->>'id')::uuid and reaction='confirm') <> 1 then raise exception 'initial confirmation missing'; end if;
-  if (select ST_Equals(location::geometry,centre::geometry) and ST_X(public_location::geometry)=round(ST_X(centre::geometry)::numeric,3)::double precision from public.deltas where id=(result->'delta'->>'id')::uuid) is not true then raise exception 'coordinate behavior changed'; end if;
+  if (select ST_Equals(location::geometry,centre::geometry)
+             and ST_X(public_location::geometry)=round(ST_X(centre::geometry)::numeric,3)::double precision
+             and ST_Y(public_location::geometry)=round(ST_Y(centre::geometry)::numeric,3)::double precision
+      from public.deltas where id=(result->'delta'->>'id')::uuid) is not true then raise exception 'coordinate behavior changed'; end if;
 
   inside := ST_Project(centre,30000,0); perform pg_temp.submit('perm',inside);
   just_inside := ST_Project(centre,59990,0); perform pg_temp.submit('perm',just_inside);
