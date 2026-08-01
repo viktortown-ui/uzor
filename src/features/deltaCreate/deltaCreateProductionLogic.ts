@@ -1,5 +1,5 @@
 import { createEmptyDeltaDraft, getGeneratedDeltaStatement, validateDeltaStep } from './deltaCreateLogic';
-import { isWithinPermMvpArea } from './deltaGeoLogic';
+import { isWithinPermMvpArea, PERM_MVP_AREA_ERROR } from './deltaGeoLogic';
 import type { DeltaCreateDraft } from './deltaCreateTypes';
 import type { CreateDeltaInput, DeltaCard, DeltaCategory, DeltaEffect, ReactToDeltaResult } from '../deltas/deltaTypes';
 import { getDeltaEffectCopy } from '../deltas/deltaLogic';
@@ -59,6 +59,7 @@ export function mapDeltaPublishError(error: unknown) {
   if (/city_not_found/.test(message)) return 'Пермь пока не подключена к системе Дельт.';
   if (/category_not_found/.test(message)) return 'Эта категория больше недоступна. Выберите другую.';
   if (/invalid_coordinates/.test(message)) return 'Не удалось определить место. Выберите точку ещё раз.';
+  if (/outside_city_area/.test(message)) return PERM_MVP_AREA_ERROR;
   if (/invalid_delta_payload/.test(message)) return 'Проверьте заполненные данные.';
   if (/delta_not_found/.test(message)) return 'Похожая Дельта больше недоступна.';
   if (/author_reaction_locked/.test(message)) return 'Первая отметка автора уже закреплена.';

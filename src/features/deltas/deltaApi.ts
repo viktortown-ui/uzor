@@ -5,7 +5,7 @@ export class DeltaApiError extends Error { constructor(public code: DeltaApiErro
 
 function mapDeltaError(error: unknown): DeltaApiError {
   const message = error && typeof error === 'object' && 'message' in error ? String((error as { message?: unknown }).message) : '';
-  const codes: DeltaApiErrorCode[] = ['not_authenticated', 'not_circle_member', 'city_not_found', 'category_not_found', 'invalid_coordinates', 'invalid_delta_payload', 'delta_not_found', 'author_reaction_locked'];
+  const codes: DeltaApiErrorCode[] = ['not_authenticated', 'not_circle_member', 'city_not_found', 'category_not_found', 'invalid_coordinates', 'outside_city_area', 'invalid_delta_payload', 'delta_not_found', 'author_reaction_locked'];
   return new DeltaApiError(codes.find((code) => message.includes(code)) ?? 'unknown');
 }
 async function rpc<T>(name: string, args?: Record<string, unknown>): Promise<T> { const { data, error } = await getSupabaseClient().rpc(name, args); if (error) throw mapDeltaError(error); return data as T; }

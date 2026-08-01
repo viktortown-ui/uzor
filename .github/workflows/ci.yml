@@ -9,6 +9,21 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  delta-city-boundary-migration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: postgres }
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env: { PGHOST: localhost, PGPORT: 5432, PGUSER: postgres, PGPASSWORD: postgres, PGDATABASE: postgres }
+    steps:
+      - uses: actions/checkout@v5
+      - name: Apply Delta migrations and run city-boundary smoke tests
+        run: psql --set ON_ERROR_STOP=1 --file scripts/delta-city-submission-boundary-postgres-smoke.sql
+
   open-city-migration:
     runs-on: ubuntu-latest
     services:
